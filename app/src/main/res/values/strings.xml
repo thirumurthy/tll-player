@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">TLL Player</string>
+    <string name="title_channel_reversal">Channel Reversal</string>
+    <string name="title_channel_num">Display channel number when changing channels</string>
+    <string name="check_version">Update app</string>
+    <string name="title_boot_startup">Automatic startup</string>
+    <string name="appreciate">Appreciate the author</string>
+    <string name="channels">Configuring Addresses</string>
+    <string name="channel">Default Channel</string>
+    <string name="title_time">Display time</string>
+    <string name="title_config_auto_load">Automatically update the video source after the application starts</string>
+    <string name="exit">Exit the app</string>
+    <string name="default_channel">Default channel number</string>
+    <string name="clear">Restore Defaults</string>
+    <string name="server">Network Configuration</string>
+</resources>
