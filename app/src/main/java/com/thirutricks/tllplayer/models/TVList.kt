@@ -20,7 +20,7 @@ import java.io.File
 
 object TVList {
     private const val TAG = "TVList"
-    const val FILE_NAME = "channels.txt"
+    const val FILE_NAME = "channels_test.txt"
     private lateinit var appDirectory: File
     private lateinit var serverUrl: String
     private lateinit var list: List<TV>
@@ -138,10 +138,10 @@ object TVList {
     }
 
     fun str2List(str: String): Boolean {
-        var string = str
+        var string = str.trim()
         val g = Gua()
-        if (g.verify(str)) {
-            string = g.decode(str)
+        if (g.verify(string)) {
+            string = g.decode(string)
         }
         if (string.isBlank()) {
             return false
