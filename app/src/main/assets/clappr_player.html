@@ -19,6 +19,11 @@
             width: 100%;
             height: 100%;
         }
+        /* Auto-detect fit mode */
+        .fit { object-fit: contain; } /* Default, fits inside container */
+        .extra-fit { object-fit: fill; } /* Stretches fully */
+        .fill { object-fit: cover; } /* Covers entire area, cropping if needed */
+
     </style>
 </head>
 <body>
@@ -38,6 +43,23 @@
                 controls: true,
             },
         });
+        setTimeout(function () {
+                     const videoPlayer = document.getElementById('player');
+                    const screenRatio = window.innerWidth / window.innerHeight;
+
+                    if (screenRatio < 1) {
+                        // Portrait mode (mobile) - Fit
+                        // videoPlayer.className = "fit";
+                        videoPlayer.className = "extra-fit";
+                    } else {
+                        // Landscape mode (desktop or tablet) - Fill
+                        //videoPlayer.className = "fill";
+                        videoPlayer.className = "extra-fit";
+                    }
+
+
+                }, 2000 )
+
     } else {
         document.body.innerHTML = "<h1 style='color: white;'>No video URL provided!</h1>";
     }

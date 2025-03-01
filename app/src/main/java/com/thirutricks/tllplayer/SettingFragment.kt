@@ -328,11 +328,11 @@ class SettingFragment : Fragment() {
         val permissionsList: MutableList<String> = mutableListOf()
 
         // Check for "Request Install Packages" permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            !context.packageManager.canRequestPackageInstalls()
-        ) {
-            permissionsList.add(Manifest.permission.REQUEST_INSTALL_PACKAGES)
-        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+//            !context.packageManager.canRequestPackageInstalls()
+//        ) {
+//            permissionsList.add(Manifest.permission.REQUEST_INSTALL_PACKAGES)
+//        }
 
         // Check for "Read External Storage" permission
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
