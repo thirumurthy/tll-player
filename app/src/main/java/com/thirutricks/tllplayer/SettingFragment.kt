@@ -89,7 +89,7 @@ class SettingFragment : Fragment() {
         }
 
         binding.checkVersion.setOnClickListener {
-            requestInstallPermissions()
+           // requestInstallPermissions()
             (activity as MainActivity).settingActive()
         }
 
@@ -320,65 +320,6 @@ class SettingFragment : Fragment() {
             val config = binding.config
             config.text = SP.config?.let { Editable.Factory.getInstance().newEditable(it) }
                 ?: Editable.Factory.getInstance().newEditable("")
-        }
-    }
-
-    private fun requestInstallPermissions() {
-        val context = requireContext()
-        val permissionsList: MutableList<String> = mutableListOf()
-
-        // Check for "Request Install Packages" permission
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-//            !context.packageManager.canRequestPackageInstalls()
-//        ) {
-//            permissionsList.add(Manifest.permission.REQUEST_INSTALL_PACKAGES)
-//        }
-
-        // Check for "Read External Storage" permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            permissionsList.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
-
-        // Optional: Handle scoped storage for Android 13 and above
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.READ_MEDIA_IMAGES
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                permissionsList.add(Manifest.permission.READ_MEDIA_IMAGES)
-            }
-        } else {
-            // Check for "Write External Storage" permission (deprecated after Android 10)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                permissionsList.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            }
-        }
-
-        // Request permissions if the list is not empty
-        if (permissionsList.isNotEmpty()) {
-            try {
-                ActivityCompat.requestPermissions(
-                    requireActivity(),
-                    permissionsList.toTypedArray(),
-                    PERMISSIONS_REQUEST_CODE
-                )
-            } catch (e: IllegalStateException) {
-                Log.e(TAG, "Fragment is not attached to an activity: ${e.message}")
-            }
-        } else {
-            // All permissions are granted; proceed with the update manager
-            updateManager.checkAndUpdate()
         }
     }
 

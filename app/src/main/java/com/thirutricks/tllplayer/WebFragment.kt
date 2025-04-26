@@ -1,5 +1,6 @@
 package com.thirutricks.tllplayer
 
+import android.app.AlertDialog
 import android.graphics.Bitmap
 import android.net.Uri
 import android.net.http.SslError
@@ -50,6 +51,9 @@ class WebFragment : Fragment() {
         _binding = PlayerBinding.inflate(inflater, container, false)
 
         webView = binding.webView
+
+        binding.videoLayout.visibility = View.GONE
+        binding.webView.visibility = View.VISIBLE
 
         val application = requireActivity().applicationContext as MyTVApplication
 
@@ -118,8 +122,25 @@ class WebFragment : Fragment() {
                 handler: SslErrorHandler,
                 error: SslError?
             ) {
-                handler.proceed()
+                val context = webView?.context ?: return
+
+                AlertDialog.Builder(context).apply {
+                    setTitle("SSL Certificate Error")
+                    setMessage("The site's security certificate is not trusted. Do you want to continue anyway?")
+
+                    setPositiveButton("Continue") { _, _ ->
+                        handler.proceed() // Only proceed if the user explicitly agrees
+                    }
+
+                    setNegativeButton("Cancel") { _, _ ->
+                        handler.cancel() // Cancel the connection
+                    }
+
+                    setCancelable(false)
+                    show()
+                }
             }
+
 
             override fun shouldInterceptRequest(
                 view: WebView?,

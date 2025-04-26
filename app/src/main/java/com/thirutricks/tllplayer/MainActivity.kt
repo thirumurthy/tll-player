@@ -30,7 +30,10 @@ import com.thirutricks.tllplayer.RootCheckUtil
 class MainActivity : FragmentActivity() {
 
     private var ok = 0
-    private var webFragment = WebFragment()
+    //private var webFragment = WebFragment()
+   // private var webFragment = VLCFragment()
+    private var webFragment = GSYVideoPlayerFragment()
+
     private val errorFragment = ErrorFragment()
     private val loadingFragment = LoadingFragment()
     private var infoFragment = InfoFragment()
@@ -151,6 +154,7 @@ class MainActivity : FragmentActivity() {
         gestureDetector = GestureDetector(this, GestureListener(this))
 
         showTime()
+        
     }
 
     override fun onResumeFragments() {
@@ -294,16 +298,19 @@ class MainActivity : FragmentActivity() {
                 if (velocityY > 0) {
                     if (menuFragment.isHidden && settingFragment.isHidden) {
                         prev()
+                        return true // We handled it
                     }
                 }
                 if (velocityY < 0) {
                     if (menuFragment.isHidden && settingFragment.isHidden) {
                         next()
+                        return true // We handled it
                     }
                 }
             }
 
-            return super.onFling(e1, e2, velocityX, velocityY)
+            // return super.onFling(e1, e2, velocityX, velocityY)
+            return false // Let GSY handle if not ours
         }
 
 //        override fun onScroll(

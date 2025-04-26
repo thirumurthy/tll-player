@@ -6,6 +6,27 @@
     android:background="@android:color/black"
     android:keepScreenOn="true">
 
+<!--    <org.videolan.libvlc.util.VLCVideoLayout-->
+<!--        android:id="@+id/videoLayout"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent" />-->
+    <!-- GSYVideoPlayer -->
+    <com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer
+        android:id="@+id/videoLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+<!--        app:gsy_auto_rotate="true"    &lt;!&ndash; Auto rotate support &ndash;&gt;-->
+<!--    app:gsy_show_fullscreen_button="true" &lt;!&ndash; Show fullscreen button &ndash;&gt;-->
+<!--    app:gsy_show_wifi_error="true"    &lt;!&ndash; Show error if no wifi &ndash;&gt;-->
+<!--    app:gsy_landscape_rotate="true"    &lt;!&ndash; Landscape rotate support &ndash;&gt;-->
+<!--    app:gsy_enable_rotate="true"      &lt;!&ndash; Allow rotating the video player &ndash;&gt;-->
+<!--    app:gsy_cache_with_play="true"    &lt;!&ndash; Cache enabled &ndash;&gt;-->
+<!--    app:gsy_progress_bar="true"      &lt;!&ndash; Show progress bar &ndash;&gt;-->
+<!--    app:gsy_back_button="true"       &lt;!&ndash; Show back button &ndash;&gt;-->
+<!--    app:gsy_lock_landscape="false"   &lt;!&ndash; Allow landscape view lock &ndash;&gt;-->
+<!--    app:gsy_lock_portrait="false"    &lt;!&ndash; Allow portrait view lock &ndash;&gt;-->
+
+
     <WebView
         android:id="@+id/web_view"
         android:layout_width="match_parent"
