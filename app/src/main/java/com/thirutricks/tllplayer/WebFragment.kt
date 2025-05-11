@@ -215,6 +215,14 @@ class WebFragment : Fragment() {
                         }
                     }
 
+                    "besttllapp.online"-> webView.evaluateJavascript(context.resources.openRawResource(R.raw.snx)
+                        .bufferedReader()
+                        .use { it.readText() }) { value ->
+                        if (value == "success") {
+                            Log.e(TAG, "success")
+                        }
+                    }
+
                     "www.gdtv.cn" -> {
                         webView.evaluateJavascript(context.resources.openRawResource(R.raw.ahtv)
                             .bufferedReader()
@@ -647,7 +655,7 @@ class WebFragment : Fragment() {
         }
 //        url = "https://live.kankanews.com/huikan/"
         val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
-        webView.loadUrl("file:///android_asset/clappr_player.html?url=$encodedUrl")
+        webView.loadUrl(url)
     }
 
     companion object {
