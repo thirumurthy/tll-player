@@ -139,6 +139,10 @@ class WebFragment : Fragment() {
                     return null
                 }
 
+
+
+
+
                 if ((uri?.host == "www.btzx.com.cn"
                             || uri?.host == "g.cbg.cn"
                             || uri?.host == "www.ahtv.cn"
@@ -160,12 +164,12 @@ class WebFragment : Fragment() {
                 ) {
                     return null
                 }
-                if (uri?.host == "aj2031.online" ||
-                    uri?.host == "www.googletagmanager.com"
-
-                ) {
-                    return null
-                }
+//                if (uri?.host == "aj2031.online" ||
+//                    uri?.host == "www.googletagmanager.com"
+//
+//                ) {
+//                    return null
+//                }
                 if (  uri?.path?.endsWith(
                         "gpt.js"
                     ) == true
@@ -197,6 +201,20 @@ class WebFragment : Fragment() {
                 ) {
                     return WebResourceResponse("text/plain", "utf-8", null)
                 }
+                if ( uri?.host == "pagead2.googlesyndication.com"
+                    || uri?.host == "www.googletagmanager.com"
+                    || uri?.host == "jouwaikekaivep.net"
+                    || uri?.host == "instant.page"
+                    || uri?.path?.endsWith(
+                        "adsbygoogle.js"
+                    ) == true
+                    || uri?.path?.endsWith(
+                        "anti_copy.js"
+                    ) == true
+                ) {
+                    return WebResourceResponse("text/plain", "utf-8", null)
+                }
+
 //                Log.i(TAG, "${request?.method} ${uri.toString()} ${request?.requestHeaders}")
                 return null
             }
