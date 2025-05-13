@@ -132,6 +132,13 @@ class WebFragment : Fragment() {
                 ) {
                     return null
                 }
+                if (uri?.host == "cdnjs.cloudflare.com" && uri.path?.endsWith(
+                        "controls.min.css"
+                    ) == true
+                ) {
+                    return null
+                }
+
                 if ((uri?.host == "www.btzx.com.cn"
                             || uri?.host == "g.cbg.cn"
                             || uri?.host == "www.ahtv.cn"
