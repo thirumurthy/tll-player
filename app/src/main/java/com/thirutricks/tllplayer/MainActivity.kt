@@ -34,7 +34,7 @@ class MainActivity : FragmentActivity() {
    // private var webFragment = VLCFragment()
     //private var webFragment = GSYVideoPlayerFragment()
 
-    private var webFragment = WebFragment()
+    //private var webFragment = WebFragment()
     private val errorFragment = ErrorFragment()
     private val loadingFragment = LoadingFragment()
     private var infoFragment = InfoFragment()

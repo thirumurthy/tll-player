@@ -387,16 +387,16 @@ class WebFragment : Fragment() {
 
 
                     }
-
-                    "news.hbtv.com.cn" -> {
-                        webView.evaluateJavascript(context.resources.openRawResource(R.raw.ahtv)
-                            .bufferedReader()
-                            .use { it.readText() }) { value ->
-                            if (value == "success") {
-                                Log.e(TAG, "success")
-                            }
-                        }
-                    }
+//
+//                    "news.hbtv.com.cn" -> {
+//                        webView.evaluateJavascript(context.resources.openRawResource(R.raw.ahtv)
+//                            .bufferedReader()
+//                            .use { it.readText() }) { value ->
+//                            if (value == "success") {
+//                                Log.e(TAG, "success")
+//                            }
+//                        }
+//                    }
 
                     "cricktv.site"-> {
                         webView.evaluateJavascript(context.resources.openRawResource(R.raw.ahtv)
@@ -632,7 +632,10 @@ class WebFragment : Fragment() {
                     if(result!=null){
                         withContext(Dispatchers.Main) {
                             val encodedUrl = java.net.URLEncoder.encode(result, "UTF-8")
-                            webView.loadUrl("file:///android_asset/clappr_player.html?url=$encodedUrl")
+                            //webView.loadUrl("file:///android_asset/clappr_player.html?url=$encodedUrl")
+                            webView.loadUrl("https://besttllapp.online/tl/al.php?channel=$encodedUrl")
+
+
                         }
                     }
 
@@ -654,8 +657,13 @@ class WebFragment : Fragment() {
             }
         }
 //        url = "https://live.kankanews.com/huikan/"
-        val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
-        webView.loadUrl(url)
+        // val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
+        val wrappedUrl = if (url.endsWith(".ts", ignoreCase = true) || url.endsWith(".m3u8", ignoreCase = true)) {
+            "https://besttllapp.online/tl/al.php?channel=${java.net.URLEncoder.encode(url, "UTF-8")}"
+        } else {
+            url
+        }
+        webView.loadUrl(wrappedUrl)
     }
 
     companion object {
