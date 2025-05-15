@@ -145,17 +145,35 @@ class GroupAdapter(
         }
 
         fun focus(hasFocus: Boolean) {
-            if (hasFocus) {
-                binding.title.setTextColor(ContextCompat.getColor(context, R.color.white))
-            } else {
-                binding.title.setTextColor(
-                    ContextCompat.getColor(
-                        context,
-                        R.color.description_blur
-                    )
-                )
-            }
+            val colorWhite = ContextCompat.getColor(context, R.color.white)
+            val colorBlur = ContextCompat.getColor(context, R.color.description_blur)
+            val focusBackground = R.drawable.focus_background
+
+            // Animate title text color change
+            binding.title.setTextColor(if (hasFocus) colorWhite else colorBlur)
+
+            // Animate root view scale, elevation, and background change
+            binding.root.animate()
+                .scaleX(if (hasFocus) 1.0f else 0.95f)
+                .scaleY(if (hasFocus) 1.0f else 0.95f)
+                .translationZ(if (hasFocus) 8f else 0f)
+                .setDuration(200)
+                .withStartAction {
+                    if (hasFocus) {
+                        binding.root.setBackgroundResource(focusBackground)
+                    }
+                }
+                .withEndAction {
+                    if (!hasFocus) {
+                        binding.root.background = null
+                    }
+                }
+                .start()
+
+            // Set elevation to ensure it matches the animation
+            binding.root.elevation = if (hasFocus) 8f else 0f
         }
+
     }
 
     fun toPosition(position: Int) {

@@ -223,34 +223,34 @@ class ListAdapter(
         }
 
         fun focus(hasFocus: Boolean) {
-            if (hasFocus) {
-                binding.title.setTextColor(ContextCompat.getColor(context, R.color.white))
-                binding.description.setTextColor(ContextCompat.getColor(context, R.color.white))
-//                binding.root.alpha = 1.0F
-                // binding.root.setBackgroundResource(R.color.focus) old code
-                binding.root.setBackgroundResource(R.drawable.focus_background) // Use drawable for better design
+            val colorWhite = ContextCompat.getColor(context, R.color.white)
+            val colorTitleBlur = ContextCompat.getColor(context, R.color.title_blur)
+            val colorDescriptionBlur = ContextCompat.getColor(context, R.color.description_blur)
 
-                // Apply scale animation and shadow
-                binding.root.animate().scaleX(1.05f).scaleY(1.05f).setDuration(200).start()
-                binding.root.elevation = 10f // Add shadow for focused item
+            // Text color change
+            binding.title.setTextColor(if (hasFocus) colorWhite else colorTitleBlur)
+            binding.description.setTextColor(if (hasFocus) colorWhite else colorDescriptionBlur)
 
-            } else {
-                binding.title.setTextColor(ContextCompat.getColor(context, R.color.title_blur))
-                binding.description.setTextColor(
-                    ContextCompat.getColor(
-                        context,
-                        R.color.description_blur
-                    )
-                )
-//                binding.root.alpha = 0.8F
-                // binding.root.setBackgroundResource(R.color.blur) old code
-                binding.root.setBackgroundResource(R.drawable.blur_background) // Use drawable for better design
+            // Cancel any ongoing animations to avoid clashing
+            binding.root.animate().cancel()
 
-                // Reset scale and shadow
-                binding.root.animate().scaleX(1.0f).scaleY(1.0f).setDuration(200).start()
-                binding.root.elevation = 0f // Remove shadow
-            }
+            // Apply background immediately to avoid flicker
+            binding.root.setBackgroundResource(
+                if (hasFocus) R.drawable.focus_background else R.drawable.blur_background
+            )
+
+            // Animate scale and elevation
+            binding.root.animate()
+                .scaleX(if (hasFocus) 1.05f else 0.95f)
+                .scaleY(if (hasFocus) 1.05f else 1.0f)
+                .setDuration(200)
+                .start()
+
+            // Set elevation (not animated—applied directly)
+            binding.root.elevation = if (hasFocus) 10f else 0f
         }
+
+
 
         fun like(liked: Boolean) {
             if (liked) {

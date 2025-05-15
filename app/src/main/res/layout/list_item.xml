@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="2dp"
-    android:background="#FF263238">
+    android:background="#AA0080FF">
 
     <ImageView
         android:id="@+id/icon"
@@ -52,6 +52,6 @@
         app:layout_constraintTop_toBottomOf="@id/title"
         android:visibility="gone"
         android:text=""
-        android:textColor="#B3EEEEEE"
+        android:textColor="#AA0080FF"
         android:textSize="14sp" />
 </androidx.constraintlayout.widget.ConstraintLayout>

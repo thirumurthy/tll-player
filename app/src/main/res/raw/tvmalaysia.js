@@ -5,6 +5,12 @@
         body.style.position = 'fixed';
         body.style.left = '100%';
         body.style.backgroundColor = '#000';
+          // Show the body after a small delay
+          setTimeout(() => {
+            body.style.position = '';
+            body.style.left = '';
+            body.style.backgroundColor = '';
+          }, 100); // short delay to ensure smooth transition
 
         let count = 0;
         const interval = setInterval(() => {
@@ -27,6 +33,7 @@
             if (button) {
                 button.style.display = 'none';
             }
+
 
             count++;
             if (count > 6 * 1000) { // If count exceeds 6000
