@@ -21,7 +21,9 @@
         android:paddingTop="20dp"
         android:paddingLeft="10dp"
         android:paddingRight="10dp"
-        android:background="@color/blur"
+        android:background="@drawable/menu_panel_bg"
+        android:clipToPadding="false"
+        android:padding="16dp"
         >
         <TextView
             android:id="@+id/name"
