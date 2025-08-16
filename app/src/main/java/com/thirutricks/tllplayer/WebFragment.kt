@@ -3,6 +3,7 @@ package com.thirutricks.tllplayer
 import android.graphics.Bitmap
 import android.net.Uri
 import android.net.http.SslError
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -16,6 +17,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.thirutricks.tllplayer.databinding.PlayerBinding
 import com.thirutricks.tllplayer.models.TVModel
@@ -433,6 +435,36 @@ class WebFragment : Fragment() {
                         }
                     }
 
+                    "l455o.com"-> {
+                        webView.evaluateJavascript(context.resources.openRawResource(R.raw.moon)
+                            .bufferedReader()
+                            .use { it.readText() }) { value ->
+                            if (value == "{}") {
+                                Log.e(TAG, "success")
+                            }
+                        }
+                    }
+
+                    "filemoon.nl"-> {
+                        webView.evaluateJavascript(context.resources.openRawResource(R.raw.moon)
+                            .bufferedReader()
+                            .use { it.readText() }) { value ->
+                            if (value == "{}") {
+                                Log.e(TAG, "success")
+                            }
+                        }
+                    }
+
+                    "filemoon.sx"-> {
+                        webView.evaluateJavascript(context.resources.openRawResource(R.raw.moon)
+                            .bufferedReader()
+                            .use { it.readText() }) { value ->
+                            if (value == "{}") {
+                                Log.e(TAG, "success")
+                            }
+                        }
+                    }
+
                     "tapmadtv.live"-> {
                         webView.evaluateJavascript(context.resources.openRawResource(R.raw.gdtv)
                             .bufferedReader()
@@ -638,14 +670,55 @@ class WebFragment : Fragment() {
     }
 
     fun play(tvModel: TVModel) {
+        this.tvModel = tvModel
+        val url = tvModel.videoUrl.value as? String ?: return
+
+        // Check if it's an RTMP URL
+        if (url.startsWith("rtmp://") || url.startsWith("rtmps://") || url.startsWith("rtmpt://") || url.startsWith("rtmpe://") || url.startsWith("rtmpts://") || url.startsWith("rtmpte://")) {
+            try {
+                // 1. Try VLC
+                val vlcIntent = context?.packageManager?.getLaunchIntentForPackage("org.videolan.vlc")?.apply {
+                    action = Intent.ACTION_VIEW
+                    data = Uri.parse(url)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+
+                if (vlcIntent != null) {
+                    context?.startActivity(vlcIntent)
+                    return
+                }
+
+                // 2. Try MX Player
+                val mxIntent = context?.packageManager?.getLaunchIntentForPackage("com.mxtech.videoplayer.ad")?.apply {
+                    action = Intent.ACTION_VIEW
+                    setDataAndType(Uri.parse(url), "video/*")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                } ?: context?.packageManager?.getLaunchIntentForPackage("com.mxtech.videoplayer.pro")?.apply {
+                    action = Intent.ACTION_VIEW
+                    setDataAndType(Uri.parse(url), "video/*")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+
+                if (mxIntent != null) {
+                    context?.startActivity(mxIntent)
+                    return
+                }
+
+                // 3. Neither VLC nor MX Player installed
+                Toast.makeText(context, "Please install VLC or MX Player to play RTMP link", Toast.LENGTH_LONG).show()
+
+            } catch (e: Exception) {
+                Log.e("RTMP", "Error opening player: ${e.message}")
+                Toast.makeText(context, "Error opening player", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Continue with normal URL handling for non-RTMP URLs
 //        if (tvModel.tv.type == Type.HLS) {
 //            "暂不支持此格式".showToast(Toast.LENGTH_LONG)
 //            return
 //        }
 
-        this.tvModel = tvModel
-        var url = tvModel.videoUrl.value as String
-// Launch a coroutine on the IO dispatcher for background work
 
             if (url.contains("yupptv.com") || url.contains("athavantv.com") || url.contains("ttn.tv") || url.contains("youtube.com")) {
                 // Example of calling WebView.loadUrl
@@ -658,7 +731,8 @@ class WebFragment : Fragment() {
                         withContext(Dispatchers.Main) {
                             val encodedUrl = java.net.URLEncoder.encode(result, "UTF-8")
                             //webView.loadUrl("file:///android_asset/clappr_player.html?url=$encodedUrl")
-                            webView.loadUrl("https://besttllapp.online/tl/al.php?channel=$encodedUrl")
+                            //webView.loadUrl("https://besttllapp.online/tl/al.php?channel=$encodedUrl")
+                            webView.loadUrl("file:///android_asset/tll_player.html?channel=$encodedUrl")
 
 
                         }
