@@ -201,7 +201,7 @@ class MainActivity : FragmentActivity() {
     }
 
     fun setServer(server: String) {
-        settingFragment.setServer(server)
+       // settingFragment.setServer(server)
     }
 
     private fun watch() {

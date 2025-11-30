@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/setting"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:clickable="true"
-    android:focusable="false"
-    android:gravity="center"
-    android:background="#99000000"
-    android:orientation="vertical">
+    android:background="#80000000">
 
     <ScrollView
         android:id="@+id/container"
-        android:layout_width="500dp"
+        android:layout_width="wrap_content"
+        android:minWidth="600dp"
         android:layout_height="wrap_content"
-        android:fillViewport="true"
+        android:layout_gravity="center"
+        android:padding="32dp"
         android:scrollbars="none">
 
         <LinearLayout
@@ -21,20 +19,20 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="@drawable/menu_panel_bg"
-            android:padding="24dp"
-            android:clipToPadding="false">
+            android:background="@drawable/tv_panel_bg"
+            android:padding="40dp"
+            android:focusable="true"
+            android:focusableInTouchMode="true">
 
-            <!-- Header -->
             <TextView
                 android:id="@+id/name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/app_name"
-                android:textSize="24sp"
+                android:textSize="26sp"
                 android:textStyle="bold"
-                android:textColor="@color/white"
-                android:layout_marginBottom="8dp"/>
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="6dp" />
 
             <TextView
                 android:id="@+id/version"
@@ -43,19 +41,16 @@
                 android:text="Version 1.0.0"
                 android:textSize="14sp"
                 android:textColor="#B3FFFFFF"
-                android:layout_marginBottom="24dp"
-                android:visibility="visible"/>
+                android:layout_marginBottom="18dp" />
 
-            <!-- Section: Configuration -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Configuration"
-                android:textSize="12sp"
-                android:textColor="#FF007AFF"
-                android:textAllCaps="true"
+                android:text="CONFIGURATION"
+                android:textSize="13sp"
+                android:textColor="#00B0FF"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="12dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -63,51 +58,64 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:layout_marginBottom="12dp">
-                <Button
-                    android:id="@+id/qrcode"
-                    android:layout_width="120dp"
-                    android:layout_height="40dp"
-                    android:text="@string/server"
-                    android:background="@drawable/group_item_bg"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"/>
-                <TextView
-                    android:id="@+id/server"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text=""
-                    android:textColor="#B3FFFFFF"
-                    android:textSize="12sp"
-                    android:layout_marginStart="12dp"/>
-            </LinearLayout>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="6dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
+                    <Button
+                        android:id="@+id/qrcode"
+                        android:layout_width="120dp"
+                        android:layout_height="40dp"
+                        android:text="@string/server"
+                        android:background="@drawable/group_item_bg"
+                        android:textColor="@color/white"
+                        android:textSize="12sp"
+                        android:layout_marginTop="6dp"
+                        android:layout_marginBottom="6dp" />
+
+                    <TextView
+                        android:id="@+id/server"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="12sp"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginTop="6dp"
+                        android:layout_marginBottom="6dp" />
+                </LinearLayout>
+
                 <Button
                     android:id="@+id/confirm_config"
-                    android:layout_width="120dp"
-                    android:layout_height="40dp"
+                    android:layout_width="140dp"
+                    android:layout_height="48dp"
                     android:text="@string/channels"
-                    android:background="@drawable/group_item_bg"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"/>
+                    android:background="@drawable/tv_button_bg"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="6dp" />
+
                 <EditText
                     android:id="@+id/config"
                     android:layout_width="0dp"
                     android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/channels"
-                    android:textColorHint="#66FFFFFF"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"
-                    android:background="@null"
+                    android:layout_height="48dp"
                     android:layout_marginStart="12dp"
-                    android:inputType="textMultiLine"/>
+                    android:gravity="center_vertical"
+                    android:hint="@string/channels"
+                    android:textColorHint="#99FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/tv_input_bg"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="6dp" />
             </LinearLayout>
 
             <LinearLayout
@@ -116,151 +124,167 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:layout_marginBottom="24dp">
+
                 <Button
                     android:id="@+id/confirm_channel"
-                    android:layout_width="120dp"
-                    android:layout_height="40dp"
+                    android:layout_width="140dp"
+                    android:layout_height="48dp"
                     android:text="@string/channel"
-                    android:background="@drawable/group_item_bg"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"/>
+                    android:background="@drawable/tv_button_bg"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="6dp" />
+
                 <EditText
                     android:id="@+id/channel"
                     android:layout_width="0dp"
                     android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/channel"
-                    android:textColorHint="#66FFFFFF"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"
-                    android:background="@null"
+                    android:layout_height="48dp"
                     android:layout_marginStart="12dp"
-                    android:inputType="textMultiLine"/>
+                    android:gravity="center_vertical"
+                    android:hint="@string/channel"
+                    android:textColorHint="#99FFFFFF"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/tv_input_bg"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="6dp" />
             </LinearLayout>
 
-            <!-- Section: Preferences -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Preferences"
-                android:textSize="12sp"
-                android:textColor="#FF007AFF"
-                android:textAllCaps="true"
+                android:text="PREFERENCES"
+                android:textSize="13sp"
+                android:textColor="#00B0FF"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="12dp" />
 
             <Switch
                 android:id="@+id/switch_channel_reversal"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:text="@string/title_channel_reversal"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"/>
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:paddingStart="8dp"
+                android:layout_marginBottom="6dp" />
 
             <Switch
                 android:id="@+id/switch_channel_num"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:text="@string/title_channel_num"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"/>
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:paddingStart="8dp"
+                android:layout_marginBottom="6dp" />
 
             <Switch
                 android:id="@+id/switch_time"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:text="@string/title_time"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"/>
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:paddingStart="8dp"
+                android:layout_marginBottom="6dp" />
 
             <Switch
                 android:id="@+id/switch_boot_startup"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:text="@string/title_boot_startup"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:layout_marginBottom="8dp"/>
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:paddingStart="8dp"
+                android:layout_marginBottom="6dp" />
 
             <Switch
                 android:id="@+id/switch_config_auto_load"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
                 android:text="@string/title_config_auto_load"
-                android:textColor="@color/white"
-                android:textSize="14sp"
-                android:layout_marginBottom="24dp"/>
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:paddingStart="8dp"
+                android:layout_marginBottom="20dp" />
 
-            <!-- Section: Actions -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Actions"
-                android:textSize="12sp"
-                android:textColor="#FF007AFF"
-                android:textAllCaps="true"
+                android:text="ACTIONS"
+                android:textSize="13sp"
+                android:textColor="#00B0FF"
                 android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="12dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center">
-                
+                android:weightSum="3">
+
                 <Button
                     android:id="@+id/clear"
                     android:layout_width="0dp"
+                    android:layout_height="56dp"
                     android:layout_weight="1"
-                    android:layout_height="40dp"
                     android:text="@string/clear"
-                    android:background="@drawable/group_item_bg"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"
-                    android:layout_marginEnd="8dp"/>
+                    android:background="@drawable/tv_button_bg"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="6dp" />
 
                 <Button
                     android:id="@+id/appreciate"
                     android:layout_width="0dp"
+                    android:layout_height="56dp"
                     android:layout_weight="1"
-                    android:layout_height="40dp"
                     android:text="@string/appreciate"
-                    android:background="@drawable/group_item_bg"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"
-                    android:layout_marginEnd="8dp"/>
+                    android:background="@drawable/tv_button_bg"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="6dp" />
 
                 <Button
                     android:id="@+id/exit"
                     android:layout_width="0dp"
+                    android:layout_height="56dp"
                     android:layout_weight="1"
-                    android:layout_height="40dp"
                     android:text="@string/exit"
-                    android:background="@drawable/group_item_bg"
-                    android:textColor="@color/white"
-                    android:textSize="12sp"/>
+                    android:background="@drawable/tv_button_bg"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:layout_marginTop="6dp"
+                    android:layout_marginBottom="6dp" />
             </LinearLayout>
 
-            <!-- Hidden elements kept for compatibility -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:visibility="gone">
+
                 <Button
                     android:id="@+id/check_version"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/check_version"/>
+                    android:text="@string/check_version" />
+
                 <TextView
                     android:id="@+id/version_name"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content" />
             </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
-</LinearLayout>
+
+</FrameLayout>

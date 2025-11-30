@@ -56,6 +56,10 @@ object TVList {
             Toast.makeText(context, "Failed to read the channel, please set it in the menu", Toast.LENGTH_LONG).show()
         }
 
+        SP.configAutoLoad = true
+        SP.config = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
+
+
         if (SP.configAutoLoad && !SP.config.isNullOrEmpty()) {
             SP.config?.let {
                 update(it)
