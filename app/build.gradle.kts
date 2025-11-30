@@ -92,6 +92,13 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
 
     implementation("androidx.leanback:leanback:1.0.0")
+
+    val media3Version = "1.4.1"
+    implementation("androidx.media3:media3-exoplayer:$media3Version")
+    implementation("androidx.media3:media3-ui:$media3Version")
+    implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
+    implementation("androidx.media3:media3-exoplayer-rtsp:$media3Version")
+    implementation("androidx.media3:media3-datasource-rtmp:$media3Version")
 }
 
 configurations.configureEach {

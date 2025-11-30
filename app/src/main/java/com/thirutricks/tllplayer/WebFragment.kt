@@ -28,12 +28,17 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 
 
 class WebFragment : Fragment() {
     private lateinit var mainActivity: MainActivity
 
     private lateinit var webView: WebView
+    private var exoPlayer: ExoPlayer? = null
+    private lateinit var playerView: PlayerView
     val client = OkHttpClient()
     private var tvModel: TVModel? = null
 
@@ -52,6 +57,7 @@ class WebFragment : Fragment() {
         _binding = PlayerBinding.inflate(inflater, container, false)
 
         webView = binding.webView
+        playerView = binding.playerView
 
         val application = requireActivity().applicationContext as MyTVApplication
 
@@ -673,78 +679,37 @@ class WebFragment : Fragment() {
         this.tvModel = tvModel
         val url = tvModel.videoUrl.value as? String ?: return
 
-        // Check if it's an RTMP URL
-        if (url.startsWith("rtmp://") || url.startsWith("rtmps://") || url.startsWith("rtmpt://") || url.startsWith("rtmpe://") || url.startsWith("rtmpts://") || url.startsWith("rtmpte://")) {
-            try {
-                // 1. Try VLC
-                val vlcIntent = context?.packageManager?.getLaunchIntentForPackage("org.videolan.vlc")?.apply {
-                    action = Intent.ACTION_VIEW
-                    data = Uri.parse(url)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
+        Log.i(TAG, "play ${tvModel.tv.title} $url")
 
-                if (vlcIntent != null) {
-                    context?.startActivity(vlcIntent)
-                    return
-                }
-
-                // 2. Try MX Player
-                val mxIntent = context?.packageManager?.getLaunchIntentForPackage("com.mxtech.videoplayer.ad")?.apply {
-                    action = Intent.ACTION_VIEW
-                    setDataAndType(Uri.parse(url), "video/*")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                } ?: context?.packageManager?.getLaunchIntentForPackage("com.mxtech.videoplayer.pro")?.apply {
-                    action = Intent.ACTION_VIEW
-                    setDataAndType(Uri.parse(url), "video/*")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-
-                if (mxIntent != null) {
-                    context?.startActivity(mxIntent)
-                    return
-                }
-
-                // 3. Neither VLC nor MX Player installed
-                Toast.makeText(context, "Please install VLC or MX Player to play RTMP link", Toast.LENGTH_LONG).show()
-
-            } catch (e: Exception) {
-                Log.e("RTMP", "Error opening player: ${e.message}")
-                Toast.makeText(context, "Error opening player", Toast.LENGTH_SHORT).show()
-            }
+        if (url.endsWith(".m3u8", ignoreCase = true) || url.endsWith(".ts", ignoreCase = true) ||
+            url.startsWith("rtmp://") || url.startsWith("rtsp://")) {
+            
+            webView.visibility = View.GONE
+            playerView.visibility = View.VISIBLE
+            webView.loadUrl("about:blank") // Stop webview
+            
+            initializePlayer(url)
+            return
         }
 
-        // Continue with normal URL handling for non-RTMP URLs
-//        if (tvModel.tv.type == Type.HLS) {
-//            "暂不支持此格式".showToast(Toast.LENGTH_LONG)
-//            return
-//        }
+        // Not ExoPlayer supported URL, use WebView
+        playerView.visibility = View.GONE
+        webView.visibility = View.VISIBLE
+        releasePlayer()
 
-
-            if (url.contains("yupptv.com") || url.contains("athavantv.com") || url.contains("ttn.tv") || url.contains("youtube.com")) {
-                // Example of calling WebView.loadUrl
-                CoroutineScope(Dispatchers.IO).launch {
-                    // Perform network or background tasks
-                    val result = performNetworkRequest(url)
-
-                    // Switch to Main thread to update WebView
-                    if(result!=null){
-                        withContext(Dispatchers.Main) {
-                            val encodedUrl = java.net.URLEncoder.encode(result, "UTF-8")
-                            //webView.loadUrl("file:///android_asset/clappr_player.html?url=$encodedUrl")
-                            //webView.loadUrl("https://besttllapp.online/tl/al.php?channel=$encodedUrl")
-                            webView.loadUrl("file:///android_asset/tll_player.html?channel=$encodedUrl")
-
-
-                        }
+        if (url.contains("yupptv.com") || url.contains("athavantv.com") || url.contains("ttn.tv") || url.contains("youtube.com")) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val result = performNetworkRequest(url)
+                if(result!=null){
+                    withContext(Dispatchers.Main) {
+                        val encodedUrl = java.net.URLEncoder.encode(result, "UTF-8")
+                        webView.loadUrl("file:///android_asset/tll_player.html?channel=$encodedUrl")
                     }
-
                 }
-
             }
+            return
+        }
 
-
-
-        Log.i(TAG, "play ${tvModel.tv.title} $url")
         val uri = Uri.parse(url)
         Log.e(TAG, "uri ${uri.host}")
         when (uri.host) {
@@ -755,14 +720,55 @@ class WebFragment : Fragment() {
                 )
             }
         }
-//        url = "https://live.kankanews.com/huikan/"
-        // val encodedUrl = java.net.URLEncoder.encode(url, "UTF-8")
-        val wrappedUrl = if (url.endsWith(".ts", ignoreCase = true) || url.endsWith(".m3u8", ignoreCase = true)) {
-            "https://besttllapp.online/tl/al.php?channel=${java.net.URLEncoder.encode(url, "UTF-8")}"
+
+        webView.loadUrl(url)
+    }
+
+    private fun initializePlayer(url: String) {
+        releasePlayer()
+        
+        exoPlayer = ExoPlayer.Builder(requireContext()).build()
+        playerView.player = exoPlayer
+        
+        val mediaItem = MediaItem.fromUri(url)
+        exoPlayer?.setMediaItem(mediaItem)
+        exoPlayer?.prepare()
+        exoPlayer?.playWhenReady = true
+    }
+
+    private fun releasePlayer() {
+        exoPlayer?.release()
+        exoPlayer = null
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (android.os.Build.VERSION.SDK_INT <= 23) {
+            releasePlayer()
         } else {
-            url
+            exoPlayer?.pause()
         }
-        webView.loadUrl(wrappedUrl)
+        webView.onPause()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (android.os.Build.VERSION.SDK_INT > 23) {
+            releasePlayer()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (exoPlayer == null && playerView.visibility == View.VISIBLE) {
+            tvModel?.let { play(it) }
+        }
+        webView.onResume()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        releasePlayer()
     }
 
     companion object {

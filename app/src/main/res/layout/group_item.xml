@@ -5,19 +5,22 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@drawable/group_item_bg"
-    android:padding="8dp"
-    android:clipToPadding="false">
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp"
+    android:layout_marginBottom="4dp"
+    android:focusable="true"
+    android:clickable="true">
 
     <TextView
         android:id="@+id/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="start"
-        android:layout_marginStart="10dp"
-        android:layout_marginBottom="5dp"
-        android:gravity="start"
-        android:textColor="#B3EEEEEE"
-        android:color="#FF263238"
-        android:layout_marginVertical="5dp"
-        android:textSize="20sp" />
+        android:gravity="center_vertical"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:fontFamily="sans-serif-medium"/>
 </LinearLayout>

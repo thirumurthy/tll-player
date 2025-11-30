@@ -5,187 +5,262 @@
     android:layout_height="match_parent"
     android:clickable="true"
     android:focusable="false"
-    android:gravity="end"
-    >
+    android:gravity="center"
+    android:background="#99000000"
+    android:orientation="vertical">
+
     <ScrollView
         android:id="@+id/container"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:fillViewport="true"
-        >
-    <LinearLayout
-        android:id="@+id/content"
-        android:layout_width="350dp"
+        android:layout_width="500dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingTop="20dp"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp"
-        android:background="@drawable/menu_panel_bg"
-        android:clipToPadding="false"
-        android:padding="16dp"
-        >
-        <TextView
-            android:id="@+id/name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textSize="16sp" />
-        <TextView
-            android:id="@+id/version"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text=""
-            android:textSize="11sp"
-            android:visibility="gone"
-            />
+        android:fillViewport="true"
+        android:scrollbars="none">
+
         <LinearLayout
+            android:id="@+id/content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            >
-            <Button
-                android:id="@+id/check_version"
-                android:layout_width="100dp"
-                android:layout_height="45dp"
-                android:layout_marginEnd="5dp"
-                android:textSize="11sp"
-                android:text="@string/check_version"
-                />
-            <ProgressBar
-                android:visibility="gone"
+            android:orientation="vertical"
+            android:background="@drawable/menu_panel_bg"
+            android:padding="24dp"
+            android:clipToPadding="false">
+
+            <!-- Header -->
+            <TextView
+                android:id="@+id/name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                />
+                android:text="@string/app_name"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:layout_marginBottom="8dp"/>
+
             <TextView
-                android:id="@+id/version_name"
-                android:text=""
-                android:textSize="11sp"
+                android:id="@+id/version"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/qrcode"
-                android:layout_width="100dp"
-                android:layout_height="45dp"
-                android:layout_marginEnd="5dp"
-                android:textSize="11sp"
-                android:text="@string/server" />
+                android:layout_height="wrap_content"
+                android:text="Version 1.0.0"
+                android:textSize="14sp"
+                android:textColor="#B3FFFFFF"
+                android:layout_marginBottom="24dp"
+                android:visibility="visible"/>
+
+            <!-- Section: Configuration -->
             <TextView
-                android:id="@+id/server"
-                android:layout_width="245dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=""
-                android:textSize="11sp"
-                />
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/confirm_config"
-                android:layout_width="100dp"
-                android:layout_height="45dp"
-                android:layout_marginEnd="5dp"
-                android:textSize="11sp"
-                android:text="@string/channels" />
-            <EditText
-                android:id="@+id/config"
-                android:layout_width="245dp"
+                android:text="Configuration"
+                android:textSize="12sp"
+                android:textColor="#FF007AFF"
+                android:textAllCaps="true"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="11sp"
-                android:autofillHints=""
-                android:hint="@string/channels"
-                android:scrollbars="vertical"
-                android:inputType="textMultiLine" />
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/confirm_channel"
-                android:layout_width="100dp"
-                android:layout_height="45dp"
-                android:layout_marginEnd="5dp"
-                android:textSize="11sp"
-                android:text="@string/channel" />
-            <EditText
-                android:id="@+id/channel"
-                android:layout_width="245dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+                <Button
+                    android:id="@+id/qrcode"
+                    android:layout_width="120dp"
+                    android:layout_height="40dp"
+                    android:text="@string/server"
+                    android:background="@drawable/group_item_bg"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"/>
+                <TextView
+                    android:id="@+id/server"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="12sp"
+                    android:layout_marginStart="12dp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="11sp"
-                android:autofillHints=""
-                android:hint="@string/channel"
-                android:scrollbars="vertical"
-                android:inputType="textMultiLine" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+                <Button
+                    android:id="@+id/confirm_config"
+                    android:layout_width="120dp"
+                    android:layout_height="40dp"
+                    android:text="@string/channels"
+                    android:background="@drawable/group_item_bg"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"/>
+                <EditText
+                    android:id="@+id/config"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/channels"
+                    android:textColorHint="#66FFFFFF"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:background="@null"
+                    android:layout_marginStart="12dp"
+                    android:inputType="textMultiLine"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="24dp">
+                <Button
+                    android:id="@+id/confirm_channel"
+                    android:layout_width="120dp"
+                    android:layout_height="40dp"
+                    android:text="@string/channel"
+                    android:background="@drawable/group_item_bg"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"/>
+                <EditText
+                    android:id="@+id/channel"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/channel"
+                    android:textColorHint="#66FFFFFF"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:background="@null"
+                    android:layout_marginStart="12dp"
+                    android:inputType="textMultiLine"/>
+            </LinearLayout>
+
+            <!-- Section: Preferences -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Preferences"
+                android:textSize="12sp"
+                android:textColor="#FF007AFF"
+                android:textAllCaps="true"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <Switch
+                android:id="@+id/switch_channel_reversal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/title_channel_reversal"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp"/>
+
+            <Switch
+                android:id="@+id/switch_channel_num"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/title_channel_num"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp"/>
+
+            <Switch
+                android:id="@+id/switch_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/title_time"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp"/>
+
+            <Switch
+                android:id="@+id/switch_boot_startup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/title_boot_startup"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:layout_marginBottom="8dp"/>
+
+            <Switch
+                android:id="@+id/switch_config_auto_load"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/title_config_auto_load"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- Section: Actions -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Actions"
+                android:textSize="12sp"
+                android:textColor="#FF007AFF"
+                android:textAllCaps="true"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+                
+                <Button
+                    android:id="@+id/clear"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="40dp"
+                    android:text="@string/clear"
+                    android:background="@drawable/group_item_bg"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:layout_marginEnd="8dp"/>
+
+                <Button
+                    android:id="@+id/appreciate"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="40dp"
+                    android:text="@string/appreciate"
+                    android:background="@drawable/group_item_bg"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"
+                    android:layout_marginEnd="8dp"/>
+
+                <Button
+                    android:id="@+id/exit"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="40dp"
+                    android:text="@string/exit"
+                    android:background="@drawable/group_item_bg"
+                    android:textColor="@color/white"
+                    android:textSize="12sp"/>
+            </LinearLayout>
+
+            <!-- Hidden elements kept for compatibility -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone">
+                <Button
+                    android:id="@+id/check_version"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/check_version"/>
+                <TextView
+                    android:id="@+id/version_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
         </LinearLayout>
-        <Button
-            android:id="@+id/clear"
-            android:layout_width="100dp"
-            android:layout_height="45dp"
-            android:layout_marginTop="0dp"
-            android:text="@string/clear"
-            android:textSize="11sp"
-            />
-        <Button
-            android:id="@+id/appreciate"
-            android:layout_width="100dp"
-            android:layout_height="45dp"
-            android:layout_marginTop="0dp"
-            android:text="@string/appreciate"
-            android:textSize="11sp"
-            />
-        <Button
-            android:id="@+id/exit"
-            android:layout_width="100dp"
-            android:layout_height="45dp"
-            android:layout_marginTop="0dp"
-            android:text="@string/exit"
-            android:textSize="11sp"
-            />
-        <Switch
-            android:id="@+id/switch_channel_reversal"
-            android:text="@string/title_channel_reversal"
-            android:textSize="11sp"
-            android:layout_marginTop="5dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-        <Switch
-            android:id="@+id/switch_channel_num"
-            android:text="@string/title_channel_num"
-            android:textSize="11sp"
-            android:layout_marginTop="5dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-        <Switch
-            android:id="@+id/switch_time"
-            android:text="@string/title_time"
-            android:textSize="11sp"
-            android:layout_marginTop="5dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-        <Switch
-            android:id="@+id/switch_boot_startup"
-            android:text="@string/title_boot_startup"
-            android:layout_marginTop="5dp"
-            android:textSize="11sp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-        <Switch
-            android:id="@+id/switch_config_auto_load"
-            android:text="@string/title_config_auto_load"
-            android:textSize="11sp"
-            android:layout_marginTop="5dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
     </ScrollView>
 </LinearLayout>
