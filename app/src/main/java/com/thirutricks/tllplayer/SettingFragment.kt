@@ -42,7 +42,7 @@ class SettingFragment : Fragment() {
 
         updateManager = UpdateManager(requireContext(), requireContext().appVersionCode)
         (activity as MainActivity).ready(TAG)
-        SP.config = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
+        // SP.config = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
         return binding.root
     }
 
@@ -54,25 +54,37 @@ class SettingFragment : Fragment() {
         val ctx = requireContext()
 
         binding.name.text = getString(R.string.app_name)
-        binding.version.text = "https://github.com/thirumurthy/tll-player"
+        // binding.version.text = "https://github.com/thirumurthy/tll-player"
+        binding.version.visibility = View.GONE
 
         binding.switchChannelReversal.isChecked = SP.channelReversal
         binding.switchChannelNum.isChecked = SP.channelNum
         binding.switchTime.isChecked = SP.time
         binding.switchBootStartup.isChecked = SP.bootStartup
+        binding.switchBootStartup.isChecked = SP.bootStartup
         binding.switchConfigAutoLoad.isChecked = SP.configAutoLoad
+        binding.switchChannelCheck.isChecked = SP.channelCheck
 
         binding.config.text = Editable.Factory.getInstance().newEditable(SP.config ?: "")
         binding.channel.text = Editable.Factory.getInstance().newEditable(SP.channel.toString())
 
         scaleForTV()
 
-        binding.content.apply {
+//        binding.content.apply {
+//            isFocusable = true
+//            isFocusableInTouchMode = true
+//            requestFocus()
+//        }
+
+        // Focus on Default Channel input as requested
+        binding.channel.apply {
             isFocusable = true
             isFocusableInTouchMode = true
             requestFocus()
         }
     }
+    
+
 
     // ------------------------------------------------------------
     //  TIVIMATE FOCUS ANIMATION (SCALE + SHADOW)
@@ -84,7 +96,9 @@ class SettingFragment : Fragment() {
             binding.switchChannelNum,
             binding.switchTime,
             binding.switchBootStartup,
+            binding.switchBootStartup,
             binding.switchConfigAutoLoad,
+            binding.switchChannelCheck,
             binding.confirmConfig,
             binding.confirmChannel,
             binding.clear,
@@ -126,7 +140,8 @@ class SettingFragment : Fragment() {
         val views = listOf(
             binding.switchChannelReversal, binding.switchChannelNum,
             binding.switchTime, binding.switchBootStartup,
-            binding.switchConfigAutoLoad
+            binding.switchTime, binding.switchBootStartup,
+            binding.switchConfigAutoLoad, binding.switchChannelCheck
         )
 
         views.forEach { v ->
@@ -163,6 +178,12 @@ class SettingFragment : Fragment() {
 
         binding.switchConfigAutoLoad.setOnCheckedChangeListener { _, b ->
             SP.configAutoLoad = b
+            SP.configAutoLoad = b
+            (activity as MainActivity).settingActive()
+        }
+
+        binding.switchChannelCheck.setOnCheckedChangeListener { _, b ->
+            SP.channelCheck = b
             (activity as MainActivity).settingActive()
         }
 
@@ -222,7 +243,7 @@ class SettingFragment : Fragment() {
         binding.clear.setOnClickListener {
             //tvUiUtils?.playClickSound()
 
-            SP.config = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
+            // SP.config = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
             SP.channel = 0
             SP.position = 0
 

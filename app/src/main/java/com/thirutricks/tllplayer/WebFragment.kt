@@ -31,8 +31,24 @@ import java.io.IOException
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import androidx.media3.common.C
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.drm.DefaultDrmSessionManager
+import androidx.media3.exoplayer.drm.FrameworkMediaDrm
+import androidx.media3.exoplayer.drm.LocalMediaDrmCallback
+import java.util.UUID
+import android.util.Base64
+import java.nio.charset.StandardCharsets
+import org.json.JSONObject
+import org.json.JSONArray
 
 
+
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
+
+@OptIn(UnstableApi::class)
 class WebFragment : Fragment() {
     private lateinit var mainActivity: MainActivity
 
@@ -682,7 +698,8 @@ class WebFragment : Fragment() {
         Log.i(TAG, "play ${tvModel.tv.title} $url")
 
         if (url.endsWith(".m3u8", ignoreCase = true) || url.endsWith(".ts", ignoreCase = true) ||
-            url.startsWith("rtmp://") || url.startsWith("rtsp://")) {
+            url.endsWith(".mpd", ignoreCase = true) ||
+            url.startsWith("rtmp://") || url.startsWith("rtsp://") || url.contains("?|")) {
             
             webView.visibility = View.GONE
             playerView.visibility = View.VISIBLE
@@ -725,15 +742,100 @@ class WebFragment : Fragment() {
     }
 
     private fun initializePlayer(url: String) {
+        // Always release the previous player to ensure we can configure DRM correctly for the new content
         releasePlayer()
+
+        var videoUrl = url
+        var drmConfig: DrmConfig? = null
+
+        if (url.contains("?|")) {
+            val parts = url.split("?|")
+            videoUrl = parts[0]
+            val params = parts[1]
+            val queryParams = params.split("&").associate {
+                val (key, value) = it.split("=")
+                key to value
+            }
+
+            if (queryParams["drmScheme"] == "clearkey") {
+                val drmLicense = queryParams["drmLicense"]
+                if (drmLicense != null) {
+                    drmConfig = DrmConfig("clearkey", drmLicense)
+                }
+            }
+        }
+
+        val builder = ExoPlayer.Builder(requireContext())
+        if (drmConfig != null && drmConfig.scheme == "clearkey") {
+            Log.d(TAG, "Configuring ClearKey DRM with license: ${drmConfig.license}")
+            val drmCallback = LocalMediaDrmCallback(createClearKeyJson(drmConfig.license).toByteArray())
+            val drmSessionManager = DefaultDrmSessionManager.Builder()
+                .setUuidAndExoMediaDrmProvider(C.CLEARKEY_UUID, FrameworkMediaDrm.DEFAULT_PROVIDER)
+                .build(drmCallback)
+            builder.setMediaSourceFactory(
+                androidx.media3.exoplayer.source.DefaultMediaSourceFactory(requireContext())
+                    .setDrmSessionManagerProvider { drmSessionManager }
+            )
+        }
+        exoPlayer = builder.build()
         
-        exoPlayer = ExoPlayer.Builder(requireContext()).build()
+        exoPlayer?.addListener(object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                super.onPlayerError(error)
+                Log.e(TAG, "ExoPlayer Error: ${error.message}", error)
+                tvModel?.setErrInfo("Player Error: ${error.message}")
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                super.onPlaybackStateChanged(playbackState)
+                 if (playbackState == Player.STATE_READY) {
+                        tvModel?.setErrInfo("") // Clear error info on successful play
+                 }
+            }
+        })
+
         playerView.player = exoPlayer
         
-        val mediaItem = MediaItem.fromUri(url)
+        val mediaItem = MediaItem.fromUri(videoUrl)
         exoPlayer?.setMediaItem(mediaItem)
         exoPlayer?.prepare()
         exoPlayer?.playWhenReady = true
+    }
+
+    data class DrmConfig(val scheme: String, val license: String)
+
+    private fun createClearKeyJson(license: String): String {
+        // License format: keyId:key
+        val parts = license.split(":")
+        val keyIdHex = parts[0]
+        val keyHex = parts[1]
+
+        val keyIdBase64 = hexToBase64Url(keyIdHex)
+        val keyBase64 = hexToBase64Url(keyHex)
+
+        val keyObject = JSONObject()
+        keyObject.put("kty", "oct")
+        keyObject.put("k", keyBase64)
+        keyObject.put("kid", keyIdBase64)
+
+        val keysArray = JSONArray()
+        keysArray.put(keyObject)
+
+        val jsonObject = JSONObject()
+        jsonObject.put("keys", keysArray)
+        jsonObject.put("type", "temporary")
+
+        return jsonObject.toString()
+    }
+
+    private fun hexToBase64Url(hex: String): String {
+        val bytes = ByteArray(hex.length / 2)
+        for (i in bytes.indices) {
+            val index = i * 2
+            val j = Integer.parseInt(hex.substring(index, index + 2), 16)
+            bytes[i] = j.toByte()
+        }
+        return Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
     }
 
     private fun releasePlayer() {

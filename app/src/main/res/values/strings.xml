@@ -13,4 +13,5 @@
     <string name="default_channel">Default channel number</string>
     <string name="clear">Restore Defaults</string>
     <string name="server">Network Configuration</string>
+    <string name="title_channel_check">Remove dead channels</string>
 </resources>

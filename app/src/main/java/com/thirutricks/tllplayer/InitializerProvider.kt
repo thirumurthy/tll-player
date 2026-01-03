@@ -9,8 +9,12 @@ internal class InitializerProvider : ContentProvider() {
 
     // Happens before Application#onCreate.It's fine to init something here
     override fun onCreate(): Boolean {
-        SP.init(context!!)
-        TVList.init(context!!)
+        try {
+            SP.init(context!!)
+            TVList.init(context!!)
+        } catch (e: Exception) {
+            android.util.Log.e("InitializerProvider", "Error initializing", e)
+        }
         return true
     }
 

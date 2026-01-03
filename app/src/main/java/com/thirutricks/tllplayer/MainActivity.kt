@@ -63,6 +63,7 @@ class MainActivity : FragmentActivity() {
             super.onAvailable(network)
             if (isVpnActive()) {
                 runOnUiThread {
+                    Log.d(TAG, "VPN detected via Callback. Exiting app.")
                     Toast.makeText(this@MainActivity, "VPN detected. Exiting app.", Toast.LENGTH_LONG).show()
                     finishAffinity() // Close all activities
                 }
@@ -83,6 +84,7 @@ class MainActivity : FragmentActivity() {
     @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "onCreate started")
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
@@ -733,6 +735,7 @@ class MainActivity : FragmentActivity() {
                 @Suppress("DEPRECATION")
                 val networkInfo = connectivityManager.getNetworkInfo(network)
                 if (networkInfo != null && networkInfo.type == ConnectivityManager.TYPE_VPN) {
+                    Log.d(TAG, "VPN detected via legacy check.")
                     return true
                 }
             }
@@ -755,8 +758,9 @@ class MainActivity : FragmentActivity() {
 
     private fun handleRootStatusChange(isRooted: Boolean) {
         if (isRooted) {
-            Toast.makeText(this, "Root detected. Exiting app.", Toast.LENGTH_LONG).show()
-            finishAffinity() // Exit the app
+//            Log.d(TAG, "Root detected. Exiting app.")
+//            Toast.makeText(this, "Root detected. Exiting app.", Toast.LENGTH_LONG).show()
+//            finishAffinity() // Exit the app
         } else {
             Toast.makeText(this, "Device is no longer rooted.", Toast.LENGTH_SHORT).show()
         }

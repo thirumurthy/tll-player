@@ -19,14 +19,8 @@ import okhttp3.OkHttpClient
  */
 object SecureHttpClient {
     val client: OkHttpClient by lazy {
-        val certificatePinner = CertificatePinner.Builder()
-            // Example pin, REPLACE with your real one
-            .add("besttllapp.online", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
-            // .add("your.other.domain", "sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=")
-            .build()
-
         OkHttpClient.Builder()
-            .certificatePinner(certificatePinner)
+            .addInterceptor(SecurityInterceptor(MyTVApplication.getInstance()))
             .build()
     }
 }

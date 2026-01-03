@@ -8,7 +8,7 @@
     <ScrollView
         android:id="@+id/container"
         android:layout_width="wrap_content"
-        android:minWidth="600dp"
+        android:minWidth="800dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:padding="32dp"
@@ -50,6 +50,7 @@
                 android:textSize="13sp"
                 android:textColor="#00B0FF"
                 android:textStyle="bold"
+                android:visibility="gone"
                 android:layout_marginBottom="12dp" />
 
             <LinearLayout
@@ -207,6 +208,16 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:text="@string/title_config_auto_load"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:paddingStart="8dp"
+                android:layout_marginBottom="6dp" />
+
+            <Switch
+                android:id="@+id/switch_channel_check"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:text="@string/title_channel_check"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:paddingStart="8dp"

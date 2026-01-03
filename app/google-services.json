@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "1059828767216",
+    "firebase_url": "https://tamil-tv-cast.firebaseio.com",
+    "project_id": "tamil-tv-cast",
+    "storage_bucket": "tamil-tv-cast.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1059828767216:android:387870f71d6495dd2c2535",
+        "android_client_info": {
+          "package_name": "com.blogspot.thirutricks.thirulivetv"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBAwpo_g5OMRzGsn4Wx_ytG2yx7brHZM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1059828767216:android:eac7c1b9d3f0067c2c2535",
+        "android_client_info": {
+          "package_name": "com.thirutricks.tllplayer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBAwpo_g5OMRzGsn4Wx_ytG2yx7brHZM8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

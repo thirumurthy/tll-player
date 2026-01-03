@@ -35,6 +35,8 @@ object SP {
 
     const val KEY_EPG = "epg"
 
+    private const val KEY_CONFIG_CHANNEL_CHECK = "config_channel_check"
+
     private lateinit var sp: SharedPreferences
 
     private var listener: OnSharedPreferenceChangeListener? = null
@@ -96,6 +98,10 @@ object SP {
     var channel: Int
         get() = sp.getInt(KEY_CHANNEL, 0)
         set(value) = sp.edit().putInt(KEY_CHANNEL, value).apply()
+
+    var channelCheck: Boolean
+        get() = sp.getBoolean(KEY_CONFIG_CHANNEL_CHECK, true)
+        set(value) = sp.edit().putBoolean(KEY_CONFIG_CHANNEL_CHECK, value).apply()
 
     fun getLike(id: Int): Boolean {
         val stringSet = sp.getStringSet(KEY_LIKE, emptySet())

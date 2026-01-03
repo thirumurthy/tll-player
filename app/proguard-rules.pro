@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep data models to prevent Gson serialization/deserialization issues
+-keep class com.thirutricks.tllplayer.models.** { *; }
+
+# Keep Gua library classes
+-keep class io.github.lizongying.** { *; }
+
+# Keep generic type signatures for Gson TypeToken
+-keepattributes Signature
+-keepattributes *Annotation*
