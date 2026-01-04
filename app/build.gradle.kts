@@ -1,4 +1,6 @@
 import java.io.BufferedReader
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -15,18 +17,41 @@ android {
         applicationId = "com.thirutricks.tllplayer"
         minSdk = 21
         targetSdk = 34
-        versionCode = getVersionCode()
-        versionName = getVersionName()
+        versionCode = if (project.hasProperty("versionCodeOverride")) {
+            (project.property("versionCodeOverride") as String).toInt()
+        } else {
+            getVersionCode()
+        }
+        versionName = if (project.hasProperty("versionNameOverride")) {
+            project.property("versionNameOverride") as String
+        } else {
+            getVersionName()
+        }
     }
 
     buildFeatures {
         viewBinding = true
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePropertiesFile = rootProject.file("keystore.properties")
+            if (keystorePropertiesFile.exists()) {
+                val keystoreProperties = Properties()
+                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             isShrinkResources = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -40,6 +40,7 @@ import androidx.media3.exoplayer.drm.LocalMediaDrmCallback
 import java.util.UUID
 import android.util.Base64
 import java.nio.charset.StandardCharsets
+import androidx.media3.datasource.DefaultHttpDataSource
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -747,36 +748,86 @@ class WebFragment : Fragment() {
 
         var videoUrl = url
         var drmConfig: DrmConfig? = null
+        val requestHeaders = mutableMapOf<String, String>()
+        var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-        if (url.contains("?|")) {
-            val parts = url.split("?|")
-            videoUrl = parts[0]
-            val params = parts[1]
-            val queryParams = params.split("&").associate {
-                val (key, value) = it.split("=")
-                key to value
-            }
+        val regex = "(?i)(\\?\\|)|(\\?%7C)".toRegex()
+        val matchResult = regex.find(url)
 
-            if (queryParams["drmScheme"] == "clearkey") {
-                val drmLicense = queryParams["drmLicense"]
-                if (drmLicense != null) {
-                    drmConfig = DrmConfig("clearkey", drmLicense)
+        if (matchResult != null) {
+            val splitIndex = matchResult.range.first
+            videoUrl = url.substring(0, splitIndex)
+            val paramsString = url.substring(matchResult.range.last + 1)
+            
+            val params = paramsString.split("&")
+            for (param in params) {
+                val parts = param.split("=", limit = 2)
+                if (parts.size == 2) {
+                    val key = parts[0].trim()
+                    val value = parts[1].trim()
+
+                    when (key.lowercase()) {
+                        "drmscheme" -> {
+                            if (value.lowercase() == "clearkey") {
+                                // Will parse license later or store it now
+                            }
+                        }
+                        "drmlicense" -> {
+                             // Check if it's currently set to clearkey logic above, simplified here:
+                             // We re-check params logic or just store it. 
+                             // Let's iterate again or store in map first? 
+                             // Better to iterate once.
+                        }
+                        "user-agent" -> userAgent = value
+                        "cookie" -> requestHeaders["Cookie"] = value
+                        "referer" -> requestHeaders["Referer"] = value
+                        "origin" -> requestHeaders["Origin"] = value
+                        // Add other headers if needed
+                    }
                 }
+            }
+            
+            // Re-parse for DRM specifically to keep existing logic structure or adapt it
+            val queryParams = params.associate {
+                val parts = it.split("=", limit = 2)
+                if (parts.size == 2) parts[0].trim() to parts[1].trim() else "" to ""
+            }
+            
+            // Case insensitive lookup for DRM
+            val schemeKey = queryParams.keys.find { it.equals("drmScheme", ignoreCase = true) }
+            val licenseKey = queryParams.keys.find { it.equals("drmLicense", ignoreCase = true) }
+
+            if (schemeKey != null && queryParams[schemeKey]?.lowercase() == "clearkey") {
+                 val drmLicense = queryParams[licenseKey]
+                 if (drmLicense != null) {
+                     drmConfig = DrmConfig("clearkey", drmLicense)
+                 }
             }
         }
 
         val builder = ExoPlayer.Builder(requireContext())
+        
+        // Configure Data Source with Headers
+        val httpDataSourceFactory = DefaultHttpDataSource.Factory()
+            .setUserAgent(userAgent)
+            .setAllowCrossProtocolRedirects(true)
+            .setDefaultRequestProperties(requestHeaders)
+        
+        val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(requireContext())
+            .setDataSourceFactory(httpDataSourceFactory)
+
         if (drmConfig != null && drmConfig.scheme == "clearkey") {
             Log.d(TAG, "Configuring ClearKey DRM with license: ${drmConfig.license}")
             val drmCallback = LocalMediaDrmCallback(createClearKeyJson(drmConfig.license).toByteArray())
             val drmSessionManager = DefaultDrmSessionManager.Builder()
                 .setUuidAndExoMediaDrmProvider(C.CLEARKEY_UUID, FrameworkMediaDrm.DEFAULT_PROVIDER)
                 .build(drmCallback)
-            builder.setMediaSourceFactory(
-                androidx.media3.exoplayer.source.DefaultMediaSourceFactory(requireContext())
-                    .setDrmSessionManagerProvider { drmSessionManager }
-            )
+            
+            mediaSourceFactory.setDrmSessionManagerProvider { drmSessionManager }
         }
+        
+        builder.setMediaSourceFactory(mediaSourceFactory)
+        
         exoPlayer = builder.build()
         
         exoPlayer?.addListener(object : Player.Listener {
@@ -799,8 +850,9 @@ class WebFragment : Fragment() {
         val mediaItem = MediaItem.fromUri(videoUrl)
         exoPlayer?.setMediaItem(mediaItem)
         exoPlayer?.prepare()
-        exoPlayer?.playWhenReady = true
+        exoPlayer?.play()
     }
+
 
     data class DrmConfig(val scheme: String, val license: String)
 

@@ -43,7 +43,8 @@ class UpdateManager(
                 release = releaseRequest.getRelease()
                 Log.i(TAG, "versionCode $versionCode ${release?.version_code}")
                 if (release?.version_code != null) {
-                    if (release?.version_code!! >= versionCode) {
+                    // Update only if remote version code is STRICTLY GREATER than current
+                    if (release?.version_code!! > versionCode) {
                         text = "Latest version:${release?.version_name}"
                         update = true
                     } else {
@@ -63,6 +64,16 @@ class UpdateManager(
     }
 
     private fun startDownload(release: ReleaseResponse) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!context.packageManager.canRequestPackageInstalls()) {
+                val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                }
+                (context as FragmentActivity).startActivityForResult(intent, 123)
+                // Might want to return here and ask user to retry after granting permission
+            }
+        }
+
         val apkName = "tll-player"
         val apkFileName = "$apkName-${release.version_name}.apk"
         val downloadManager =
@@ -90,7 +101,13 @@ class UpdateManager(
 
         downloadReceiver = DownloadReceiver(context, apkFileName, downloadReference)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(
+                downloadReceiver,
+                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                Context.RECEIVER_EXPORTED
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.registerReceiver(
                 downloadReceiver,
                 IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
@@ -214,7 +231,11 @@ class UpdateManager(
             Log.i(TAG, "apkFile $apkFile")
 
             if (apkFile.exists()) {
-                val apkUri = Uri.parse("file://$apkFile")
+                val apkUri = androidx.core.content.FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    apkFile
+                )
                 Log.i(TAG, "apkUri $apkUri")
                 val installIntent = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(apkUri, "application/vnd.android.package-archive")

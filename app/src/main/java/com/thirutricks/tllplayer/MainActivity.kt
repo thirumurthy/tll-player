@@ -43,6 +43,10 @@ class MainActivity : FragmentActivity() {
     private var menuFragment = MenuFragment()
     private var settingFragment = SettingFragment()
 
+    private lateinit var updateManager: UpdateManager
+
+
+
     private val handler = Handler(Looper.myLooper()!!)
     private val delayHideMenu = 10 * 1000L
     private val delayHideSetting = 3 * 60 * 1000L
@@ -157,6 +161,9 @@ class MainActivity : FragmentActivity() {
         gestureDetector = GestureDetector(this, GestureListener(this))
 
         showTime()
+
+        updateManager = UpdateManager(this, this.appVersionCode)
+        updateManager.checkAndUpdate()
     }
 
     override fun onResumeFragments() {
