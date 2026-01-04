@@ -48,6 +48,19 @@ class ConfirmationFragment(
                 }
             }
 
+            val focusListener = android.view.View.OnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    view.animate().scaleX(1.10f).scaleY(1.10f).setDuration(120).start()
+                    view.elevation = 24f
+                } else {
+                    view.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
+                    view.elevation = 0f
+                }
+            }
+
+            btnUpdate.onFocusChangeListener = focusListener
+            btnCancel.onFocusChangeListener = focusListener
+
             builder.setView(view)
             builder.create()
         } ?: throw IllegalStateException("Activity cannot be null")

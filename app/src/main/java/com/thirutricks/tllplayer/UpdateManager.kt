@@ -17,6 +17,7 @@ import androidx.fragment.app.FragmentActivity
 import com.thirutricks.tllplayer.requests.ApiClient
 import com.thirutricks.tllplayer.requests.ReleaseRequest
 import com.thirutricks.tllplayer.requests.ReleaseResponse
+import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -59,8 +60,12 @@ class UpdateManager(
     }
 
     private fun updateUI(text: String, update: Boolean) {
-        val dialog = ConfirmationFragment(this@UpdateManager, text, update)
-        dialog.show((context as FragmentActivity).supportFragmentManager, TAG)
+        if (update) {
+            val dialog = ConfirmationFragment(this@UpdateManager, text, update)
+            dialog.show((context as FragmentActivity).supportFragmentManager, TAG)
+        } else {
+             Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun startDownload(release: ReleaseResponse) {
