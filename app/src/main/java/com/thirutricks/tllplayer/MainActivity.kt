@@ -463,9 +463,11 @@ class MainActivity : FragmentActivity() {
     }
 
     private val hideSetting = Runnable {
-        if (!settingFragment.isHidden) {
-            supportFragmentManager.beginTransaction().hide(settingFragment).commitNow()
-            showTime()
+        if (!isFinishing && !supportFragmentManager.isStateSaved) {
+            if (!settingFragment.isHidden) {
+                supportFragmentManager.beginTransaction().hide(settingFragment).commitAllowingStateLoss()
+                showTime()
+            }
         }
     }
 

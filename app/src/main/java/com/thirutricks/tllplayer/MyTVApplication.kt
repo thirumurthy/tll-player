@@ -62,6 +62,15 @@ class MyTVApplication : MultiDexApplication() {
             shouldHeight = height
             shouldWidth = (height * 16.0 / 9.0).toInt()
         }
+
+        try {
+            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().apply {
+                setCustomKey("release_version", BuildConfig.VERSION_NAME)
+                setCustomKey("version_code", BuildConfig.VERSION_CODE)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun getDisplayMetrics(): DisplayMetrics {
