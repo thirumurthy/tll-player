@@ -18,15 +18,16 @@ android {
         minSdk = 21
         targetSdk = 34
         versionCode = if (project.hasProperty("versionCodeOverride")) {
-            (project.property("versionCodeOverride") as String).toInt()
+            project.property("versionCodeOverride").toString().toInt()
         } else {
             getVersionCode()
         }
         versionName = if (project.hasProperty("versionNameOverride")) {
-            project.property("versionNameOverride") as String
+            project.property("versionNameOverride").toString()
         } else {
             getVersionName()
         }
+        println("Building with VersionCode: $versionCode, VersionName: $versionName")
     }
 
     buildFeatures {

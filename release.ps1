@@ -42,7 +42,9 @@ Write-Host ""
 Write-Host "--> Building Release APK (Pre-tag check)..."
 if (Test-Path ".\gradlew.bat") {
     # Pass overrides so build gets correct version without git tag
-    .\gradlew.bat assembleRelease "-PversionCodeOverride=$versionCode" "-PversionNameOverride=$Version"
+    # Pass overrides so build gets correct version without git tag
+    $gradleArgs = @("assembleRelease", "-PversionCodeOverride=$versionCode", "-PversionNameOverride=$Version")
+    & .\gradlew.bat $gradleArgs
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Build Successful."
     } else {
