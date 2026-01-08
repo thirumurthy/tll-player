@@ -21,7 +21,7 @@ class QrCodeUtil {
         @ColorInt colorBlack: Int = Color.BLACK,
         @ColorInt colorWhite: Int = Color.WHITE,
     ): Bitmap? {
-        if (width < 0 || height < 0) {
+        if (content.isEmpty() || width < 0 || height < 0) {
             return null
         }
         try {

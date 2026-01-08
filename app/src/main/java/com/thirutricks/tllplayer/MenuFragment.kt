@@ -181,6 +181,9 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
+        if (!::groupAdapter.isInitialized || !::listAdapter.isInitialized) {
+            return
+        }
         if (!hidden) {
             if (binding.list.isVisible) {
 //                if (binding.group.isVisible) {
@@ -223,8 +226,8 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
             (activity as MainActivity).menuActive()
         } else {
             view?.post {
-                groupAdapter.visiable = false
-                listAdapter.visiable = false
+                if (::groupAdapter.isInitialized) groupAdapter.visiable = false
+                if (::listAdapter.isInitialized) listAdapter.visiable = false
             }
         }
     }

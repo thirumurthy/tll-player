@@ -77,8 +77,8 @@ class ListAdapter(
     }
 
     fun update(tvListModel: TVListModel) {
-        this.tvListModel = tvListModel
         recyclerView.post {
+            this.tvListModel = tvListModel
             notifyDataSetChanged()
         }
     }

@@ -373,8 +373,8 @@ class MainActivity : FragmentActivity() {
     }
 
     fun onPlayEnd() {
-        val tvModel = TVList.getTVModel()!!
-        if (SP.repeatInfo) {
+        val tvModel = TVList.getTVModel()
+        if (tvModel != null && SP.repeatInfo) {
             infoFragment.show(tvModel)
             if (SP.channelNum) {
                 channelFragment.show(tvModel)
@@ -383,10 +383,12 @@ class MainActivity : FragmentActivity() {
     }
 
     fun play(position: Int) {
-        val prevGroup = TVList.getTVModel()!!.groupIndex
+        val currentTvModel = TVList.getTVModel() ?: return
+        val prevGroup = currentTvModel.groupIndex
         if (position > -1 && position < TVList.size()) {
             TVList.setPosition(position)
-            val currentGroup = TVList.getTVModel()!!.groupIndex
+            val newTvModel = TVList.getTVModel() ?: return
+            val currentGroup = newTvModel.groupIndex
             if (currentGroup != prevGroup) {
                 Log.i(TAG, "group change")
                 menuFragment.updateList(currentGroup)
@@ -397,13 +399,15 @@ class MainActivity : FragmentActivity() {
     }
 
     fun prev() {
-        val prevGroup = TVList.getTVModel()!!.groupIndex
+        val currentTvModel = TVList.getTVModel() ?: return
+        val prevGroup = currentTvModel.groupIndex
         var position = TVList.position.value?.dec() ?: 0
         if (position == -1) {
             position = TVList.size() - 1
         }
         TVList.setPosition(position)
-        val currentGroup = TVList.getTVModel()!!.groupIndex
+        val newTvModel = TVList.getTVModel() ?: return
+        val currentGroup = newTvModel.groupIndex
         if (currentGroup != prevGroup) {
             Log.i(TAG, "group change")
             menuFragment.updateList(currentGroup)
@@ -411,13 +415,15 @@ class MainActivity : FragmentActivity() {
     }
 
     fun next() {
-        val prevGroup = TVList.getTVModel()!!.groupIndex
+        val currentTvModel = TVList.getTVModel() ?: return
+        val prevGroup = currentTvModel.groupIndex
         var position = TVList.position.value?.inc() ?: 0
         if (position == TVList.size()) {
             position = 0
         }
         TVList.setPosition(position)
-        val currentGroup = TVList.getTVModel()!!.groupIndex
+        val newTvModel = TVList.getTVModel() ?: return
+        val currentGroup = newTvModel.groupIndex
         if (currentGroup != prevGroup) {
             Log.i(TAG, "group change")
             menuFragment.updateList(currentGroup)
@@ -441,7 +447,7 @@ class MainActivity : FragmentActivity() {
 
         supportFragmentManager.beginTransaction()
             .hide(fragment)
-            .commitNow()
+            .commitNowAllowingStateLoss()
     }
 
     fun menuActive() {

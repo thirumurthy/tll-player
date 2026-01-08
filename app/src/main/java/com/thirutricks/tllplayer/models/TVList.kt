@@ -267,6 +267,10 @@ object TVList {
     }
 
     private fun checkChannelsInBackground() {
+        // Temporarily disabled: Remove dead channels and automatic removal
+        // because of this many working channels get removed.
+        // Also app is getting crashed because of index changes.
+        /*
         if (!SP.channelCheck) return
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -321,6 +325,7 @@ object TVList {
                 Log.i(TAG, "No dead channels found")
             }
         }
+        */
     }
 
     private fun checkLink(url: String): Boolean {

@@ -191,6 +191,12 @@ class SettingFragment : Fragment() {
             val imageModalFragment = ModalFragment()
             val size = Utils.dpToPx(200)
             val img = QrCodeUtil().createQRCodeBitmap(binding.server.text.toString(), size, size)
+            
+            if (img == null) {
+                android.widget.Toast.makeText(requireContext(), "No content to generate QR Code", android.widget.Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            
             val args = Bundle()
             args.putParcelable("bitmap", img);
             imageModalFragment.arguments = args
