@@ -72,6 +72,7 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
     }
 
     fun update() {
+        if (!::groupAdapter.isInitialized) return
         groupAdapter.update(TVList.groupModel)
 
         var tvListModel = TVList.groupModel.getTVListModel(TVList.groupModel.position.value!!)

@@ -35,8 +35,8 @@ class MainActivity : FragmentActivity() {
     //private var webFragment = GSYVideoPlayerFragment()
 
     //private var webFragment = WebFragment()
-    private val errorFragment = ErrorFragment()
-    private val loadingFragment = LoadingFragment()
+    private var errorFragment = ErrorFragment()
+    private var loadingFragment = LoadingFragment()
     private var infoFragment = InfoFragment()
     private var channelFragment = ChannelFragment()
     private var timeFragment = TimeFragment()
@@ -156,6 +156,35 @@ class MainActivity : FragmentActivity() {
                 .hide(timeFragment)
                 .show(webFragment)
                 .commitNow()
+        } else {
+             // restore fragments
+             val fragments = supportFragmentManager.fragments
+             for (fragment in fragments) {
+                 if (fragment is WebFragment) {
+                     webFragment = fragment
+                 }
+                 if (fragment is ErrorFragment) {
+                     errorFragment = fragment
+                 }
+                 if (fragment is LoadingFragment) {
+                     loadingFragment = fragment
+                 }
+                 if (fragment is InfoFragment) {
+                     infoFragment = fragment
+                 }
+                 if (fragment is ChannelFragment) {
+                     channelFragment = fragment
+                 }
+                 if (fragment is TimeFragment) {
+                     timeFragment = fragment
+                 }
+                 if (fragment is MenuFragment) {
+                     menuFragment = fragment
+                 }
+                 if (fragment is SettingFragment) {
+                     settingFragment = fragment
+                 }
+             }
         }
 
         gestureDetector = GestureDetector(this, GestureListener(this))

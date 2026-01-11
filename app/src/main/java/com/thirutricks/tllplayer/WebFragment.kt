@@ -782,6 +782,7 @@ class WebFragment : Fragment() {
                         "cookie" -> requestHeaders["Cookie"] = value
                         "referer" -> requestHeaders["Referer"] = value
                         "origin" -> requestHeaders["Origin"] = value
+                        "x-forwarded-for" -> requestHeaders["X-Forwarded-For"] = value
                         // Add other headers if needed
                     }
                 }
