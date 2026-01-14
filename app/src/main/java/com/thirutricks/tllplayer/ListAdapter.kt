@@ -492,7 +492,7 @@ class ListAdapter(
             OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
             com.thirutricks.tllplayer.models.TVList.refreshModels()
             update(tvListModel)
-            movingPosition = index - 1
+            movingPosition = position - 1
             recyclerView.post {
                 toPosition(position - 1)
             }
@@ -514,7 +514,7 @@ class ListAdapter(
             OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
             com.thirutricks.tllplayer.models.TVList.refreshModels()
             update(tvListModel)
-            movingPosition = index + 1
+            movingPosition = position + 1
             recyclerView.post {
                  toPosition(position + 1)
             }

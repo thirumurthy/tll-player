@@ -372,7 +372,7 @@ class GroupAdapter(
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
             com.thirutricks.tllplayer.models.TVList.refreshModels()
             update(tvGroupModel)
-            movingPosition = index - 1
+            movingPosition = position - 1
             recyclerView.post {
                 toPosition(position - 1)
             }
@@ -393,7 +393,7 @@ class GroupAdapter(
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
             com.thirutricks.tllplayer.models.TVList.refreshModels()
             update(tvGroupModel)
-            movingPosition = index + 1
+            movingPosition = position + 1
             recyclerView.post {
                 toPosition(position + 1)
             }
