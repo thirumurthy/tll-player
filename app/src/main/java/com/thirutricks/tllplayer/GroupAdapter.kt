@@ -36,6 +36,7 @@ class GroupAdapter(
 
     val application = context.applicationContext as MyTVApplication
     var visible = false
+    private var movingPosition = -1
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(context)
@@ -99,7 +100,11 @@ class GroupAdapter(
         view.onFocusChangeListener = onFocusChangeListener
 
         view.setOnClickListener { _ ->
-            listener?.onItemClicked(position)
+            if (movingPosition == position) {
+                stopMove()
+            } else {
+                listener?.onItemClicked(position)
+            }
         }
 
         view.setOnLongClickListener {
@@ -139,34 +144,50 @@ class GroupAdapter(
                     }, 0)
                 }
 
+                if (movingPosition != -1 && movingPosition == position) {
+                    when (keyCode) {
+                        KeyEvent.KEYCODE_DPAD_UP -> {
+                            moveGroupUp(position)
+                            return@setOnKeyListener true
+                        }
+                        KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            moveGroupDown(position)
+                            return@setOnKeyListener true
+                        }
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                            stopMove()
+                            return@setOnKeyListener true
+                        }
+                    }
+                }
+
                 return@setOnKeyListener listener?.onKey(keyCode) ?: false
             }
             false
         }
 
         viewHolder.bindTitle(tvListModel.getName())
-        // viewHolder.setArrowsVisibility(position) // Removed, using drag instead
+        viewHolder.bindTitle(tvListModel.getName())
+        viewHolder.setArrowsVisibility(movingPosition == position)
+        
+        viewHolder.binding.arrowUp.setOnClickListener {
+            moveGroupUp(position)
+        }
+        viewHolder.binding.arrowDown.setOnClickListener {
+            moveGroupDown(position)
+        }
     }
 
     override fun getItemCount() = tvGroupModel.size()
 
-    class ViewHolder(private val context: Context, private val binding: GroupItemBinding) :
+    class ViewHolder(private val context: Context, val binding: GroupItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bindTitle(text: String) {
             binding.title.text = text
         }
 
-        fun setArrowsVisibility(position: Int) {
-            binding.arrows.visibility = if (SP.moveMode && position > 1) View.VISIBLE else View.GONE
-            // Removed arrow click listeners, using drag instead
-            // if (SP.moveMode && position > 1) {
-            //     binding.arrowUp.setOnClickListener {
-            //         moveGroupUp(position)
-            //     }
-            //     binding.arrowDown.setOnClickListener {
-            //         moveGroupDown(position)
-            //     }
-            // }
+        fun setArrowsVisibility(isMoving: Boolean) {
+            binding.arrows.visibility = if (isMoving) View.VISIBLE else View.GONE
         }
 
         fun focus(hasFocus: Boolean) {
@@ -292,10 +313,17 @@ class GroupAdapter(
             Toast.makeText(context, "Cannot move this category", Toast.LENGTH_SHORT).show()
             return
         }
-        val viewHolder = recyclerView.findViewHolderForAdapterPosition(position) as? ViewHolder
-        if (viewHolder != null) {
-            itemTouchHelper.startDrag(viewHolder)
+        if (movingPosition != -1 && movingPosition != position) {
+            notifyItemChanged(movingPosition)
         }
+        movingPosition = position
+        notifyItemChanged(position)
+    }
+
+    private fun stopMove() {
+        val prevPosition = movingPosition
+        movingPosition = -1
+        notifyItemChanged(prevPosition)
     }
 
 
@@ -344,6 +372,7 @@ class GroupAdapter(
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
             com.thirutricks.tllplayer.models.TVList.refreshModels()
             update(tvGroupModel)
+            movingPosition = index - 1
             recyclerView.post {
                 toPosition(position - 1)
             }
@@ -364,6 +393,7 @@ class GroupAdapter(
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
             com.thirutricks.tllplayer.models.TVList.refreshModels()
             update(tvGroupModel)
+            movingPosition = index + 1
             recyclerView.post {
                 toPosition(position + 1)
             }

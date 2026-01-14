@@ -46,6 +46,7 @@ class ListAdapter(
     private lateinit var itemTouchHelper: ItemTouchHelper
 
     val application = context.applicationContext as MyTVApplication
+    private var movingPosition = -1
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(context)
@@ -105,7 +106,7 @@ class ListAdapter(
                 val to = target.adapterPosition
 
                 val categoryName = tvListModel.getName()
-                val currentOrder = getCurrentChannelOrder(categoryName)
+                val currentOrder = getCurrentChannelOrder()
                 Collections.swap(currentOrder, from, to)
                 OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
                 com.thirutricks.tllplayer.models.TVList.refreshModels()
@@ -167,7 +168,11 @@ class ListAdapter(
         view.onFocusChangeListener = onFocusChangeListener
 
         view.setOnClickListener { _ ->
-            listener?.onItemClicked(tvModel)
+            if (movingPosition == position) {
+                stopMove()
+            } else {
+                listener?.onItemClicked(tvModel)
+            }
         }
 
         view.setOnLongClickListener {
@@ -207,6 +212,23 @@ class ListAdapter(
                     }, 0)
                 }
 
+                if (movingPosition != -1 && movingPosition == position) {
+                    when (keyCode) {
+                        KeyEvent.KEYCODE_DPAD_UP -> {
+                            moveChannelUp(position)
+                            return@setOnKeyListener true
+                        }
+                        KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            moveChannelDown(position)
+                            return@setOnKeyListener true
+                        }
+                        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                            stopMove()
+                            return@setOnKeyListener true
+                        }
+                    }
+                }
+
                 if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
                     tvModel.setLike(!(tvModel.like.value as Boolean))
                     viewHolder.like(tvModel.like.value as Boolean)
@@ -221,7 +243,14 @@ class ListAdapter(
 
         viewHolder.bindImage(tvModel.tv.logo, tvModel.tv.id)
 
-        // viewHolder.setArrows(position, tvModel) // Removed, using drag instead
+        viewHolder.setArrows(movingPosition == position)
+        
+        viewHolder.binding.arrowUp.setOnClickListener {
+            moveChannelUp(position)
+        }
+        viewHolder.binding.arrowDown.setOnClickListener {
+            moveChannelDown(position)
+        }
     }
 
     override fun getItemCount() = tvListModel.size()
@@ -315,17 +344,8 @@ class ListAdapter(
             }
         }
 
-        fun setArrows(position: Int, tvModel: TVModel) {
-            binding.arrows.visibility = if (SP.moveMode) View.VISIBLE else View.GONE
-            // Removed arrow click listeners, using drag instead
-            // if (SP.moveMode) {
-            //     binding.arrowUp.setOnClickListener {
-            //         moveChannelUp(position, tvModel)
-            //     }
-            //     binding.arrowDown.setOnClickListener {
-            //         moveChannelDown(position, tvModel)
-            //     }
-            // }
+        fun setArrows(isMoving: Boolean) {
+            binding.arrows.visibility = if (isMoving) View.VISIBLE else View.GONE
         }
 
         override fun onSharedPreferenceChanged(key: String) {
@@ -404,15 +424,22 @@ class ListAdapter(
     }
 
     private fun startMove(position: Int) {
-        val viewHolder = recyclerView.findViewHolderForAdapterPosition(position) as? ViewHolder
-        if (viewHolder != null) {
-            itemTouchHelper.startDrag(viewHolder)
+        if (movingPosition != -1 && movingPosition != position) {
+            notifyItemChanged(movingPosition)
         }
+        movingPosition = position
+        notifyItemChanged(position)
+    }
+
+    private fun stopMove() {
+        val prevPosition = movingPosition
+        movingPosition = -1
+        notifyItemChanged(prevPosition)
     }
 
 
 
-    private fun getCurrentChannelOrder(categoryName: String): MutableList<String> {
+    private fun getCurrentChannelOrder(): MutableList<String> {
         val order = mutableListOf<String>()
         for (i in 0 until tvListModel.size()) {
             val model = tvListModel.getTVModel(i)
@@ -444,6 +471,54 @@ class ListAdapter(
             }
         })
         renameDialog.show((context as? androidx.fragment.app.FragmentActivity)?.supportFragmentManager ?: return, "RenameChannel")
+    }
+
+    private fun moveChannelUp(position: Int) {
+        if (position <= 0) {
+            Toast.makeText(context, "Cannot move this channel up", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val categoryName = tvListModel.getName()
+        val currentOrder = getCurrentChannelOrder()
+        val index = position
+        
+        if (index > 0 && index < currentOrder.size) { // Validate index
+             // Correct index for swapping - listAdapter index matches order list index directly if no extra items
+            // Assuming currentOrder matches adapter position mapping (check getCurrentChannelOrder logic)
+            // getCurrentChannelOrder iterates tvListModel.
+            
+            Collections.swap(currentOrder, index, index - 1)
+            OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
+            com.thirutricks.tllplayer.models.TVList.refreshModels()
+            update(tvListModel)
+            movingPosition = index - 1
+            recyclerView.post {
+                toPosition(position - 1)
+            }
+        }
+    }
+
+    private fun moveChannelDown(position: Int) {
+        if (position >= tvListModel.size() - 1) {
+            Toast.makeText(context, "Cannot move this channel down", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val categoryName = tvListModel.getName()
+        val currentOrder = getCurrentChannelOrder()
+        val index = position
+
+        if (index < currentOrder.size - 1) {
+            Collections.swap(currentOrder, index, index + 1)
+            OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
+            com.thirutricks.tllplayer.models.TVList.refreshModels()
+            update(tvListModel)
+            movingPosition = index + 1
+            recyclerView.post {
+                 toPosition(position + 1)
+            }
+        }
     }
 
     companion object {
