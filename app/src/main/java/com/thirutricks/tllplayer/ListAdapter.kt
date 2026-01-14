@@ -491,7 +491,16 @@ class ListAdapter(
             Collections.swap(currentOrder, index, index - 1)
             OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
             com.thirutricks.tllplayer.models.TVList.refreshModels()
-            update(tvListModel)
+            
+            // Get the updated model from the group model to ensure we have the fresh data
+            val updatedModel = com.thirutricks.tllplayer.models.TVList.groupModel.getTVListModel(tvListModel.getIndex())
+            if (updatedModel != null) {
+                update(updatedModel)
+            } else {
+                // Fallback if model not found (shouldn't happen usually)
+                update(tvListModel)
+            }
+            
             movingPosition = position - 1
             recyclerView.post {
                 toPosition(position - 1)
@@ -513,7 +522,16 @@ class ListAdapter(
             Collections.swap(currentOrder, index, index + 1)
             OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
             com.thirutricks.tllplayer.models.TVList.refreshModels()
-            update(tvListModel)
+            
+            // Get the updated model from the group model to ensure we have the fresh data
+            val updatedModel = com.thirutricks.tllplayer.models.TVList.groupModel.getTVListModel(tvListModel.getIndex())
+            if (updatedModel != null) {
+                update(updatedModel)
+            } else {
+                // Fallback if model not found (shouldn't happen usually)
+                update(tvListModel)
+            }
+
             movingPosition = position + 1
             recyclerView.post {
                  toPosition(position + 1)
