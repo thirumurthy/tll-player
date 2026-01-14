@@ -12,6 +12,7 @@ import com.thirutricks.tllplayer.R
 import com.thirutricks.tllplayer.SP
 import com.thirutricks.tllplayer.showToast
 import com.thirutricks.tllplayer.SecureHttpClient
+import com.thirutricks.tllplayer.OrderPreferenceManager
 import okhttp3.Request
 import io.github.lizongying.Gua
 import kotlinx.coroutines.CoroutineScope
@@ -229,7 +230,12 @@ object TVList {
         return true
     }
 
-    private fun refreshModels() {
+    fun refreshModels() {
+        if (!::list.isInitialized || list.isEmpty()) {
+            Log.w(TAG, "Cannot refresh models: list not initialized or empty")
+            return
+        }
+        
         groupModel.clear()
 
         val map: MutableMap<String, MutableList<TVModel>> = mutableMapOf()
@@ -240,15 +246,75 @@ object TVList {
             map[v.group]?.add(TVModel(v))
         }
 
+        // Apply saved category order
+        val categoryOrder = OrderPreferenceManager.getCategoryOrder()
+        val categoryRenames = OrderPreferenceManager.getCategoryRenames()
+        
+        val sortedCategories = if (categoryOrder != null && categoryOrder.isNotEmpty()) {
+            // Use saved order, but filter out categories that no longer exist
+            val orderedCategories = mutableListOf<String>()
+            val unorderedCategories = map.keys.filter { it !in categoryOrder }.toMutableList()
+            
+            // Add categories in saved order
+            for (catName in categoryOrder) {
+                if (catName in map) {
+                    orderedCategories.add(catName)
+                }
+            }
+            // Add new categories at the end
+            orderedCategories.addAll(unorderedCategories)
+            orderedCategories
+        } else {
+            map.keys.toList()
+        }
+
         val listModelNew: MutableList<TVModel> = mutableListOf()
         var groupIndex = 2
         var id = 0
-        for ((k, v) in map) {
-            val tvListModel = TVListModel(k, groupIndex)
-            for ((listIndex, v1) in v.withIndex()) {
+        
+        for (categoryName in sortedCategories) {
+            val originalCategoryName = categoryName
+            val displayCategoryName = categoryRenames[originalCategoryName] ?: originalCategoryName
+            val channels = map[originalCategoryName] ?: continue
+            
+            // Apply saved channel order for this category
+            val channelOrder = OrderPreferenceManager.getChannelOrder(originalCategoryName)
+            val channelRenames = OrderPreferenceManager.getChannelRenames()
+            
+            val sortedChannels = if (channelOrder != null && channelOrder.isNotEmpty()) {
+                // Create a map of URL -> TVModel for quick lookup
+                val urlToModel = channels.associateBy { 
+                    it.tv.uris.firstOrNull() ?: "" 
+                }
+                val orderedChannels = mutableListOf<TVModel>()
+                val unorderedChannels = channels.filter { 
+                    it.tv.uris.firstOrNull()?.let { url -> url !in channelOrder } ?: true 
+                }.toMutableList()
+                
+                // Add channels in saved order
+                for (url in channelOrder) {
+                    urlToModel[url]?.let { orderedChannels.add(it) }
+                }
+                // Add new channels at the end
+                orderedChannels.addAll(unorderedChannels)
+                orderedChannels
+            } else {
+                channels
+            }
+            
+            val tvListModel = TVListModel(displayCategoryName, groupIndex)
+            for ((listIndex, v1) in sortedChannels.withIndex()) {
                 v1.tv.id = id
                 v1.groupIndex = groupIndex
                 v1.listIndex = listIndex
+                
+                // Apply channel rename if exists
+                val channelUrl = v1.tv.uris.firstOrNull() ?: ""
+                val renamedTitle = channelRenames[channelUrl]
+                if (renamedTitle != null) {
+                    v1.tv.title = renamedTitle
+                }
+                
                 tvListModel.addTVModel(v1)
                 listModelNew.add(v1)
                 id++

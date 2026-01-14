@@ -8,11 +8,17 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.view.marginBottom
 import androidx.core.view.marginStart
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.thirutricks.tllplayer.databinding.GroupItemBinding
 import com.thirutricks.tllplayer.models.TVGroupModel
 import com.thirutricks.tllplayer.models.TVListModel
+import com.thirutricks.tllplayer.OrderPreferenceManager
+import com.thirutricks.tllplayer.RenameDialogFragment
+import android.widget.Toast
+import android.view.MotionEvent
+import java.util.Collections
 
 
 class GroupAdapter(
@@ -26,10 +32,10 @@ class GroupAdapter(
     private var focused: View? = null
     private var defaultFocused = false
     private var defaultFocus: Int = -1
-
-    var visiable = false
+    private lateinit var itemTouchHelper: ItemTouchHelper
 
     val application = context.applicationContext as MyTVApplication
+    var visible = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(context)
@@ -78,12 +84,12 @@ class GroupAdapter(
             if (hasFocus) {
                 viewHolder.focus(true)
                 focused = view
-                if (visiable) {
+                if (visible) {
                     if (position != tvGroupModel.position.value) {
                         tvGroupModel.setPosition(position)
                     }
                 } else {
-                    visiable = true
+                    visible = true
                 }
             } else {
                 viewHolder.focus(false)
@@ -94,6 +100,24 @@ class GroupAdapter(
 
         view.setOnClickListener { _ ->
             listener?.onItemClicked(position)
+        }
+
+        // Long press for re-arrangement and rename
+        var longPressStartTime = 0L
+        view.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    longPressStartTime = System.currentTimeMillis()
+                }
+                MotionEvent.ACTION_UP -> {
+                    val pressDuration = System.currentTimeMillis() - longPressStartTime
+                    if (pressDuration > 500) { // Long press detected (500ms)
+                        showCategoryOptions(position, tvListModel)
+                        return@setOnTouchListener true
+                    }
+                }
+            }
+            false
         }
 
         view.setOnKeyListener { _, keyCode, event: KeyEvent? ->
@@ -134,6 +158,7 @@ class GroupAdapter(
         }
 
         viewHolder.bindTitle(tvListModel.getName())
+        // viewHolder.setArrowsVisibility(position) // Removed, using drag instead
     }
 
     override fun getItemCount() = tvGroupModel.size()
@@ -142,6 +167,19 @@ class GroupAdapter(
         RecyclerView.ViewHolder(binding.root) {
         fun bindTitle(text: String) {
             binding.title.text = text
+        }
+
+        fun setArrowsVisibility(position: Int) {
+            binding.arrows.visibility = if (SP.moveMode && position > 1) View.VISIBLE else View.GONE
+            // Removed arrow click listeners, using drag instead
+            // if (SP.moveMode && position > 1) {
+            //     binding.arrowUp.setOnClickListener {
+            //         moveGroupUp(position)
+            //     }
+            //     binding.arrowDown.setOnClickListener {
+            //         moveGroupDown(position)
+            //     }
+            // }
         }
 
         fun focus(hasFocus: Boolean) {
@@ -205,6 +243,143 @@ class GroupAdapter(
         this.tvGroupModel = tvGroupModel
         recyclerView.post {
             notifyDataSetChanged()
+        }
+    }
+
+    fun attachItemTouchHelper() {
+        val callback = object : ItemTouchHelper.Callback() {
+            override fun isLongPressDragEnabled() = false
+            override fun isItemViewSwipeEnabled() = false
+
+            override fun getMovementFlags(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
+                val dragFlags = ItemTouchHelper.UP or ItemTouchHelper.DOWN
+                return makeMovementFlags(dragFlags, 0)
+            }
+
+            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+                val from = viewHolder.adapterPosition
+                val to = target.adapterPosition
+
+                if (from <= 1 || to <= 1) return false // can't move first two
+
+                val currentOrder = getCurrentCategoryOrder()
+                Collections.swap(currentOrder, from - 2, to - 2)
+                OrderPreferenceManager.saveCategoryOrder(currentOrder)
+                com.thirutricks.tllplayer.models.TVList.refreshModels()
+                notifyItemMoved(from, to)
+                return true
+            }
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                // no swipe
+            }
+        }
+        itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper.attachToRecyclerView(recyclerView)
+    }
+
+    private fun showCategoryOptions(position: Int, tvListModel: TVListModel) {
+        val displayName = tvListModel.getName()
+        val renames = OrderPreferenceManager.getCategoryRenames()
+        val originalName = renames.entries.find { it.value == displayName }?.key ?: displayName
+
+        val optionsDialog = CategoryOptionsDialogFragment.newInstance(displayName)
+        optionsDialog.setCategoryOptionsListener(object : CategoryOptionsDialogFragment.CategoryOptionsListener {
+            override fun onMoveSelected() {
+                startMove(position)
+            }
+
+            override fun onRenameSelected() {
+                showRenameDialog(originalName)
+            }
+
+            override fun onCancelSelected() {
+                // Do nothing
+            }
+        })
+        optionsDialog.show((context as? androidx.fragment.app.FragmentActivity)?.supportFragmentManager ?: return, "CategoryOptions")
+    }
+
+    private fun startMove(position: Int) {
+        if (position <= 1) {
+            Toast.makeText(context, "Cannot move this category", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(position) as? ViewHolder
+        if (viewHolder != null) {
+            itemTouchHelper.startDrag(viewHolder)
+        }
+    }
+
+
+
+    private fun getCurrentCategoryOrder(): MutableList<String> {
+        val order = mutableListOf<String>()
+        for (i in 0 until tvGroupModel.size()) {
+            val model = tvGroupModel.getTVListModel(i)
+            if (model != null && i > 1) { // Skip "My Collection" and "All channels"
+                // Get original name (before rename)
+                val displayName = model.getName()
+                val renames = OrderPreferenceManager.getCategoryRenames()
+                val originalName = renames.entries.find { it.value == displayName }?.key ?: displayName
+                order.add(originalName)
+            }
+        }
+        return order
+    }
+
+    private fun showRenameDialog(originalName: String) {
+        val renameDialog = RenameDialogFragment.newInstance(originalName, "Rename Category")
+        renameDialog.setRenameListener(object : RenameDialogFragment.RenameListener {
+            override fun onRenameConfirmed(newName: String) {
+                OrderPreferenceManager.saveCategoryRename(originalName, newName)
+                Toast.makeText(context, "Category renamed", Toast.LENGTH_SHORT).show()
+                // Trigger refresh to apply rename
+                com.thirutricks.tllplayer.models.TVList.refreshModels()
+                // Update the adapter
+                update(tvGroupModel)
+            }
+        })
+        renameDialog.show((context as? androidx.fragment.app.FragmentActivity)?.supportFragmentManager ?: return, "RenameCategory")
+    }
+
+    private fun moveGroupUp(position: Int) {
+        if (position <= 2) {
+            Toast.makeText(context, "Cannot move this category up", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val currentOrder = getCurrentCategoryOrder()
+        val index = position - 2
+
+        if (index > 0) {
+            Collections.swap(currentOrder, index, index - 1)
+            OrderPreferenceManager.saveCategoryOrder(currentOrder)
+            com.thirutricks.tllplayer.models.TVList.refreshModels()
+            update(tvGroupModel)
+            recyclerView.post {
+                toPosition(position - 1)
+            }
+        }
+    }
+
+    private fun moveGroupDown(position: Int) {
+        if (position >= tvGroupModel.size() - 1) {
+            Toast.makeText(context, "Cannot move this category down", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val currentOrder = getCurrentCategoryOrder()
+        val index = position - 2
+
+        if (index < currentOrder.size - 1) {
+            Collections.swap(currentOrder, index, index + 1)
+            OrderPreferenceManager.saveCategoryOrder(currentOrder)
+            com.thirutricks.tllplayer.models.TVList.refreshModels()
+            update(tvGroupModel)
+            recyclerView.post {
+                toPosition(position + 1)
+            }
         }
     }
 

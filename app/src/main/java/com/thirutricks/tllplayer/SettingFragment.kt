@@ -15,6 +15,9 @@ import androidx.fragment.app.Fragment
 import com.thirutricks.tllplayer.databinding.SettingBinding
 import com.thirutricks.tllplayer.models.TVList
 import com.thirutricks.tllplayer.ui.TvUiUtils
+import com.thirutricks.tllplayer.OrderPreferenceManager
+import com.thirutricks.tllplayer.R
+import android.widget.Toast
 
 class SettingFragment : Fragment() {
 
@@ -102,6 +105,7 @@ class SettingFragment : Fragment() {
             binding.confirmConfig,
             binding.confirmChannel,
             binding.clear,
+            binding.resetOrder,
             binding.appreciate,
             binding.exit
         )
@@ -258,6 +262,22 @@ class SettingFragment : Fragment() {
 
             requireContext().deleteFile(TVList.FILE_NAME)
             SP.deleteLike()
+        }
+
+        binding.resetOrder.setOnClickListener {
+            tvUiUtils?.playClickSound()
+            
+            android.app.AlertDialog.Builder(requireContext())
+                .setTitle("Reset Order & Renames")
+                .setMessage("This will reset all category and channel order and rename settings. Continue?")
+                .setPositiveButton("Reset") { _, _ ->
+                    OrderPreferenceManager.resetAll()
+                    Toast.makeText(requireContext(), "Order and renames reset. Please refresh the channel list.", Toast.LENGTH_LONG).show()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+            
+            (activity as MainActivity).settingActive()
         }
 
         binding.appreciate.setOnClickListener {

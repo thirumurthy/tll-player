@@ -45,6 +45,7 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
         binding.group.layoutManager =
             LinearLayoutManager(context)
         groupAdapter.setItemListener(this)
+        groupAdapter.attachItemTouchHelper()
 
         var tvListModel = TVList.groupModel.getTVListModel(TVList.groupModel.position.value!!)
         if (tvListModel == null) {
@@ -63,6 +64,7 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
             LinearLayoutManager(context)
         listAdapter.focusable(false)
         listAdapter.setItemListener(this)
+        listAdapter.attachItemTouchHelper()
 
         binding.menu.setOnClickListener {
             hideSelf()
@@ -227,8 +229,8 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
             (activity as MainActivity).menuActive()
         } else {
             view?.post {
-                if (::groupAdapter.isInitialized) groupAdapter.visiable = false
-                if (::listAdapter.isInitialized) listAdapter.visiable = false
+                if (::groupAdapter.isInitialized) groupAdapter.visible = false
+                if (::listAdapter.isInitialized) listAdapter.visible = false
             }
         }
     }

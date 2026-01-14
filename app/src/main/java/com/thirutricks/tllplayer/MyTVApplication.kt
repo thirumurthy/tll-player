@@ -71,6 +71,9 @@ class MyTVApplication : MultiDexApplication() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+
+        // Initialize OrderPreferenceManager
+        OrderPreferenceManager.init(this)
     }
 
     fun getDisplayMetrics(): DisplayMetrics {

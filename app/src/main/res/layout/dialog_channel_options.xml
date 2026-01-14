@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:drawable/dialog_holo_light_frame"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:theme="@style/Theme.MyTV1">
+
+    <TextView
+        android:id="@+id/dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Channel Options"
+        android:textColor="@android:color/black"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btn_move"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/tv_button_bg"
+            android:text="Move"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/btn_rename"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/tv_button_bg"
+            android:text="Rename"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/tv_button_bg"
+            android:text="Cancel"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+
+</LinearLayout>

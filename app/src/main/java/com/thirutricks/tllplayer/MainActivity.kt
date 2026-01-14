@@ -684,12 +684,18 @@ class MainActivity : FragmentActivity() {
                 return true
             }
 
-            KeyEvent.KEYCODE_BOOKMARK -> {
-                showSetting()
-                return true
-            }
+             KeyEvent.KEYCODE_BOOKMARK -> {
+                 showSetting()
+                 return true
+             }
 
-            KeyEvent.KEYCODE_UNKNOWN -> {
+             KeyEvent.KEYCODE_M -> {
+                 SP.moveMode = !SP.moveMode
+                 Toast.makeText(this, "Move mode: ${if(SP.moveMode) "on" else "off"}", Toast.LENGTH_SHORT).show()
+                 return true
+             }
+
+             KeyEvent.KEYCODE_UNKNOWN -> {
 //                showSetting()
                 return true
             }

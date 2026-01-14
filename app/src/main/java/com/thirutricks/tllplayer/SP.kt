@@ -37,6 +37,8 @@ object SP {
 
     private const val KEY_CONFIG_CHANNEL_CHECK = "config_channel_check"
 
+    private const val KEY_MOVE_MODE = "move_mode"
+
     private lateinit var sp: SharedPreferences
 
     private var listener: OnSharedPreferenceChangeListener? = null
@@ -102,6 +104,10 @@ object SP {
     var channelCheck: Boolean
         get() = sp.getBoolean(KEY_CONFIG_CHANNEL_CHECK, true)
         set(value) = sp.edit().putBoolean(KEY_CONFIG_CHANNEL_CHECK, value).apply()
+
+    var moveMode: Boolean
+        get() = sp.getBoolean(KEY_MOVE_MODE, false)
+        set(value) = sp.edit().putBoolean(KEY_MOVE_MODE, value).apply()
 
     fun getLike(id: Int): Boolean {
         val stringSet = sp.getStringSet(KEY_LIKE, emptySet())
