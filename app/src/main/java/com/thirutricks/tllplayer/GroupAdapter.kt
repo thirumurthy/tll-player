@@ -102,22 +102,9 @@ class GroupAdapter(
             listener?.onItemClicked(position)
         }
 
-        // Long press for re-arrangement and rename
-        var longPressStartTime = 0L
-        view.setOnTouchListener { v, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    longPressStartTime = System.currentTimeMillis()
-                }
-                MotionEvent.ACTION_UP -> {
-                    val pressDuration = System.currentTimeMillis() - longPressStartTime
-                    if (pressDuration > 500) { // Long press detected (500ms)
-                        showCategoryOptions(position, tvListModel)
-                        return@setOnTouchListener true
-                    }
-                }
-            }
-            false
+        view.setOnLongClickListener {
+            showCategoryOptions(position, tvListModel)
+            true
         }
 
         view.setOnKeyListener { _, keyCode, event: KeyEvent? ->
