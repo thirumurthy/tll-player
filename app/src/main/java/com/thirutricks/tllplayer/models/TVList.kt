@@ -24,6 +24,7 @@ import java.io.File
 object TVList {
     private const val TAG = "TVList"
     const val FILE_NAME = "channels_test.txt"
+    const val DEFAULT_CONFIG_URL = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
     private lateinit var appDirectory: File
     private lateinit var serverUrl: String
     private lateinit var list: List<TV>
@@ -46,34 +47,34 @@ object TVList {
         groupModel.addTVListModel(TVListModel("All channels", 1))
 
         appDirectory = context.filesDir
-        val file = File(appDirectory, FILE_NAME)
-        val str = if (file.exists()) {
-            Log.i(TAG, "read $file")
-            file.readText()
-        } else {
-            Log.i(TAG, "read resource")
-            context.resources.openRawResource(R.raw.channels).bufferedReader(Charsets.UTF_8)
-                .use { it.readText() }
-        }
+        CoroutineScope(Dispatchers.IO).launch {
+            val file = File(appDirectory, FILE_NAME)
+            val str = if (file.exists()) {
+                Log.i(TAG, "read $file")
+                file.readText()
+            } else {
+                Log.i(TAG, "read resource")
+                context.resources.openRawResource(R.raw.channels).bufferedReader(Charsets_UTF_8)
+                    .use { it.readText() }
+            }
 
-        try {
-            // Loading form file should be fast, but ideally also async.
-            // For now, keeping synchronous for init, but could be refactored.
-            // Or just fire a fake 100% if needed, but probably not needed on startup for file read
-            str2ListSync(str)
-        } catch (e: Exception) {
-            Log.e("", "error $e")
-            file.deleteOnExit()
-            Toast.makeText(context, "Failed to read the channel, please set it in the menu", Toast.LENGTH_LONG).show()
-        }
+            try {
+                str2List(str)
+            } catch (e: Exception) {
+                Log.e(TAG, "error $e")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Failed to read the channel, please set it in the menu", Toast.LENGTH_LONG).show()
+                }
+            }
 
-        SP.configAutoLoad = true
-        SP.config = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
+            if (SP.config.isNullOrEmpty()) {
+                SP.config = DEFAULT_CONFIG_URL
+            }
 
-
-        if (SP.configAutoLoad && !SP.config.isNullOrEmpty()) {
-            SP.config?.let {
-                update(it)
+            if (SP.configAutoLoad && !SP.config.isNullOrEmpty()) {
+                SP.config?.let {
+                    update(it)
+                }
             }
         }
     }
@@ -184,7 +185,7 @@ object TVList {
         }
     }
 
-    private fun update(serverUrl: String) {
+    fun update(serverUrl: String) {
         this.serverUrl = serverUrl
         update()
     }
@@ -264,46 +265,6 @@ object TVList {
         return@withContext true
     }
 
-    // Synchronous version for Init (called from Main thread or during init where blocking is acceptable/expected or needs refactoring)
-    // Actually init calls it. Let's keep a sync version or make init suspend. Init is called in MainActivity.onCreate which is bad for suspend.
-    // For now, duplicate the logic slightly or call runBlocking (bad).
-    // Better: keep the original str2List as private helper, make public one suspend, and have a str2ListSync.
-    
-    private fun str2ListSync(str: String): Boolean {
-          var string = str.trim()
-        val g = Gua()
-        if (g.verify(string)) {
-            Log.i(TAG, "Content verified with Gua")
-            string = g.decode(string)
-        } else {
-             Log.i(TAG, "Content verification failed or not encrypted")
-        }
-        
-        if (string.isBlank()) {
-            Log.e(TAG, "Decrypted string is empty")
-            return false
-        }
-
-        val startIndex = string.indexOf('[')
-        if (startIndex != -1) {
-             string = string.substring(startIndex)
-             try {
-                val type = object : com.google.gson.reflect.TypeToken<List<TV>>() {}.type
-                list = com.google.gson.GsonBuilder().setLenient().create().fromJson(string, type)
-            } catch (e: Exception) {
-                return false
-            }
-        } else {
-            return false
-        }
-
-        // refreshModels is mostly safe depending on thread, but it touches groupModel.
-        // If init is main thread, this is fine.
-        kotlinx.coroutines.runBlocking {
-            refreshModels()
-        }
-        return true
-    }
 
     suspend fun refreshModels() = withContext(Dispatchers.Default) {
         if (!::list.isInitialized || list.isEmpty()) {
@@ -353,26 +314,25 @@ object TVList {
             val displayCategoryName = categoryRenames[originalCategoryName] ?: originalCategoryName
             val channels = map[originalCategoryName] ?: continue
             
-             // Apply saved channel order
-             val channelOrder = OrderPreferenceManager.getChannelOrder(originalCategoryName)
-             val channelRenames = OrderPreferenceManager.getChannelRenames()
-
-             val sortedChannels = if (channelOrder != null && channelOrder.isNotEmpty()) {
-                 val urlToModel = channels.associateBy { it.uris.firstOrNull() ?: it.title }
-                 val orderedChannels = mutableListOf<TV>()
-                 val unorderedChannels = channels.filter {
-                     val key = it.uris.firstOrNull() ?: it.title
-                     key !in channelOrder
-                 }.toMutableList()
-
-                 for (url in channelOrder) {
-                     urlToModel[url]?.let { orderedChannels.add(it) }
-                 }
-                 orderedChannels.addAll(unorderedChannels)
-                 orderedChannels
-             } else {
-                 channels
-             }
+            // Apply saved channel order
+            val channelOrder = OrderPreferenceManager.getChannelOrder(originalCategoryName)
+            val channelRenames = OrderPreferenceManager.getChannelRenames()
+            
+            val sortedChannels = if (channelOrder != null && channelOrder.isNotEmpty()) {
+                val urlToModel = channels.associateBy { it.uris.firstOrNull() ?: "" }
+                val orderedChannels = mutableListOf<TV>()
+                val unorderedChannels = channels.filter { 
+                    it.uris.firstOrNull()?.let { url -> url !in channelOrder } ?: true 
+                }.toMutableList()
+                
+                for (url in channelOrder) {
+                    urlToModel[url]?.let { orderedChannels.add(it) }
+                }
+                orderedChannels.addAll(unorderedChannels)
+                orderedChannels
+            } else {
+                channels
+            }
             
             // Renaming can happen here safely on TV objects
             for (tv in sortedChannels) {
@@ -426,10 +386,6 @@ object TVList {
     }
 
     private fun checkChannelsInBackground() {
-        // Temporarily disabled: Remove dead channels and automatic removal
-        // because of this many working channels get removed.
-        // Also app is getting crashed because of index changes.
-        /*
         if (!SP.channelCheck) return
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -441,18 +397,17 @@ object TVList {
             val validList = mutableListOf<TV>()
             var removedCount = 0
 
-            // Create a copy to iterate
             val currentList = list.toList()
 
             for (tv in currentList) {
                 var isAlive = false
                 if (tv.uris.isEmpty()) {
-                    isAlive = false // No URIs means dead? Or just empty? Assuming dead.
+                    isAlive = false 
                 } else {
                     for (uri in tv.uris) {
                         if (checkLink(uri)) {
                             isAlive = true
-                            break // One working link is enough
+                            break 
                         }
                     }
                 }
@@ -471,20 +426,10 @@ object TVList {
                     refreshModels()
                     "$removedCount not working channels removed".showToast(Toast.LENGTH_LONG)
                 }
-                
-                // Optional: Save the cleaned list to file?
-                // The user request was "remove from the list", implying memory.
-                // But for persistence, we might want to write it back.
-                // Logic:
-                // val gson = com.google.gson.Gson()
-                // val json = gson.toJson(list)
-                // val file = File(appDirectory, FILE_NAME)
-                // file.writeText(json)
             } else {
                 Log.i(TAG, "No dead channels found")
             }
         }
-        */
     }
 
     private fun checkLink(url: String): Boolean {
@@ -540,9 +485,6 @@ object TVList {
         }
 
         val tvModel = getTVModel(position)
-
-        // set a new position or retry when position same
-        tvModel!!.setReady()
 
         groupModel.setPosition(tvModel.groupIndex)
 
