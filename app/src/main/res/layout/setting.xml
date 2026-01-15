@@ -50,7 +50,6 @@
                 android:textSize="13sp"
                 android:textColor="#00B0FF"
                 android:textStyle="bold"
-                android:visibility="gone"
                 android:layout_marginBottom="12dp" />
 
             <LinearLayout

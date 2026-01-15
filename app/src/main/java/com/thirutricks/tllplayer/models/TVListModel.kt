@@ -82,6 +82,14 @@ class TVListModel(private val name: String, private val index: Int) : ViewModel(
         }
     }
 
+    fun swap(index1: Int, index2: Int) {
+        val list = _tvListModel.value?.toMutableList() ?: return
+        if (index1 in list.indices && index2 in list.indices) {
+            java.util.Collections.swap(list, index1, index2)
+            _tvListModel.value = list
+        }
+    }
+
     fun clear() {
         _tvListModel.value = mutableListOf()
         setPosition(0)

@@ -746,6 +746,9 @@ class WebFragment : Fragment() {
         // Always release the previous player to ensure we can configure DRM correctly for the new content
         releasePlayer()
 
+        tvModel?.setVideoQuality("")
+        tvModel?.setAudioQuality("")
+
         var videoUrl = url
         var drmConfig: DrmConfig? = null
         val requestHeaders = mutableMapOf<String, String>()

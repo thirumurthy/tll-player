@@ -57,21 +57,30 @@ class SettingFragment : Fragment() {
         val ctx = requireContext()
 
         binding.name.text = getString(R.string.app_name)
-        // binding.version.text = "https://github.com/thirumurthy/tll-player"
-        binding.version.visibility = View.GONE
+        binding.version.text = "Version 1.0.22"  // Placeholder, updated via setVersionName
 
         binding.switchChannelReversal.isChecked = SP.channelReversal
         binding.switchChannelNum.isChecked = SP.channelNum
         binding.switchTime.isChecked = SP.time
         binding.switchBootStartup.isChecked = SP.bootStartup
-        binding.switchBootStartup.isChecked = SP.bootStartup
         binding.switchConfigAutoLoad.isChecked = SP.configAutoLoad
         binding.switchChannelCheck.isChecked = SP.channelCheck
 
-        binding.config.text = Editable.Factory.getInstance().newEditable(SP.config ?: "")
-        binding.channel.text = Editable.Factory.getInstance().newEditable(SP.channel.toString())
-
         scaleForTV()
+
+        // Add content descriptions for accessibility
+        binding.switchChannelReversal.contentDescription = "Toggle channel reversal"
+        binding.switchChannelNum.contentDescription = "Toggle channel numbering"
+        binding.switchTime.contentDescription = "Toggle time display"
+        binding.switchBootStartup.contentDescription = "Toggle boot startup"
+        binding.switchConfigAutoLoad.contentDescription = "Toggle config auto load"
+        binding.switchChannelCheck.contentDescription = "Toggle channel checking"
+        binding.confirmConfig.contentDescription = "Confirm config URL"
+        binding.confirmChannel.contentDescription = "Confirm default channel"
+        binding.clear.contentDescription = "Clear all settings"
+        binding.resetOrder.contentDescription = "Reset channel and category order"
+        binding.appreciate.contentDescription = "Show appreciation message"
+        binding.exit.contentDescription = "Exit the application"
 
 //        binding.content.apply {
 //            isFocusable = true
@@ -98,7 +107,6 @@ class SettingFragment : Fragment() {
             binding.switchChannelReversal,
             binding.switchChannelNum,
             binding.switchTime,
-            binding.switchBootStartup,
             binding.switchBootStartup,
             binding.switchConfigAutoLoad,
             binding.switchChannelCheck,
@@ -142,10 +150,12 @@ class SettingFragment : Fragment() {
         }
 
         val views = listOf(
-            binding.switchChannelReversal, binding.switchChannelNum,
-            binding.switchTime, binding.switchBootStartup,
-            binding.switchTime, binding.switchBootStartup,
-            binding.switchConfigAutoLoad, binding.switchChannelCheck
+            binding.switchChannelReversal,
+            binding.switchChannelNum,
+            binding.switchTime,
+            binding.switchBootStartup,
+            binding.switchConfigAutoLoad,
+            binding.switchChannelCheck
         )
 
         views.forEach { v ->
@@ -181,7 +191,6 @@ class SettingFragment : Fragment() {
         }
 
         binding.switchConfigAutoLoad.setOnCheckedChangeListener { _, b ->
-            SP.configAutoLoad = b
             SP.configAutoLoad = b
             (activity as MainActivity).settingActive()
         }
@@ -233,8 +242,9 @@ class SettingFragment : Fragment() {
             if (uri.isAbsolute) {
                 if (uri.scheme == "file") requestReadPermissions()
                 else TVList.parseUri(uri)
+                Toast.makeText(requireContext(), "Config updated", Toast.LENGTH_SHORT).show()
             } else {
-                binding.config.error = "Invalid address"
+                Toast.makeText(requireContext(), "Invalid address", Toast.LENGTH_SHORT).show()
             }
 
             (activity as MainActivity).settingActive()
@@ -244,16 +254,19 @@ class SettingFragment : Fragment() {
             tvUiUtils?.playClickSound()
 
             val num = binding.channel.text.toString().toIntOrNull()
-            if (num != null && num > 0 && num <= TVList.listModel.size) SP.channel = num
-            else binding.channel.error = "Invalid channel"
+            if (num != null && num > 0 && num <= TVList.listModel.size) {
+                SP.channel = num
+                Toast.makeText(requireContext(), "Channel set to $num", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "Invalid channel number", Toast.LENGTH_SHORT).show()
+            }
 
             (activity as MainActivity).settingActive()
         }
 
         binding.clear.setOnClickListener {
-            //tvUiUtils?.playClickSound()
+            tvUiUtils?.playClickSound()
 
-            // SP.config = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
             SP.channel = 0
             SP.position = 0
 
@@ -262,6 +275,7 @@ class SettingFragment : Fragment() {
 
             requireContext().deleteFile(TVList.FILE_NAME)
             SP.deleteLike()
+            Toast.makeText(requireContext(), "Settings cleared", Toast.LENGTH_SHORT).show()
         }
 
         binding.resetOrder.setOnClickListener {
@@ -281,7 +295,7 @@ class SettingFragment : Fragment() {
         }
 
         binding.appreciate.setOnClickListener {
-            //tvUiUtils?.playClickSound()
+            tvUiUtils?.playClickSound()
             val modal = ModalFragment()
             val args = Bundle()
             args.putInt(ModalFragment.KEY_DRAWABLE_ID, R.drawable.appreciate)
@@ -324,7 +338,7 @@ class SettingFragment : Fragment() {
     }
 
     fun setVersionName(versionName: String) {
-        binding.versionName.text = versionName
+        binding.version.text = versionName
     }
 
     private fun hideSelf() {

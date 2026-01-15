@@ -1,76 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
-    >
+    android:gravity="center">
+
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        >
+        android:layout_height="match_parent">
 
-        <LinearLayout
-            android:id="@+id/info"
-            android:layout_width="400dp"
-            android:layout_height="80dp"
+        <androidx.cardview.widget.CardView
+            android:id="@+id/info_card"
+            android:layout_width="700dp"
+            android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="20dp"
+            android:layout_marginBottom="40dp"
+            android:minHeight="140dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="16dp"
+            app:cardBackgroundColor="@android:color/transparent">
+
+            <LinearLayout
+                android:id="@+id/info"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-            <ImageView
-                android:id="@+id/logo"
-                android:layout_width="100dp"
-                android:layout_height="match_parent"
-                android:background="@drawable/rounded_white_left"
-                android:padding="10dp"
-
-                />
-            <LinearLayout
-                    android:id="@+id/main"
-                    android:layout_width="300dp"
+                <!-- Channel Logo Section -->
+                <ImageView
+                    android:id="@+id/logo"
+                    android:layout_width="140dp"
                     android:layout_height="match_parent"
-                    android:layout_marginStart="0dp"
-                    android:background="@drawable/rounded_dark_right"
-                    android:gravity="start|center_vertical"
-                    android:orientation="vertical"
-                    android:padding="7dp">
+                    android:background="@drawable/info_card_logo_background"
+                    android:padding="12dp"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="Channel Logo" />
 
+                <!-- Content Section -->
+                <LinearLayout
+                    android:id="@+id/main"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/info_card_content_background"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- Header Row: Channel Number and Date/Time -->
+                    <LinearLayout
+                        android:id="@+id/header_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/channel_number"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="#114"
+                            android:textColor="@color/info_text_accent"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/date_time"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tue 05 Dec 08:01 pm"
+                            android:textColor="@color/info_text_tertiary"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <!-- Channel Name -->
                     <TextView
                         android:id="@+id/title"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="start"
-                        android:gravity="start"
-                        android:textColor="#FFEEEEEE"
-                        android:textSize="20sp" />
+                        android:layout_marginTop="4dp"
+                        android:text="Channel Name"
+                        android:textColor="@color/info_text_primary"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
 
+                    <!-- Group Name -->
                     <TextView
                         android:id="@+id/desc"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="start"
-                        android:layout_marginTop="4dp"
-                        android:gravity="start"
-                        android:singleLine="true"
-                        android:textColor="#B3EEEEEE"
-                        android:textSize="14sp" />
+                        android:layout_marginTop="2dp"
+                        android:text="Entertainment"
+                        android:textColor="@color/info_text_secondary"
+                        android:textSize="14sp"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
 
+                    <!-- Quality Badges Row -->
                     <LinearLayout
-                        android:id="@+id/quality_container"
+                        android:id="@+id/quality_badges_row"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:orientation="horizontal">
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
 
                         <TextView
                             android:id="@+id/video_badge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginEnd="8dp"
-                            android:background="@drawable/badge_background"
+                            android:background="@drawable/badge_video_1080p"
                             android:text="1080p"
-                            android:textColor="#000000"
+                            android:textColor="@color/badge_text"
                             android:textSize="12sp"
                             android:textStyle="bold"
                             android:visibility="gone" />
@@ -79,14 +124,45 @@
                             android:id="@+id/audio_badge"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:background="@drawable/badge_background"
+                            android:background="@drawable/badge_audio_surround"
                             android:text="5.1ch"
-                            android:textColor="#000000"
+                            android:textColor="@color/badge_text"
                             android:textSize="12sp"
                             android:textStyle="bold"
                             android:visibility="gone" />
                     </LinearLayout>
+
+                    <!-- Metadata Row (Codec, Bitrate) -->
+                    <LinearLayout
+                        android:id="@+id/metadata_row"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/codec_info"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="12dp"
+                            android:text="H.264"
+                            android:textColor="@color/info_text_secondary"
+                            android:textSize="12sp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/bitrate_info"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="8 Mbps"
+                            android:textColor="@color/info_text_secondary"
+                            android:textSize="12sp"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
                 </LinearLayout>
-        </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
     </FrameLayout>
 </LinearLayout>

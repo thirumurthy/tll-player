@@ -69,4 +69,14 @@ class TVGroupModel : ViewModel() {
 
         return _tvGroupModel.value!!.size
     }
+
+    fun swap(idx1: Int, idx2: Int) {
+        val list = _tvGroupModel.value?.toMutableList() ?: return
+        if (idx1 < list.size && idx2 < list.size) {
+            val temp = list[idx1]
+            list[idx1] = list[idx2]
+            list[idx2] = temp
+            _tvGroupModel.value = list
+        }
+    }
 }

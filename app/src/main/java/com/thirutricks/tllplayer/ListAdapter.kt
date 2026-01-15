@@ -110,9 +110,7 @@ class ListAdapter(
                 val currentOrder = getCurrentChannelOrder()
                 Collections.swap(currentOrder, from, to)
                 OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                    com.thirutricks.tllplayer.models.TVList.refreshModels()
-                }
+                tvListModel.swap(from, to)
                 notifyItemMoved(from, to)
                 return true
             }
@@ -447,10 +445,8 @@ class ListAdapter(
         for (i in 0 until tvListModel.size()) {
             val model = tvListModel.getTVModel(i)
             if (model != null) {
-                val url = model.tv.uris.firstOrNull() ?: ""
-                if (url.isNotEmpty()) {
-                    order.add(url)
-                }
+                val url = model.tv.uris.firstOrNull() ?: model.tv.title
+                order.add(url)
             }
         }
         return order
@@ -488,29 +484,19 @@ class ListAdapter(
         val currentOrder = getCurrentChannelOrder()
         val index = position
         
-        if (index > 0 && index < currentOrder.size) { // Validate index
-             // Correct index for swapping - listAdapter index matches order list index directly if no extra items
-            // Assuming currentOrder matches adapter position mapping (check getCurrentChannelOrder logic)
-            // getCurrentChannelOrder iterates tvListModel.
-            
+        if (index > 0 && index < currentOrder.size) {
             Collections.swap(currentOrder, index, index - 1)
             OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                com.thirutricks.tllplayer.models.TVList.refreshModels()
-            }
-            
-            // Get the updated model from the group model to ensure we have the fresh data
-            val updatedModel = com.thirutricks.tllplayer.models.TVList.groupModel.getTVListModel(tvListModel.getIndex())
-            if (updatedModel != null) {
-                update(updatedModel)
-            } else {
-                // Fallback if model not found (shouldn't happen usually)
-                update(tvListModel)
-            }
-            
+
+            // Swap in model and notify adapter move
+            tvListModel.swap(index, index - 1)
+            notifyItemMoved(index, index - 1)
+
             movingPosition = position - 1
+            // Ensure focus follows the moved item
             recyclerView.post {
-                toPosition(position - 1)
+                val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
+                viewHolder?.itemView?.requestFocus()
             }
         }
     }
@@ -528,22 +514,16 @@ class ListAdapter(
         if (index < currentOrder.size - 1) {
             Collections.swap(currentOrder, index, index + 1)
             OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                com.thirutricks.tllplayer.models.TVList.refreshModels()
-            }
-            
-            // Get the updated model from the group model to ensure we have the fresh data
-            val updatedModel = com.thirutricks.tllplayer.models.TVList.groupModel.getTVListModel(tvListModel.getIndex())
-            if (updatedModel != null) {
-                update(updatedModel)
-            } else {
-                // Fallback if model not found (shouldn't happen usually)
-                update(tvListModel)
-            }
+
+            // Swap in model and notify adapter move
+            tvListModel.swap(index, index + 1)
+            notifyItemMoved(index, index + 1)
 
             movingPosition = position + 1
+            // Ensure focus follows the moved item
             recyclerView.post {
-                 toPosition(position + 1)
+                val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
+                viewHolder?.itemView?.requestFocus()
             }
         }
     }

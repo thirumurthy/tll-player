@@ -17,4 +17,31 @@
 <!--    <color name="description_blur">#FF9E9E9E</color>-->
     <color name="ripple_color">#1F6200EE</color> <!-- Semi-transparent version of your focus color -->
 
+    <!-- Info Card Colors -->
+    <color name="info_card_background">#DD000000</color> <!-- 87% black -->
+    <color name="info_card_background_gradient_end">#EE000000</color> <!-- 93% black -->
+    <color name="info_logo_background">#FFFFFF</color> <!-- White -->
+    <color name="info_logo_background_alt">#F5F5F5</color> <!-- Light gray -->
+    
+    <!-- Text Colors -->
+    <color name="info_text_primary">#FFFFFF</color> <!-- White -->
+    <color name="info_text_secondary">#B3FFFFFF</color> <!-- 70% white -->
+    <color name="info_text_accent">#BBDEFB</color> <!-- Light blue -->
+    <color name="info_text_tertiary">#E0E0E0</color> <!-- Light gray -->
+    
+    <!-- Quality Badge Colors -->
+    <color name="badge_4k">#D32F2F</color> <!-- Red for 4K/UHD -->
+    <color name="badge_1080p">#1976D2</color> <!-- Blue for 1080p -->
+    <color name="badge_720p">#FF6F00</color> <!-- Orange for 720p -->
+    <color name="badge_sd">#757575</color> <!-- Gray for SD -->
+    <color name="badge_hd">#FF6F00</color> <!-- Orange for HD -->
+    
+    <!-- Audio Badge Colors -->
+    <color name="badge_surround">#388E3C</color> <!-- Green for 5.1ch/7.1ch -->
+    <color name="badge_stereo">#00796B</color> <!-- Teal for Stereo -->
+    <color name="badge_audio_default">#546E7A</color> <!-- Blue-gray for AAC/MP3 -->
+    
+    <!-- Badge Text -->
+    <color name="badge_text">#FFFFFF</color> <!-- White text on badges -->
+
 </resources>

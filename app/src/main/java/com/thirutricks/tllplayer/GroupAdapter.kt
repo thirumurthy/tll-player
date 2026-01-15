@@ -168,7 +168,6 @@ class GroupAdapter(
         }
 
         viewHolder.bindTitle(tvListModel.getName())
-        viewHolder.bindTitle(tvListModel.getName())
         viewHolder.setArrowsVisibility(movingPosition == position)
         
         viewHolder.binding.arrowUp.setOnClickListener {
@@ -274,9 +273,7 @@ class GroupAdapter(
                 val currentOrder = getCurrentCategoryOrder()
                 Collections.swap(currentOrder, from - 2, to - 2)
                 OrderPreferenceManager.saveCategoryOrder(currentOrder)
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                com.thirutricks.tllplayer.models.TVList.refreshModels()
-            }
+                tvGroupModel.swap(from, to)
                 notifyItemMoved(from, to)
                 return true
             }
@@ -375,10 +372,8 @@ class GroupAdapter(
         if (index > 0) {
             Collections.swap(currentOrder, index, index - 1)
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                com.thirutricks.tllplayer.models.TVList.refreshModels()
-            }
-            update(tvGroupModel)
+            tvGroupModel.swap(position, position - 1)
+            notifyItemMoved(position, position - 1)
             movingPosition = position - 1
             recyclerView.post {
                 toPosition(position - 1)
@@ -398,10 +393,8 @@ class GroupAdapter(
         if (index < currentOrder.size - 1) {
             Collections.swap(currentOrder, index, index + 1)
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                com.thirutricks.tllplayer.models.TVList.refreshModels()
-            }
-            update(tvGroupModel)
+            tvGroupModel.swap(position, position + 1)
+            notifyItemMoved(position, position + 1)
             movingPosition = position + 1
             recyclerView.post {
                 toPosition(position + 1)

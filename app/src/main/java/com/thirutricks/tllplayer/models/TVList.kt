@@ -353,25 +353,26 @@ object TVList {
             val displayCategoryName = categoryRenames[originalCategoryName] ?: originalCategoryName
             val channels = map[originalCategoryName] ?: continue
             
-            // Apply saved channel order
-            val channelOrder = OrderPreferenceManager.getChannelOrder(originalCategoryName)
-            val channelRenames = OrderPreferenceManager.getChannelRenames()
-            
-            val sortedChannels = if (channelOrder != null && channelOrder.isNotEmpty()) {
-                val urlToModel = channels.associateBy { it.uris.firstOrNull() ?: "" }
-                val orderedChannels = mutableListOf<TV>()
-                val unorderedChannels = channels.filter { 
-                    it.uris.firstOrNull()?.let { url -> url !in channelOrder } ?: true 
-                }.toMutableList()
-                
-                for (url in channelOrder) {
-                    urlToModel[url]?.let { orderedChannels.add(it) }
-                }
-                orderedChannels.addAll(unorderedChannels)
-                orderedChannels
-            } else {
-                channels
-            }
+             // Apply saved channel order
+             val channelOrder = OrderPreferenceManager.getChannelOrder(originalCategoryName)
+             val channelRenames = OrderPreferenceManager.getChannelRenames()
+
+             val sortedChannels = if (channelOrder != null && channelOrder.isNotEmpty()) {
+                 val urlToModel = channels.associateBy { it.uris.firstOrNull() ?: it.title }
+                 val orderedChannels = mutableListOf<TV>()
+                 val unorderedChannels = channels.filter {
+                     val key = it.uris.firstOrNull() ?: it.title
+                     key !in channelOrder
+                 }.toMutableList()
+
+                 for (url in channelOrder) {
+                     urlToModel[url]?.let { orderedChannels.add(it) }
+                 }
+                 orderedChannels.addAll(unorderedChannels)
+                 orderedChannels
+             } else {
+                 channels
+             }
             
             // Renaming can happen here safely on TV objects
             for (tv in sortedChannels) {

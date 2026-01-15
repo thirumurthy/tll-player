@@ -2,6 +2,7 @@ package com.thirutricks.tllplayer
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -9,6 +10,7 @@ import com.google.gson.reflect.TypeToken
  * Manages persistent storage for category and channel ordering and renaming
  */
 object OrderPreferenceManager {
+    private const val TAG = "OrderPreferenceManager"
     private const val PREFS_NAME = "order_preferences"
     private const val KEY_CATEGORY_ORDER = "category_order"
     private const val KEY_CHANNEL_ORDER_PREFIX = "channel_order_"
@@ -34,6 +36,7 @@ object OrderPreferenceManager {
         return try {
             gson.fromJson(json, type)
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse category order json: $json", e)
             null
         }
     }
@@ -52,6 +55,7 @@ object OrderPreferenceManager {
         return try {
             gson.fromJson(json, type)
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse channel order json for $categoryName: $json", e)
             null
         }
     }
@@ -70,6 +74,7 @@ object OrderPreferenceManager {
         return try {
             gson.fromJson(json, type) ?: emptyMap()
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse category renames json: $json", e)
             emptyMap()
         }
     }
@@ -92,6 +97,7 @@ object OrderPreferenceManager {
         return try {
             gson.fromJson(json, type) ?: emptyMap()
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse channel renames json: $json", e)
             emptyMap()
         }
     }
