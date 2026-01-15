@@ -34,8 +34,13 @@ object TVList {
     val position: LiveData<Int>
         get() = _position
 
+    private val _importProgress = MutableLiveData<Int>()
+    val importProgress: LiveData<Int>
+        get() = _importProgress
+
     fun init(context: Context) {
         _position.value = 0
+        _importProgress.value = 0
 
         groupModel.addTVListModel(TVListModel("My Collection", 0))
         groupModel.addTVListModel(TVListModel("All channels", 1))
@@ -52,7 +57,10 @@ object TVList {
         }
 
         try {
-            str2List(str)
+            // Loading form file should be fast, but ideally also async.
+            // For now, keeping synchronous for init, but could be refactored.
+            // Or just fire a fake 100% if needed, but probably not needed on startup for file read
+            str2ListSync(str)
         } catch (e: Exception) {
             Log.e("", "error $e")
             file.deleteOnExit()
@@ -102,6 +110,13 @@ object TVList {
 
     private fun update() {
         CoroutineScope(Dispatchers.IO).launch {
+            withContext(Dispatchers.Main) {
+                if (size() == 0) {
+                     _importProgress.value = 5
+                } else {
+                     _importProgress.value = 0
+                }
+            }
             try {
                 Log.i(TAG, "request $serverUrl")
                 // Use the custom unsafe client
@@ -110,24 +125,38 @@ object TVList {
                 val response = client.newCall(request).execute()
 
                 if (response.isSuccessful) {
+                    // Update progress to 60 (Server responded)
+                     withContext(Dispatchers.Main) {
+                        _importProgress.value = 60
+                    }
+
                     val file = File(appDirectory, FILE_NAME)
                     if (!file.exists()) {
                         file.createNewFile()
                     }
                     val str = response.body()!!.string()
+
+                    // Process JSON in background
+                    val success = str2List(str)
+
                     withContext(Dispatchers.Main) {
                         try {
-                             if (str2List(str)) {
+                             if (success) {
                                 file.writeText(str)
                                 SP.config = serverUrl
                                 "Channel imported successfully".showToast()
                                 checkChannelsInBackground()
+
+                                // Update progress to 100 (Done)
+                                _importProgress.value = 100
                             } else {
                                 "Channel import error: Invalid content".showToast()
+                                _importProgress.value = 0 // Reset/Fail
                             }
                         } catch (e: Exception) {
                              Log.e(TAG, "Parsing error", e)
                              "Channel import error: ${e.message}".showToast()
+                             _importProgress.value = 0 // Reset/Fail
                         }
                     }
                 } else {
@@ -173,12 +202,17 @@ object TVList {
             }
 
             try {
-                if (str2List(str)) {
-                    SP.config = uri.toString()
-                    "Channel imported successfully".showToast(Toast.LENGTH_LONG)
-                    checkChannelsInBackground()
-                } else {
-                    "Channel import failed".showToast(Toast.LENGTH_LONG)
+                CoroutineScope(Dispatchers.IO).launch {
+                    val success = str2List(str)
+                    withContext(Dispatchers.Main) {
+                        if (success) {
+                            SP.config = uri.toString()
+                            "Channel imported successfully".showToast(Toast.LENGTH_LONG)
+                            checkChannelsInBackground()
+                        } else {
+                            "Channel import failed".showToast(Toast.LENGTH_LONG)
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("", "error $e")
@@ -190,7 +224,7 @@ object TVList {
         }
     }
 
-    fun str2List(str: String): Boolean {
+    suspend fun str2List(str: String): Boolean = withContext(Dispatchers.Default) {
         var string = str.trim()
         val g = Gua()
         if (g.verify(string)) {
@@ -202,7 +236,7 @@ object TVList {
         
         if (string.isBlank()) {
             Log.e(TAG, "Decrypted string is empty")
-            return false
+            return@withContext false
         }
         
         Log.i(TAG, "Decrypted content preview: ${string.take(100)}")
@@ -219,31 +253,71 @@ object TVList {
             } catch (e: Exception) {
                 Log.e(TAG, "parse error $string")
                 Log.i(TAG, e.message, e)
-                return false
+                return@withContext false
             }
         } else {
             Log.e(TAG, "No JSON array start found")
-            return false
+            return@withContext false
         }
 
         refreshModels()
+        return@withContext true
+    }
+
+    // Synchronous version for Init (called from Main thread or during init where blocking is acceptable/expected or needs refactoring)
+    // Actually init calls it. Let's keep a sync version or make init suspend. Init is called in MainActivity.onCreate which is bad for suspend.
+    // For now, duplicate the logic slightly or call runBlocking (bad).
+    // Better: keep the original str2List as private helper, make public one suspend, and have a str2ListSync.
+    
+    private fun str2ListSync(str: String): Boolean {
+          var string = str.trim()
+        val g = Gua()
+        if (g.verify(string)) {
+            Log.i(TAG, "Content verified with Gua")
+            string = g.decode(string)
+        } else {
+             Log.i(TAG, "Content verification failed or not encrypted")
+        }
+        
+        if (string.isBlank()) {
+            Log.e(TAG, "Decrypted string is empty")
+            return false
+        }
+
+        val startIndex = string.indexOf('[')
+        if (startIndex != -1) {
+             string = string.substring(startIndex)
+             try {
+                val type = object : com.google.gson.reflect.TypeToken<List<TV>>() {}.type
+                list = com.google.gson.GsonBuilder().setLenient().create().fromJson(string, type)
+            } catch (e: Exception) {
+                return false
+            }
+        } else {
+            return false
+        }
+
+        // refreshModels is mostly safe depending on thread, but it touches groupModel.
+        // If init is main thread, this is fine.
+        kotlinx.coroutines.runBlocking {
+            refreshModels()
+        }
         return true
     }
 
-    fun refreshModels() {
+    suspend fun refreshModels() = withContext(Dispatchers.Default) {
         if (!::list.isInitialized || list.isEmpty()) {
             Log.w(TAG, "Cannot refresh models: list not initialized or empty")
-            return
+            return@withContext
         }
-        
-        groupModel.clear()
 
-        val map: MutableMap<String, MutableList<TVModel>> = mutableMapOf()
+        // Preparation Phase (Background) - Work with TV objects, NOT TVModel
+        val map: MutableMap<String, MutableList<TV>> = mutableMapOf()
         for (v in list) {
             if (v.group !in map) {
                 map[v.group] = mutableListOf()
             }
-            map[v.group]?.add(TVModel(v))
+            map[v.group]?.add(v)
         }
 
         // Apply saved category order
@@ -251,85 +325,103 @@ object TVList {
         val categoryRenames = OrderPreferenceManager.getCategoryRenames()
         
         val sortedCategories = if (categoryOrder != null && categoryOrder.isNotEmpty()) {
-            // Use saved order, but filter out categories that no longer exist
             val orderedCategories = mutableListOf<String>()
             val unorderedCategories = map.keys.filter { it !in categoryOrder }.toMutableList()
-            
-            // Add categories in saved order
             for (catName in categoryOrder) {
                 if (catName in map) {
                     orderedCategories.add(catName)
                 }
             }
-            // Add new categories at the end
             orderedCategories.addAll(unorderedCategories)
             orderedCategories
         } else {
             map.keys.toList()
         }
 
-        val listModelNew: MutableList<TVModel> = mutableListOf()
+        // Prepare raw data structures for Main thread update
+        // Triple<CategoryName, GroupIndex, List<TV>>
+        val preparedGroups = mutableListOf<Triple<String, Int, List<TV>>>()
+        
         var groupIndex = 2
-        var id = 0
+        // We will assign IDs and build TVModels in the main thread to be safe, 
+        // OR we can assign IDs here if 'id' in TV is just an Int and not LiveData.
+        // TV.id is Int. So checks are fine.
+        // But TVModel creation MUST be on Main.
         
         for (categoryName in sortedCategories) {
             val originalCategoryName = categoryName
             val displayCategoryName = categoryRenames[originalCategoryName] ?: originalCategoryName
             val channels = map[originalCategoryName] ?: continue
             
-            // Apply saved channel order for this category
+            // Apply saved channel order
             val channelOrder = OrderPreferenceManager.getChannelOrder(originalCategoryName)
             val channelRenames = OrderPreferenceManager.getChannelRenames()
             
             val sortedChannels = if (channelOrder != null && channelOrder.isNotEmpty()) {
-                // Create a map of URL -> TVModel for quick lookup
-                val urlToModel = channels.associateBy { 
-                    it.tv.uris.firstOrNull() ?: "" 
-                }
-                val orderedChannels = mutableListOf<TVModel>()
+                val urlToModel = channels.associateBy { it.uris.firstOrNull() ?: "" }
+                val orderedChannels = mutableListOf<TV>()
                 val unorderedChannels = channels.filter { 
-                    it.tv.uris.firstOrNull()?.let { url -> url !in channelOrder } ?: true 
+                    it.uris.firstOrNull()?.let { url -> url !in channelOrder } ?: true 
                 }.toMutableList()
                 
-                // Add channels in saved order
                 for (url in channelOrder) {
                     urlToModel[url]?.let { orderedChannels.add(it) }
                 }
-                // Add new channels at the end
                 orderedChannels.addAll(unorderedChannels)
                 orderedChannels
             } else {
                 channels
             }
             
-            val tvListModel = TVListModel(displayCategoryName, groupIndex)
-            for ((listIndex, v1) in sortedChannels.withIndex()) {
-                v1.tv.id = id
-                v1.groupIndex = groupIndex
-                v1.listIndex = listIndex
-                
-                // Apply channel rename if exists
-                val channelUrl = v1.tv.uris.firstOrNull() ?: ""
-                val renamedTitle = channelRenames[channelUrl]
-                if (renamedTitle != null) {
-                    v1.tv.title = renamedTitle
-                }
-                
-                tvListModel.addTVModel(v1)
-                listModelNew.add(v1)
-                id++
+            // Renaming can happen here safely on TV objects
+            for (tv in sortedChannels) {
+                 val channelUrl = tv.uris.firstOrNull() ?: ""
+                 val renamedTitle = channelRenames[channelUrl]
+                 if (renamedTitle != null) {
+                     tv.title = renamedTitle
+                 }
             }
-            groupModel.addTVListModel(tvListModel)
+            
+            preparedGroups.add(Triple(displayCategoryName, groupIndex, sortedChannels))
             groupIndex++
         }
 
-        listModel = listModelNew
+        // Update Phase (Main Thread)
+        withContext(Dispatchers.Main) {
+            groupModel.clear()
+            val listModelNew: MutableList<TVModel> = mutableListOf()
+            var id = 0
+            
+            for ((name, idx, channels) in preparedGroups) {
+                // TVListModel init calls _position.value which requires Main Thread
+                val tvListModel = TVListModel(name, idx)
+                val groupChannels = mutableListOf<TVModel>()
 
-        // All channels
-        groupModel.getTVListModel(1)?.setTVListModel(listModel)
+                for ((listIndex, tv) in channels.withIndex()) {
+                     tv.id = id
+                     // Instantiate TVModel here (Main Thread)
+                     val tvModel = TVModel(tv)
+                     tvModel.groupIndex = idx
+                     tvModel.listIndex = listIndex
+                     
+                     groupChannels.add(tvModel)
+                     listModelNew.add(tvModel)
+                     id++
+                }
 
-        Log.i(TAG, "groupModel ${groupModel.size()}")
-        groupModel.setChange()
+                tvListModel.setTVListModel(groupChannels)
+                groupModel.addTVListModel(tvListModel)
+            }
+
+            listModel = listModelNew
+
+            // All channels
+            groupModel.getTVListModel(1)?.setTVListModel(listModel)
+
+            Log.i(TAG, "groupModel ${groupModel.size()}")
+            
+            groupModel.setChange()
+        }
     }
 
     private fun checkChannelsInBackground() {
@@ -438,7 +530,7 @@ object TVList {
 
     fun setPosition(position: Int): Boolean {
         Log.i(TAG, "setPosition $position/${size()}")
-        if (position >= size()) {
+        if (position < 0 || position >= size()) {
             return false
         }
 

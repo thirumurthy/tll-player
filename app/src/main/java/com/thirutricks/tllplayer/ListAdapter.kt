@@ -29,6 +29,7 @@ import com.thirutricks.tllplayer.RenameDialogFragment
 import android.widget.Toast
 import android.view.MotionEvent
 import java.util.Collections
+import kotlinx.coroutines.launch
 
 
 class ListAdapter(
@@ -109,7 +110,9 @@ class ListAdapter(
                 val currentOrder = getCurrentChannelOrder()
                 Collections.swap(currentOrder, from, to)
                 OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
-                com.thirutricks.tllplayer.models.TVList.refreshModels()
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                    com.thirutricks.tllplayer.models.TVList.refreshModels()
+                }
                 notifyItemMoved(from, to)
                 return true
             }
@@ -464,7 +467,9 @@ class ListAdapter(
                     OrderPreferenceManager.saveChannelRename(channelUrl, newName)
                     Toast.makeText(context, "Channel renamed", Toast.LENGTH_SHORT).show()
                     // Trigger refresh to apply rename
-                    com.thirutricks.tllplayer.models.TVList.refreshModels()
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                        com.thirutricks.tllplayer.models.TVList.refreshModels()
+                    }
                     // Update the adapter
                     update(tvListModel)
                 }
@@ -490,7 +495,9 @@ class ListAdapter(
             
             Collections.swap(currentOrder, index, index - 1)
             OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
-            com.thirutricks.tllplayer.models.TVList.refreshModels()
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                com.thirutricks.tllplayer.models.TVList.refreshModels()
+            }
             
             // Get the updated model from the group model to ensure we have the fresh data
             val updatedModel = com.thirutricks.tllplayer.models.TVList.groupModel.getTVListModel(tvListModel.getIndex())
@@ -521,7 +528,9 @@ class ListAdapter(
         if (index < currentOrder.size - 1) {
             Collections.swap(currentOrder, index, index + 1)
             OrderPreferenceManager.saveChannelOrder(categoryName, currentOrder)
-            com.thirutricks.tllplayer.models.TVList.refreshModels()
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                com.thirutricks.tllplayer.models.TVList.refreshModels()
+            }
             
             // Get the updated model from the group model to ensure we have the fresh data
             val updatedModel = com.thirutricks.tllplayer.models.TVList.groupModel.getTVListModel(tvListModel.getIndex())

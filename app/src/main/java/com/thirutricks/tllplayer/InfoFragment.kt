@@ -100,6 +100,24 @@ class InfoFragment : Fragment() {
             }
         }
 
+        tvViewModel.videoQuality.observe(viewLifecycleOwner) {
+            if (!it.isNullOrEmpty()) {
+                binding.videoBadge.text = it
+                binding.videoBadge.visibility = View.VISIBLE
+            } else {
+                binding.videoBadge.visibility = View.GONE
+            }
+        }
+
+        tvViewModel.audioQuality.observe(viewLifecycleOwner) {
+            if (!it.isNullOrEmpty()) {
+                binding.audioBadge.text = it
+                binding.audioBadge.visibility = View.VISIBLE
+            } else {
+                binding.audioBadge.visibility = View.GONE
+            }
+        }
+
 //        val program = tvViewModel.getProgramOne()
 //        if (program != null) {
 //            binding.infoDesc.text = program.name

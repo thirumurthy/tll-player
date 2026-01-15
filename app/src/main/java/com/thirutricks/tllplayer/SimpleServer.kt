@@ -14,6 +14,7 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
+import kotlinx.coroutines.launch
 
 
 class SimpleServer(private val context: Context, port: Int) : NanoHTTPD(port) {
@@ -50,11 +51,13 @@ class SimpleServer(private val context: Context, port: Int) : NanoHTTPD(port) {
             session.parseBody(map)
             map["postData"]?.let {
                 handler.post {
-                    if (TVList.str2List(it)) {
-                        File(context.filesDir, TVList.FILE_NAME).writeText(it)
-                        "Channel imported successfully".showToast()
-                    } else {
-                        "Channel import error".showToast()
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                        if (TVList.str2List(it)) {
+                            File(context.filesDir, TVList.FILE_NAME).writeText(it)
+                            "Channel imported successfully".showToast()
+                        } else {
+                            "Channel import error".showToast()
+                        }
                     }
                 }
             }

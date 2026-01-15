@@ -65,6 +65,22 @@ class TVModel(var tv: TV) : ViewModel() {
         _ready.value = true
     }
 
+    private val _videoQuality = MutableLiveData<String>()
+    val videoQuality: LiveData<String>
+        get() = _videoQuality
+
+    fun setVideoQuality(q: String) {
+        _videoQuality.postValue(q)
+    }
+
+    private val _audioQuality = MutableLiveData<String>()
+    val audioQuality: LiveData<String>
+        get() = _audioQuality
+
+    fun setAudioQuality(q: String) {
+        _audioQuality.postValue(q)
+    }
+
     private val _videoIndex = MutableLiveData<Int>()
     private val videoIndex: LiveData<Int>
         get() = _videoIndex

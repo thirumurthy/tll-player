@@ -19,6 +19,7 @@ import com.thirutricks.tllplayer.RenameDialogFragment
 import android.widget.Toast
 import android.view.MotionEvent
 import java.util.Collections
+import kotlinx.coroutines.launch
 
 
 class GroupAdapter(
@@ -273,7 +274,9 @@ class GroupAdapter(
                 val currentOrder = getCurrentCategoryOrder()
                 Collections.swap(currentOrder, from - 2, to - 2)
                 OrderPreferenceManager.saveCategoryOrder(currentOrder)
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
                 com.thirutricks.tllplayer.models.TVList.refreshModels()
+            }
                 notifyItemMoved(from, to)
                 return true
             }
@@ -350,7 +353,9 @@ class GroupAdapter(
                 OrderPreferenceManager.saveCategoryRename(originalName, newName)
                 Toast.makeText(context, "Category renamed", Toast.LENGTH_SHORT).show()
                 // Trigger refresh to apply rename
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
                 com.thirutricks.tllplayer.models.TVList.refreshModels()
+            }
                 // Update the adapter
                 update(tvGroupModel)
             }
@@ -370,7 +375,9 @@ class GroupAdapter(
         if (index > 0) {
             Collections.swap(currentOrder, index, index - 1)
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
-            com.thirutricks.tllplayer.models.TVList.refreshModels()
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                com.thirutricks.tllplayer.models.TVList.refreshModels()
+            }
             update(tvGroupModel)
             movingPosition = position - 1
             recyclerView.post {
@@ -391,7 +398,9 @@ class GroupAdapter(
         if (index < currentOrder.size - 1) {
             Collections.swap(currentOrder, index, index + 1)
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
-            com.thirutricks.tllplayer.models.TVList.refreshModels()
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                com.thirutricks.tllplayer.models.TVList.refreshModels()
+            }
             update(tvGroupModel)
             movingPosition = position + 1
             recyclerView.post {

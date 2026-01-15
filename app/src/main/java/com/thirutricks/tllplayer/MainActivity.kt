@@ -42,6 +42,7 @@ class MainActivity : FragmentActivity() {
     private var timeFragment = TimeFragment()
     private var menuFragment = MenuFragment()
     private var settingFragment = SettingFragment()
+    private var importProgressFragment = ImportProgressFragment()
 
     private lateinit var updateManager: UpdateManager
 
@@ -149,8 +150,10 @@ class MainActivity : FragmentActivity() {
                 .add(R.id.main_browse_fragment, channelFragment)
                 .add(R.id.main_browse_fragment, menuFragment)
                 .add(R.id.main_browse_fragment, settingFragment)
+                .add(R.id.main_browse_fragment, importProgressFragment)
                 .hide(menuFragment)
                 .hide(settingFragment)
+                .hide(importProgressFragment)
                 .hide(errorFragment)
                 .hide(loadingFragment)
                 .hide(timeFragment)
@@ -184,6 +187,9 @@ class MainActivity : FragmentActivity() {
                  if (fragment is SettingFragment) {
                      settingFragment = fragment
                  }
+                 if (fragment is ImportProgressFragment) {
+                     importProgressFragment = fragment
+                 }
              }
         }
 
@@ -208,25 +214,60 @@ class MainActivity : FragmentActivity() {
             }
         }
 
-        if (SP.channel > 0) {
-            if (SP.channel < TVList.listModel.size) {
-                TVList.setPosition(SP.channel - 1)
-                "Play Default Channel".showToast(Toast.LENGTH_LONG)
+        // 1. Try Last Played
+        if (TVList.setPosition(SP.position)) {
+            "Play last channel".showToast(Toast.LENGTH_LONG)
+        } 
+        // 2. Try Default Channel (if set and valid)
+        // SP.channel is 1-based (0 = disabled/none), so convert to 0-based for list
+        else if (SP.channel > 0 && TVList.setPosition(SP.channel - 1)) {
+            "Play Default Channel".showToast(Toast.LENGTH_LONG)
+        } 
+        // 3. Fallback to First Channel
+        else {
+            if (TVList.setPosition(0)) {
+                "Play First Channel".showToast(Toast.LENGTH_LONG)
             } else {
-                SP.channel = 0
-                TVList.setPosition(0)
-                "The default channel is out of range in the channel list and has been automatically set to 0".showToast(Toast.LENGTH_LONG)
-            }
-        } else {
-            if (!TVList.setPosition(SP.position)) {
-                TVList.setPosition(0)
-                "The last time the channel was out of range in the channel list, it was automatically set to 0".showToast(Toast.LENGTH_LONG)
-            } else {
-                "Play last channel".showToast(Toast.LENGTH_LONG)
+                 Log.e(TAG, "No channels available to play.")
             }
         }
 
         // TODO group position
+
+        TVList.importProgress.observe(this) { progress ->
+            if (progress > 0) {
+                 if (importProgressFragment.isHidden) {
+                     supportFragmentManager.beginTransaction()
+                         .show(importProgressFragment)
+                         .commitNowAllowingStateLoss()
+                 }
+                
+                 val current = if (progress == 60) 0 else 60
+                 if(progress == 60) {
+                      importProgressFragment.animateProgress(0, 60)
+                 } else if (progress == 100) {
+                      importProgressFragment.animateProgress(60, 100)
+                      // Hide after delay or let user dismiss? 
+                      // User said "move to 100% and close".
+                      handler.postDelayed({ 
+                          if (!importProgressFragment.isHidden) {
+                              supportFragmentManager.beginTransaction()
+                                  .hide(importProgressFragment)
+                                  .commitNowAllowingStateLoss()
+                              importProgressFragment.setProgress(0) // Reset
+                          }
+                      }, 1000)
+                 }
+            } else {
+                 // Reset or hide
+                 if (!importProgressFragment.isHidden) {
+                     supportFragmentManager.beginTransaction()
+                         .hide(importProgressFragment)
+                         .commitNowAllowingStateLoss()
+                 }
+                 importProgressFragment.setProgress(0)
+            }
+        }
 
         val port = PortUtil.findFreePort()
         if (port != -1) {

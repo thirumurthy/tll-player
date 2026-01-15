@@ -844,6 +844,47 @@ class WebFragment : Fragment() {
                         tvModel?.setErrInfo("") // Clear error info on successful play
                  }
             }
+
+            override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
+                super.onVideoSizeChanged(videoSize)
+                val height = videoSize.height
+                val label = when {
+                    height >= 2160 -> "4K"
+                    height >= 1440 -> "2K"
+                    height >= 1080 -> "1080p"
+                    height >= 720 -> "720p"
+                    height >= 480 -> "480p"
+                    height > 0 -> "SD"
+                    else -> ""
+                }
+                tvModel?.setVideoQuality(label)
+            }
+
+            override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
+                super.onTracksChanged(tracks)
+                var audioLabel = ""
+                for (group in tracks.groups) {
+                    if (group.type == C.TRACK_TYPE_AUDIO && group.isSelected) {
+                        val format = group.getTrackFormat(0)
+                        val channels = format.channelCount
+                        audioLabel = when (channels) {
+                            1 -> "Mono"
+                            2 -> "Stereo"
+                            6 -> "5.1ch"
+                            8 -> "7.1ch"
+                            else -> if (channels > 0) "${channels}ch" else ""
+                        }
+                        // Optional: Check for Dolby
+                        val mime = format.sampleMimeType
+                        if (mime == androidx.media3.common.MimeTypes.AUDIO_AC3 || 
+                            mime == androidx.media3.common.MimeTypes.AUDIO_E_AC3) {
+                            audioLabel = if (audioLabel.isNotEmpty()) "$audioLabel Dolby" else "Dolby"
+                        }
+                        break // Found the selected audio track
+                    }
+                }
+                tvModel?.setAudioQuality(audioLabel)
+            }
         })
 
         playerView.player = exoPlayer
@@ -954,8 +995,8 @@ class WebFragment : Fragment() {
 
                     if (match != null) {
                         val m3u8Link = match.groupValues[1]
-                        return m3u8Link
                         println("Extracted m3u8 Link: $m3u8Link")
+                        return m3u8Link
                     }else{
                         // specifically for athavantv
                         val athavantvRegex = """file:"(https?://[^\"]+\.m3u8)"""".toRegex()
