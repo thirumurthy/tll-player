@@ -45,6 +45,7 @@ class MainActivity : FragmentActivity() {
     private var menuFragment = MenuFragment()
     private var settingFragment = SettingFragment()
     private var importProgressFragment = ImportProgressFragment()
+    private var trackSelectionFragment = TrackSelectionFragment()
 
     private lateinit var updateManager: UpdateManager
 
@@ -153,9 +154,11 @@ class MainActivity : FragmentActivity() {
                 .add(R.id.main_browse_fragment, menuFragment)
                 .add(R.id.main_browse_fragment, settingFragment)
                 .add(R.id.main_browse_fragment, importProgressFragment)
+                .add(R.id.main_browse_fragment, trackSelectionFragment)
                 .hide(menuFragment)
                 .hide(settingFragment)
                 .hide(importProgressFragment)
+                .hide(trackSelectionFragment)
                 .hide(errorFragment)
                 .show(loadingFragment)
                 .hide(timeFragment)
@@ -191,6 +194,10 @@ class MainActivity : FragmentActivity() {
                  }
                  if (fragment is ImportProgressFragment) {
                      importProgressFragment = fragment
+                 }
+
+                  if (fragment is TrackSelectionFragment) {
+                     trackSelectionFragment = fragment
                  }
              }
         }
@@ -455,23 +462,6 @@ class MainActivity : FragmentActivity() {
             return super.onFling(e1, e2, velocityX, velocityY)
         }
 
-//        override fun onScroll(
-//            e1: MotionEvent?,
-//            e2: MotionEvent,
-//            distanceX: Float,
-//            distanceY: Float
-//        ): Boolean {
-//            val deltaY = e1?.y?.let { e2.y.minus(it) } ?: 0f
-//            val deltaX = e1?.x?.let { e2.x.minus(it) } ?: 0f
-//
-//            if (abs(deltaY) > abs(deltaX)) {
-//                if ((e1?.x ?: 0f) > windowManager.defaultDisplay.width * 2 / 3) {
-//                    adjustVolume(deltaY)
-//                }
-//            }
-//
-//            return super.onScroll(e1, e2, distanceX, distanceY)
-//        }
 
         private fun adjustVolume(deltaY: Float) {
             val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -491,21 +481,6 @@ class MainActivity : FragmentActivity() {
             Toast.makeText(context, "Volume: $newVolume / $maxVolume", Toast.LENGTH_SHORT).show()
         }
 
-//        private fun changeBrightness(deltaBrightness: Float) {
-//            brightness += deltaBrightness
-//            if (brightness < 0) {
-//                brightness = 0f
-//            } else if (brightness > 1) {
-//                brightness = 1f
-//            }
-//
-//            val layoutParams = windowManager.attributes
-//            layoutParams.screenBrightness = brightness
-//            windowManager.attributes = layoutParams
-//
-//            //You can add a toast to show the current brightness
-//            Toast.makeText(context, "Brightness: $brightness", Toast.LENGTH_SHORT).show()
-//        }
     }
 
     fun onPlayEnd() {
@@ -630,9 +605,7 @@ class MainActivity : FragmentActivity() {
             return
         }
 
-//        if (SP.channelNum) {
-//            channelFragment.show(channel)
-//        }
+
         channelFragment.show(channel)
     }
 
@@ -665,6 +638,11 @@ class MainActivity : FragmentActivity() {
 
         if (!settingFragment.isHidden) {
             hideSettingFragment()
+            return
+        }
+
+         if (!trackSelectionFragment.isHidden) {
+            hideTrackSelectionFragment()
             return
         }
 
@@ -706,6 +684,43 @@ class MainActivity : FragmentActivity() {
         showTime()
     }
 
+     private fun showAudioSelector() {
+        if (!menuFragment.isHidden || !settingFragment.isHidden) return
+        
+        val tracks = webFragment.getAudioTracks()
+        if (tracks.isEmpty()) {
+            Toast.makeText(this, "No audio tracks available", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        trackSelectionFragment.setTracks(tracks, object : TrackSelectionFragment.TrackSelectionListener {
+            override fun onTrackSelected(index: Int) {
+                val currentTv = TVList.getTVModel()
+                if (currentTv != null && currentTv.tv.uris.isNotEmpty()) {
+                    SP.setAudioTrack(currentTv.tv.uris[0], index)
+                }
+                webFragment.setAudioTrack(index)
+                hideTrackSelectionFragment()
+            }
+
+            override fun onDismiss() {
+                hideTrackSelectionFragment()
+            }
+        })
+        
+        supportFragmentManager.beginTransaction()
+            .show(trackSelectionFragment)
+            .commitNow()
+    }
+
+    private fun hideTrackSelectionFragment() {
+        if (trackSelectionFragment.isHidden) return
+        supportFragmentManager.beginTransaction()
+            .hide(trackSelectionFragment)
+            .commitNow()
+    }
+
+
     private fun showErrorFragment(msg: String) {
         errorFragment.show(msg)
         if (!errorFragment.isHidden) {
@@ -729,7 +744,7 @@ class MainActivity : FragmentActivity() {
     }
 
     fun onKey(keyCode: Int, event: KeyEvent?): Boolean {
-        Log.d(TAG, "keyCode $keyCode, repeat ${event?.repeatCount}")
+        Log.d(TAG, "onKey keyCode $keyCode, repeat ${event?.repeatCount}")
         when (keyCode) {
             KeyEvent.KEYCODE_0 -> {
                 showChannel("0")
@@ -824,32 +839,45 @@ class MainActivity : FragmentActivity() {
 
             KeyEvent.KEYCODE_ENTER -> {
                 showFragment(menuFragment)
+                return true
             }
 
-            KeyEvent.KEYCODE_DPAD_CENTER -> {
-                showFragment(menuFragment)
+             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden) {
+                    showFragment(menuFragment)
+                    return true
+                }
+                return !trackSelectionFragment.isHidden || !menuFragment.isHidden || !settingFragment.isHidden
+
+
+
+
             }
 
-            KeyEvent.KEYCODE_DPAD_UP -> {
-                channelUp()
+            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
+                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden) {
+                    channelUp()
+                    return true
+                }
+                // If any overlay is visible, don't let activity handle it as channel change
+                return !trackSelectionFragment.isHidden || !menuFragment.isHidden || !settingFragment.isHidden 
             }
 
-            KeyEvent.KEYCODE_CHANNEL_UP -> {
-                channelUp()
-            }
-
-            KeyEvent.KEYCODE_DPAD_DOWN -> {
-                channelDown()
-            }
-
-            KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-                channelDown()
+            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
+                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden) {
+                    channelDown()
+                    return true
+                }
+                // If any overlay is visible, don't let activity handle it as channel change
+                return !trackSelectionFragment.isHidden || !menuFragment.isHidden || !settingFragment.isHidden
             }
 
             KeyEvent.KEYCODE_DPAD_LEFT -> {
-                if (settingFragment.isHidden) {
+                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden) {
                     showFragment(menuFragment)
+                    return true
                 }
+                return !trackSelectionFragment.isHidden || !menuFragment.isHidden || !settingFragment.isHidden
             }
 
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -857,6 +885,19 @@ class MainActivity : FragmentActivity() {
                     showSetting()
                     return true
                 }
+                 // 1. If menu is open, let menu handle it for navigation (e.g. Categories -> Channel List)
+                if (!menuFragment.isHidden) {
+                    if (menuFragment.onKey(keyCode)) return true
+                }
+                
+                // 2. If nothing is open and playing, show audio selector
+                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden && !loadingFragment.isVisible) {
+                    showAudioSelector()
+                    return true
+                }
+                
+                return !trackSelectionFragment.isHidden || !menuFragment.isHidden || !settingFragment.isHidden
+
 //                return true
             }
         }
@@ -914,15 +955,17 @@ class MainActivity : FragmentActivity() {
         return false
     }
 
-    private fun startRootMonitoring() {
-        handler.post(object : Runnable {
+       private fun startRootMonitoring() {
+        rootHandler.post(object : Runnable {
             override fun run() {
                 val isRooted = RootCheckUtil.isDeviceRooted()
-                if (isRooted != wasRooted) {
-                    wasRooted = isRooted
-                    handleRootStatusChange(isRooted)
+                if (isRooted && !wasRooted) {
+                    Log.d(TAG, "Root access detected. Exiting app.")
+                    Toast.makeText(this@MainActivity, "Rooted device detected. App cannot run.", Toast.LENGTH_LONG).show()
+                    finishAffinity()
                 }
-                handler.postDelayed(this, checkInterval)
+                wasRooted = isRooted
+                rootHandler.postDelayed(this, checkInterval)
             }
         })
     }
