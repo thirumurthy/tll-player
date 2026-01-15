@@ -78,6 +78,8 @@ class WebFragment : Fragment() {
 
         val application = requireActivity().applicationContext as MyTVApplication
 
+        webView.setBackgroundColor(android.graphics.Color.BLACK)
+
         webView.layoutParams.width = application.shouldWidthPx()
         webView.layoutParams.height = application.shouldHeightPx()
         if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {

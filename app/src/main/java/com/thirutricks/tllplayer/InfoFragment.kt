@@ -68,9 +68,9 @@ class InfoFragment : Fragment() {
         binding.videoBadge.textSize = application.px2PxFont(binding.videoBadge.textSize)
         binding.audioBadge.textSize = application.px2PxFont(binding.audioBadge.textSize)
 
-        // Scale container
-        binding.container.layoutParams.width = application.shouldWidthPx()
-        binding.container.layoutParams.height = application.shouldHeightPx()
+        // Set container to full screen for proper overlay positioning
+        binding.container.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+        binding.container.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
 
         _binding!!.root.visibility = View.GONE
         _binding!!.root.alpha = 0f
