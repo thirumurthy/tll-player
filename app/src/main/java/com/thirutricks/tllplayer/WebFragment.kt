@@ -816,7 +816,19 @@ class WebFragment : Fragment() {
             }
         }
 
+         // Configure LoadControl for better buffering to prevent freezing
+        val loadControl = DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                30000,  // Min buffer increased to 30s
+                60000,  // Max buffer 60s
+                4000,   // Buffer for playback 4s (more stable start)
+                8000    // Buffer after rebuffer 8s (prevent rapid pauses)
+            )
+            .setPrioritizeTimeOverSizeThresholds(true) // Prioritize time-based buffering
+            .build()
+
         val builder = ExoPlayer.Builder(requireContext())
+            .setLoadControl(loadControl)
         
         // Configure Data Source with Headers
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
