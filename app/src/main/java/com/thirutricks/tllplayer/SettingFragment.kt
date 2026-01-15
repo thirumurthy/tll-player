@@ -66,6 +66,8 @@ class SettingFragment : Fragment() {
         binding.switchConfigAutoLoad.isChecked = SP.configAutoLoad
         binding.switchChannelCheck.isChecked = SP.channelCheck
         binding.switchWatchLast.isChecked = SP.watchLast
+         binding.switchForceHighQuality.isChecked = SP.forceHighQuality
+
 
         scaleForTV()
 
@@ -112,6 +114,7 @@ class SettingFragment : Fragment() {
             binding.switchConfigAutoLoad,
             binding.switchChannelCheck,
             binding.switchWatchLast,
+            binding.switchForceHighQuality,
             binding.confirmConfig,
             binding.confirmChannel,
             binding.clear,
@@ -158,7 +161,8 @@ class SettingFragment : Fragment() {
             binding.switchBootStartup,
             binding.switchConfigAutoLoad,
             binding.switchChannelCheck,
-            binding.switchWatchLast
+            binding.switchWatchLast,
+             binding.switchForceHighQuality
         )
 
         views.forEach { v ->
@@ -205,6 +209,11 @@ class SettingFragment : Fragment() {
 
          binding.switchWatchLast.setOnCheckedChangeListener { _, b ->
             SP.watchLast = b
+            (activity as MainActivity).settingActive()
+        }
+
+        binding.switchForceHighQuality.setOnCheckedChangeListener { _, b ->
+            SP.forceHighQuality = b
             (activity as MainActivity).settingActive()
         }
 

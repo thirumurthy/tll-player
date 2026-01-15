@@ -41,6 +41,9 @@ object SP {
 
     private const val KEY_WATCH_LAST = "watch_last"
 
+        private const val KEY_FORCE_HIGH_QUALITY = "force_high_quality"
+
+
     private lateinit var sp: SharedPreferences
 
     private var listener: OnSharedPreferenceChangeListener? = null
@@ -114,6 +117,10 @@ object SP {
      var watchLast: Boolean
         get() = sp.getBoolean(KEY_WATCH_LAST, true)
         set(value) = sp.edit().putBoolean(KEY_WATCH_LAST, value).apply()
+
+        var forceHighQuality: Boolean
+        get() = sp.getBoolean(KEY_FORCE_HIGH_QUALITY, true)
+        set(value) = sp.edit().putBoolean(KEY_FORCE_HIGH_QUALITY, value).apply()
 
     fun getLike(id: Int): Boolean {
         val stringSet = sp.getStringSet(KEY_LIKE, emptySet())

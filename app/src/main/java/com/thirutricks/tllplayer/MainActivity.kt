@@ -218,6 +218,7 @@ class MainActivity : FragmentActivity() {
         if (SP.watchLast && TVList.setPosition(SP.position)) {
             "Play last channel".showToast(Toast.LENGTH_LONG)
         } 
+
         // 2. Try Default Channel (if set and valid)
         // SP.channel is 1-based (0 = disabled/none), so convert to 0-based for list
         else if (SP.channel > 0 && TVList.setPosition(SP.channel - 1)) {
@@ -662,8 +663,8 @@ class MainActivity : FragmentActivity() {
             .commitNow()
     }
 
-    fun onKey(keyCode: Int): Boolean {
-        Log.d(TAG, "keyCode $keyCode")
+    fun onKey(keyCode: Int, event: KeyEvent?): Boolean {
+        Log.d(TAG, "keyCode $keyCode, repeat ${event?.repeatCount}")
         when (keyCode) {
             KeyEvent.KEYCODE_0 -> {
                 showChannel("0")
@@ -787,15 +788,29 @@ class MainActivity : FragmentActivity() {
             }
 
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                showSetting()
+                 if (event != null && event.isLongPress) {
+                    showSetting()
+                    return true
+                }
 //                return true
             }
         }
         return false
     }
 
+    override fun onKeyLongPress(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            showSetting()
+            return true
+        }
+        return super.onKeyLongPress(keyCode, event)
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (onKey(keyCode)) {
+       if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            event?.startTracking()
+        }
+        if (onKey(keyCode, event)) {
             return true
         }
 
