@@ -87,7 +87,7 @@ class WebFragment : Fragment() {
         webView.layoutParams.width = application.shouldWidthPx()
         webView.layoutParams.height = application.shouldHeightPx()
         if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
-            webView.getSettings().setAllowUniversalAccessFromFileURLs(true);
+            webView.settings.allowUniversalAccessFromFileURLs = true
         }
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
@@ -854,7 +854,7 @@ class WebFragment : Fragment() {
         
         exoPlayer = builder.build()
 
-                if (SP.forceHighQuality) {
+        if (SP.forceHighQuality) {
             val trackSelectionParameters = exoPlayer?.trackSelectionParameters
                 ?.buildUpon()
                 ?.setMaxVideoSizeSd() // Start with SD as baseline
@@ -863,6 +863,7 @@ class WebFragment : Fragment() {
             if (trackSelectionParameters != null) {
                 exoPlayer?.trackSelectionParameters = trackSelectionParameters
             }
+        }
 
         
         exoPlayer?.addListener(object : Player.Listener {
