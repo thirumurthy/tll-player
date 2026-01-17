@@ -47,6 +47,7 @@ class InfoFragment : Fragment() {
 
         // Scale info card dimensions
         binding.infoCard.layoutParams.width = application.px2Px(binding.infoCard.layoutParams.width)
+        binding.infoCard.layoutParams.height = application.px2Px(binding.infoCard.layoutParams.height)
         val layoutParams = binding.infoCard.layoutParams as ViewGroup.MarginLayoutParams
         layoutParams.bottomMargin = application.px2Px(binding.infoCard.marginBottom)
         binding.infoCard.layoutParams = layoutParams
@@ -155,10 +156,14 @@ class InfoFragment : Fragment() {
             }
         }
 
-        // Reset auto-hide timer
+        // Reset auto-hide timer and show with smooth fade-in
         handler.removeCallbacks(removeRunnable)
         binding.root.visibility = View.VISIBLE
-        binding.root.animate().alpha(1f).setDuration(300).start()
+        binding.root.alpha = 0f
+        binding.root.animate()
+            .alpha(1f)
+            .setDuration(300)
+            .start()
         handler.postDelayed(removeRunnable, delay)
     }
 
@@ -233,9 +238,14 @@ class InfoFragment : Fragment() {
 
     private val removeRunnable = Runnable {
         stopDateTimeUpdater()
-        binding.root.animate().alpha(0f).setDuration(300).withEndAction {
-            binding.root.visibility = View.GONE
-        }.start()
+        // Simple fade animation without any layout changes
+        binding.root.animate()
+            .alpha(0f)
+            .setDuration(300)
+            .withEndAction {
+                binding.root.visibility = View.GONE
+            }
+            .start()
     }
 
     override fun onDestroyView() {
