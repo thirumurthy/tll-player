@@ -41,6 +41,7 @@ import java.util.UUID
 import android.util.Base64
 import java.nio.charset.StandardCharsets
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import org.json.JSONObject
 import org.json.JSONArray
 
@@ -1047,7 +1048,7 @@ class WebFragment : Fragment() {
     }
 
     companion object {
-        private const val TAG = "WebFragment"
+        const val TAG = "WebFragment"
     }
 
     private fun performNetworkRequest(url: String): String? {

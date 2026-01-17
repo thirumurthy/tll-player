@@ -18,6 +18,9 @@ import com.thirutricks.tllplayer.OrderPreferenceManager
 import com.thirutricks.tllplayer.RenameDialogFragment
 import android.widget.Toast
 import android.view.MotionEvent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.Collections
 import kotlinx.coroutines.launch
 
@@ -351,8 +354,8 @@ class GroupAdapter(
                 Toast.makeText(context, "Category renamed", Toast.LENGTH_SHORT).show()
                 // Trigger refresh to apply rename
                 kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
-                com.thirutricks.tllplayer.models.TVList.refreshModels()
-            }
+                    com.thirutricks.tllplayer.models.TVList.refreshModels()
+                }
                 // Update the adapter
                 update(tvGroupModel)
             }
