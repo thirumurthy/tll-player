@@ -700,14 +700,18 @@ class WebFragment : Fragment() {
 
     fun play(tvModel: TVModel) {
         this.tvModel = tvModel
-        val url = tvModel.videoUrl.value as? String ?: return
+        val url = tvModel.videoUrl.value as? String
+        if (url.isNullOrEmpty()) {
+            Log.e(TAG, "Invalid URL")
+            tvModel?.setErrInfo("Invalid video URL")
+            return
+        }
 
         Log.i(TAG, "play ${tvModel.tv.title} $url")
         savedAudioTrackToApply = SP.getAudioTrack(url)
         Log.i(TAG, "Saved audio track to apply: $savedAudioTrackToApply")
 
-        if (url.endsWith(".m3u8", ignoreCase = true) || url.endsWith(".ts", ignoreCase = true) ||
-            url.endsWith(".mpd", ignoreCase = true) ||
+        if (STREAMING_EXTENSIONS.any { url.endsWith(it, ignoreCase = true) }||
             url.startsWith("rtmp://") || url.startsWith("rtsp://") || url.contains("?|")) {
             
             webView.visibility = View.GONE
@@ -726,10 +730,15 @@ class WebFragment : Fragment() {
         if (url.contains("yupptv.com") || url.contains("athavantv.com") || url.contains("ttn.tv") || url.contains("youtube.com")) {
             CoroutineScope(Dispatchers.IO).launch {
                 val result = performNetworkRequest(url)
-                if(result!=null){
+                if(result != null){
                     withContext(Dispatchers.Main) {
                         val encodedUrl = java.net.URLEncoder.encode(result, "UTF-8")
-                        webView.loadUrl("file:///android_asset/tll_player.html?channel=$encodedUrl")
+                        webView.loadUrl("$ASSET_PLAYER_URL$encodedUrl")
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        tvModel?.setErrInfo("Failed to load stream")
+                        Toast.makeText(context, "Stream not available", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -820,8 +829,8 @@ class WebFragment : Fragment() {
          // Configure LoadControl for better buffering to prevent freezing
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                30000,  // Min buffer increased to 30s
-                60000,  // Max buffer 60s
+                MIN_BUFFER_MS ,  // Min buffer increased to 30s
+                MAX_BUFFER_MS ,  // Max buffer 60s
                 4000,   // Buffer for playback 4s (more stable start)
                 8000    // Buffer after rebuffer 8s (prevent rapid pauses)
             )
@@ -1046,10 +1055,19 @@ class WebFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         releasePlayer()
+        _binding = null
     }
 
     companion object {
         const val TAG = "WebFragment"
+         // Add these constants
+        private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        private const val ASSET_PLAYER_URL = "file:///android_asset/tll_player.html?channel="
+        private const val MIN_BUFFER_MS = 30000
+        private const val MAX_BUFFER_MS = 60000
+        
+        // File extensions
+        private val STREAMING_EXTENSIONS = listOf(".m3u8", ".ts", ".mpd")
     }
 
     private fun performNetworkRequest(url: String): String? {
@@ -1120,7 +1138,11 @@ class WebFragment : Fragment() {
 
             }
         } catch (e: IOException) {
-            println("Error during the API call: ${e.message}")
+            Log.e(TAG, "Network error: ${e.message}", e)
+            // Inform the UI about the error
+            CoroutineScope(Dispatchers.Main).launch {
+                tvModel?.setErrInfo("Network error: ${e.message}")
+            }
         }
         return m3u8Link
     }
