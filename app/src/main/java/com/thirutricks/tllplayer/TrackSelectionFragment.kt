@@ -9,7 +9,7 @@ import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.codesrahul.exclusivetv.databinding.FragmentTrackSelectionBinding
+import com.thirutricks.tllplayer.databinding.FragmentTrackSelectionBinding
 
 class TrackSelectionFragment : Fragment() {
     private var _binding: FragmentTrackSelectionBinding? = null

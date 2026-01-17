@@ -25,7 +25,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.thirutricks.tllplayer.models.TVList
-import com.codesrahul.exclusivetv.models.TVModel
+import com.thirutricks.tllplayer.models.TVModel
 import com.thirutricks.tllplayer.RootCheckUtil
 
 
