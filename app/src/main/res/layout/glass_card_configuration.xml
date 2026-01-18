@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CONFIGURATION"
+        android:textSize="@dimen/settings_section_title_size"
+        android:textColor="@color/accent_blue"
+        android:textStyle="bold"
+        android:layout_marginBottom="@dimen/tv_item_spacing"
+        android:fontFamily="sans-serif-medium" />
+
+    <!-- Server Configuration Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="@dimen/tv_item_spacing">
+
+        <Button
+            android:id="@+id/qrcode"
+            android:layout_width="140dp"
+            android:layout_height="@dimen/settings_button_height"
+            android:text="@string/server"
+            android:background="@drawable/tv_button_glass"
+            android:textColor="@color/info_text_primary"
+            android:textSize="@dimen/tv_text_size_small"
+            android:fontFamily="sans-serif-medium" />
+
+        <TextView
+            android:id="@+id/server"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="@color/info_text_secondary"
+            android:textSize="@dimen/tv_text_size_small"
+            android:layout_marginStart="@dimen/tv_item_spacing"
+            android:fontFamily="sans-serif" />
+    </LinearLayout>
+
+    <!-- Channels Configuration Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="@dimen/tv_item_spacing">
+
+        <Button
+            android:id="@+id/confirm_config"
+            android:layout_width="140dp"
+            android:layout_height="@dimen/settings_button_height"
+            android:text="@string/channels"
+            android:background="@drawable/tv_button_glass"
+            android:textColor="@color/info_text_primary"
+            android:textSize="@dimen/tv_text_size_small"
+            android:fontFamily="sans-serif-medium" />
+
+        <EditText
+            android:id="@+id/config"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="@dimen/settings_button_height"
+            android:layout_marginStart="@dimen/tv_item_spacing"
+            android:gravity="center_vertical"
+            android:hint="@string/channels"
+            android:textColorHint="@color/info_text_hint"
+            android:textColor="@color/info_text_primary"
+            android:background="@drawable/tv_input_glass"
+            android:paddingStart="@dimen/tv_item_spacing"
+            android:paddingEnd="@dimen/tv_item_spacing"
+            android:fontFamily="sans-serif" />
+    </LinearLayout>
+
+    <!-- Channel Configuration Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/confirm_channel"
+            android:layout_width="140dp"
+            android:layout_height="@dimen/settings_button_height"
+            android:text="@string/channel"
+            android:background="@drawable/tv_button_glass"
+            android:textColor="@color/info_text_primary"
+            android:textSize="@dimen/tv_text_size_small"
+            android:fontFamily="sans-serif-medium" />
+
+        <EditText
+            android:id="@+id/channel"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="@dimen/settings_button_height"
+            android:layout_marginStart="@dimen/tv_item_spacing"
+            android:gravity="center_vertical"
+            android:hint="@string/channel"
+            android:textColorHint="@color/info_text_hint"
+            android:textColor="@color/info_text_primary"
+            android:background="@drawable/tv_input_glass"
+            android:paddingStart="@dimen/tv_item_spacing"
+            android:paddingEnd="@dimen/tv_item_spacing"
+            android:fontFamily="sans-serif" />
+    </LinearLayout>
+
+</LinearLayout>

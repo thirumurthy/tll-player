@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!-- Modern Toggle Switch Style -->
+    <style name="ModernToggleSwitch" parent="Widget.AppCompat.CompoundButton.Switch">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:textColor">@color/info_text_primary</item>
+        <item name="android:textSize">@dimen/tv_text_size_medium</item>
+        <item name="android:paddingStart">@dimen/toggle_padding</item>
+        <item name="android:paddingEnd">@dimen/toggle_padding</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
+        <item name="android:minHeight">@dimen/tv_min_touch_target</item>
+    </style>
+    
+    <!-- Glass Card Button Style -->
+    <style name="GlassCardButton" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/glass_card_selector</item>
+        <item name="android:textColor">@color/info_text_primary</item>
+        <item name="android:textSize">@dimen/tv_text_size_small</item>
+        <item name="android:minHeight">@dimen/tv_min_touch_target</item>
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
+    </style>
+    
+    <!-- Glass Card EditText Style -->
+    <style name="GlassCardEditText" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/glass_card_selector</item>
+        <item name="android:textColor">@color/info_text_primary</item>
+        <item name="android:textColorHint">@color/info_text_secondary</item>
+        <item name="android:textSize">@dimen/tv_text_size_medium</item>
+        <item name="android:minHeight">@dimen/tv_min_touch_target</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:focusable">true</item>
+        <item name="android:focusableInTouchMode">true</item>
+    </style>
+    
+    <!-- Section Header Style -->
+    <style name="SectionHeader">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/focus</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginBottom">@dimen/tv_item_spacing</item>
+    </style>
+
+</resources>

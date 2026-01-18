@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Focused and enabled state -->
+    <item android:state_focused="true" android:state_checked="true">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/focus" />
+                    <corners android:radius="16dp" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <stroke android:width="2dp" android:color="@color/glass_border_focused" />
+                    <corners android:radius="16dp" />
+                    <solid android:color="@android:color/transparent" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    
+    <!-- Focused and disabled state -->
+    <item android:state_focused="true" android:state_checked="false">
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/glass_card_background_focused" />
+                    <corners android:radius="16dp" />
+                </shape>
+            </item>
+            <item>
+                <shape android:shape="rectangle">
+                    <stroke android:width="2dp" android:color="@color/glass_border_focused" />
+                    <corners android:radius="16dp" />
+                    <solid android:color="@android:color/transparent" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    
+    <!-- Enabled state (not focused) -->
+    <item android:state_checked="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/focus" />
+            <corners android:radius="16dp" />
+            <stroke android:width="1dp" android:color="@color/glass_border" />
+        </shape>
+    </item>
+    
+    <!-- Disabled state (not focused) -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/glass_card_background" />
+            <corners android:radius="16dp" />
+            <stroke android:width="1dp" android:color="@color/glass_border" />
+        </shape>
+    </item>
+</selector>

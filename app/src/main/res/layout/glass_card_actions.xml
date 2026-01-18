@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ACTIONS"
+        android:textSize="@dimen/settings_section_title_size"
+        android:textColor="@color/accent_blue"
+        android:textStyle="bold"
+        android:layout_marginBottom="@dimen/tv_item_spacing"
+        android:fontFamily="sans-serif-medium" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="4">
+
+        <Button
+            android:id="@+id/clear"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/settings_item_height"
+            android:layout_weight="1"
+            android:text="@string/clear"
+            android:background="@drawable/tv_button_glass"
+            android:textColor="@color/info_text_primary"
+            android:textSize="@dimen/tv_text_size_small"
+            android:layout_marginEnd="8dp"
+            android:fontFamily="sans-serif-medium" />
+
+        <Button
+            android:id="@+id/reset_order"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/settings_item_height"
+            android:layout_weight="1"
+            android:text="Reset Order"
+            android:background="@drawable/tv_button_glass"
+            android:textColor="@color/info_text_primary"
+            android:textSize="@dimen/tv_text_size_small"
+            android:layout_marginEnd="8dp"
+            android:fontFamily="sans-serif-medium" />
+
+        <Button
+            android:id="@+id/appreciate"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/settings_item_height"
+            android:layout_weight="1"
+            android:text="@string/appreciate"
+            android:background="@drawable/tv_button_glass"
+            android:textColor="@color/info_text_primary"
+            android:textSize="@dimen/tv_text_size_small"
+            android:layout_marginEnd="8dp"
+            android:fontFamily="sans-serif-medium" />
+
+        <Button
+            android:id="@+id/exit"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/settings_item_height"
+            android:layout_weight="1"
+            android:text="@string/exit"
+            android:background="@drawable/tv_button_glass"
+            android:textColor="@color/info_text_primary"
+            android:textSize="@dimen/tv_text_size_small"
+            android:fontFamily="sans-serif-medium" />
+    </LinearLayout>
+
+    <!-- Hidden version check section (keeping for compatibility) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <Button
+            android:id="@+id/check_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/check_version" />
+
+        <TextView
+            android:id="@+id/version_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+</LinearLayout>

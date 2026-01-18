@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base dark background with transparency -->
+    <item>
+        <shape>
+            <solid android:color="#B3000000" />
+        </shape>
+    </item>
+    
+    <!-- Gradient overlay for depth -->
+    <item>
+        <shape>
+            <gradient
+                android:startColor="#1A1A1A1A"
+                android:centerColor="#33000000"
+                android:endColor="#4D000000"
+                android:angle="135"
+                android:type="linear" />
+        </shape>
+    </item>
+</layer-list>

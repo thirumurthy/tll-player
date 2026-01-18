@@ -15,6 +15,10 @@ import androidx.fragment.app.Fragment
 import com.thirutricks.tllplayer.databinding.SettingBinding
 import com.thirutricks.tllplayer.models.TVList
 import com.thirutricks.tllplayer.ui.TvUiUtils
+import com.thirutricks.tllplayer.ui.ModernToggleSwitch
+import com.thirutricks.tllplayer.ui.GlassCard
+import com.thirutricks.tllplayer.ui.GlassyBackgroundView
+import com.thirutricks.tllplayer.ui.SettingsFocusManager
 import com.thirutricks.tllplayer.OrderPreferenceManager
 import com.thirutricks.tllplayer.R
 import android.widget.Toast
@@ -27,6 +31,7 @@ class SettingFragment : Fragment() {
     private lateinit var uri: Uri
     private lateinit var updateManager: UpdateManager
     private var tvUiUtils: TvUiUtils? = null
+    private lateinit var settingsFocusManager: SettingsFocusManager
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,8 +44,13 @@ class SettingFragment : Fragment() {
         tvUiUtils = TvUiUtils(requireContext())
         tvUiUtils?.initSounds(R.raw.focus, R.raw.click)  // SOUND FEEDBACK
 
+        // Initialize SettingsFocusManager
+        settingsFocusManager = SettingsFocusManager(requireContext())
+        settingsFocusManager.initialize(tvUiUtils!!)
+
         setupUI()
         setupListeners()
+        setupGlassyBackground()
         setupFocusAnimations()  // ⭐ ADD TIVIMATE STYLE FOCUS EFFECTS
 
         updateManager = UpdateManager(requireContext(), requireContext().appVersionCode)
@@ -50,10 +60,9 @@ class SettingFragment : Fragment() {
     }
 
     // ------------------------------------------------------------
-    //  TIVIMATE STYLE UI SETUP
+    //  MODERN UI SETUP
     // ------------------------------------------------------------
     private fun setupUI() {
-
         val ctx = requireContext()
 
         binding.name.text = getString(R.string.app_name)
@@ -66,10 +75,7 @@ class SettingFragment : Fragment() {
         binding.switchConfigAutoLoad.isChecked = SP.configAutoLoad
         binding.switchChannelCheck.isChecked = SP.channelCheck
         binding.switchWatchLast.isChecked = SP.watchLast
-         binding.switchForceHighQuality.isChecked = SP.forceHighQuality
-
-
-        scaleForTV()
+        binding.switchForceHighQuality.isChecked = SP.forceHighQuality
 
         // Add content descriptions for accessibility
         binding.switchChannelReversal.contentDescription = "Toggle channel reversal"
@@ -85,12 +91,6 @@ class SettingFragment : Fragment() {
         binding.appreciate.contentDescription = "Show appreciation message"
         binding.exit.contentDescription = "Exit the application"
 
-//        binding.content.apply {
-//            isFocusable = true
-//            isFocusableInTouchMode = true
-//            requestFocus()
-//        }
-
         // Focus on Default Channel input as requested
         binding.channel.apply {
             isFocusable = true
@@ -102,11 +102,35 @@ class SettingFragment : Fragment() {
 
 
     // ------------------------------------------------------------
-    //  TIVIMATE FOCUS ANIMATION (SCALE + SHADOW)
+    //  GLASSMORPHISM BACKGROUND SETUP
+    // ------------------------------------------------------------
+    private fun setupGlassyBackground() {
+        val glassyBackground = binding.root.findViewById<GlassyBackgroundView>(R.id.glassy_background)
+        glassyBackground?.let {
+            it.setGlassIntensity(0.8f)
+            it.setBlurEnabled(true)
+        }
+        
+        // Initialize glass cards with audio feedback
+        val headerCard = binding.root.findViewById<GlassCard>(R.id.header_card)
+        val configCard = binding.root.findViewById<GlassCard>(R.id.configuration_card)
+        val preferencesCard = binding.root.findViewById<GlassCard>(R.id.preferences_card)
+        val actionsCard = binding.root.findViewById<GlassCard>(R.id.actions_card)
+        
+        listOf(headerCard, configCard, preferencesCard, actionsCard).forEach { card ->
+            card?.initializeWithAudio(tvUiUtils!!)
+        }
+    }
+
+    // ------------------------------------------------------------
+    //  MODERN FOCUS ANIMATION SYSTEM
     // ------------------------------------------------------------
     private fun setupFocusAnimations() {
-
-        val focusViews = listOf(
+        // Setup focus handling for the entire settings layout
+        settingsFocusManager.setupSettingsFocus(binding.content)
+        
+        // Initialize modern toggle switches with audio feedback
+        val toggleSwitches = listOf(
             binding.switchChannelReversal,
             binding.switchChannelNum,
             binding.switchTime,
@@ -114,63 +138,16 @@ class SettingFragment : Fragment() {
             binding.switchConfigAutoLoad,
             binding.switchChannelCheck,
             binding.switchWatchLast,
-            binding.switchForceHighQuality,
-            binding.confirmConfig,
-            binding.confirmChannel,
-            binding.clear,
-            binding.resetOrder,
-            binding.appreciate,
-            binding.exit
+            binding.switchForceHighQuality
         )
-
-        focusViews.forEach { v ->
-
-            v.setOnFocusChangeListener { view, hasFocus ->
-                if (hasFocus) {
-                    view.animate().scaleX(1.10f).scaleY(1.10f)
-                        .setDuration(120).start()
-                    view.elevation = 24f
-                } else {
-                    view.animate().scaleX(1f).scaleY(1f)
-                        .setDuration(120).start()
-                    view.elevation = 0f
-                }
+        
+        toggleSwitches.forEach { switch ->
+            if (switch is ModernToggleSwitch) {
+                switch.initializeWithAudio(tvUiUtils!!)
             }
-
-            // REMOVE any sound or click override
-            v.setOnTouchListener(null)
         }
     }
 
-
-    // ------------------------------------------------------------
-    //  BASIC TV SCALING
-    // ------------------------------------------------------------
-    private fun scaleForTV() {
-        val scale = 1.12f
-
-        binding.content.apply {
-            scaleX = scale
-            scaleY = scale
-        }
-
-        val views = listOf(
-            binding.switchChannelReversal,
-            binding.switchChannelNum,
-            binding.switchTime,
-            binding.switchBootStartup,
-            binding.switchConfigAutoLoad,
-            binding.switchChannelCheck,
-            binding.switchWatchLast,
-             binding.switchForceHighQuality
-        )
-
-        views.forEach { v ->
-            try {
-                v.setTextSize(TypedValue.COMPLEX_UNIT_PX, v.textSize * scale)
-            } catch (_: Exception) { }
-        }
-    }
 
     // ------------------------------------------------------------
     //  LISTENERS (UNCUT)
@@ -452,6 +429,10 @@ class SettingFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        
+        // Cleanup focus animations
+        settingsFocusManager.cleanup(binding.content)
+        
         _binding = null
     }
 

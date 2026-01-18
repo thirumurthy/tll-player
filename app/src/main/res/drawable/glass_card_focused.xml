@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Enhanced glass background when focused -->
+    <item>
+        <shape>
+            <solid android:color="#40FFFFFF" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+    
+    <!-- Stronger top highlight for focused state -->
+    <item android:top="0dp" android:height="24dp">
+        <shape>
+            <gradient
+                android:startColor="#33FFFFFF"
+                android:endColor="@android:color/transparent"
+                android:angle="90" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+    
+    <!-- Enhanced border for focus -->
+    <item>
+        <shape>
+            <stroke 
+                android:width="2dp" 
+                android:color="#66FFFFFF" />
+            <corners android:radius="16dp" />
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+</layer-list>
