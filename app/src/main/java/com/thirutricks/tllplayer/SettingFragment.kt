@@ -19,6 +19,9 @@ import com.thirutricks.tllplayer.ui.ModernToggleSwitch
 import com.thirutricks.tllplayer.ui.GlassCard
 import com.thirutricks.tllplayer.ui.GlassyBackgroundView
 import com.thirutricks.tllplayer.ui.SettingsFocusManager
+import com.thirutricks.tllplayer.ui.ResponsiveLayoutManager
+import com.thirutricks.tllplayer.ui.SettingsAccessibilityManager
+import com.thirutricks.tllplayer.ui.PerformanceOptimizationManager
 import com.thirutricks.tllplayer.OrderPreferenceManager
 import com.thirutricks.tllplayer.R
 import android.widget.Toast
@@ -32,6 +35,9 @@ class SettingFragment : Fragment() {
     private lateinit var updateManager: UpdateManager
     private var tvUiUtils: TvUiUtils? = null
     private lateinit var settingsFocusManager: SettingsFocusManager
+    private lateinit var responsiveLayoutManager: ResponsiveLayoutManager
+    private lateinit var accessibilityManager: SettingsAccessibilityManager
+    private lateinit var performanceManager: PerformanceOptimizationManager
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -44,6 +50,15 @@ class SettingFragment : Fragment() {
         tvUiUtils = TvUiUtils(requireContext())
         tvUiUtils?.initSounds(R.raw.focus, R.raw.click)  // SOUND FEEDBACK
 
+        // Initialize ResponsiveLayoutManager
+        responsiveLayoutManager = ResponsiveLayoutManager(requireContext())
+
+        // Initialize AccessibilityManager
+        accessibilityManager = SettingsAccessibilityManager(requireContext())
+
+        // Initialize PerformanceOptimizationManager
+        performanceManager = PerformanceOptimizationManager(requireContext())
+
         // Initialize SettingsFocusManager
         settingsFocusManager = SettingsFocusManager(requireContext())
         settingsFocusManager.initialize(tvUiUtils!!)
@@ -52,6 +67,9 @@ class SettingFragment : Fragment() {
         setupListeners()
         setupGlassyBackground()
         setupFocusAnimations()  // ⭐ ADD TIVIMATE STYLE FOCUS EFFECTS
+        setupResponsiveLayout() // ⭐ ADD RESPONSIVE LAYOUT OPTIMIZATION
+        setupAccessibility()    // ⭐ ADD ACCESSIBILITY COMPLIANCE
+        setupPerformanceOptimization() // ⭐ ADD PERFORMANCE OPTIMIZATION
 
         updateManager = UpdateManager(requireContext(), requireContext().appVersionCode)
         (activity as MainActivity).ready(TAG)
@@ -146,6 +164,111 @@ class SettingFragment : Fragment() {
                 switch.initializeWithAudio(tvUiUtils!!)
             }
         }
+    }
+
+
+    // ------------------------------------------------------------
+    //  PERFORMANCE OPTIMIZATION AND ADAPTIVE RENDERING
+    // ------------------------------------------------------------
+    private fun setupPerformanceOptimization() {
+        val content = binding.content
+        val glassyBackground = binding.root.findViewById<GlassyBackgroundView>(R.id.glassy_background)
+        
+        // Start performance monitoring
+        performanceManager.startMonitoring(content)
+        
+        // Apply performance optimizations based on device capabilities
+        performanceManager.applyPerformanceOptimizations(content)
+        
+        // Optimize GPU usage for blur effects
+        performanceManager.optimizeGpuUsage(glassyBackground)
+        
+        // Create fallback rendering for lower-end devices
+        performanceManager.createFallbackRendering(content)
+        
+        // Log performance status
+        val isLowEnd = performanceManager.isLowEndDevice()
+        Log.d(TAG, "Performance optimization applied. Low-end device: $isLowEnd")
+    }
+
+
+    // ------------------------------------------------------------
+    //  ACCESSIBILITY AND COMPLIANCE
+    // ------------------------------------------------------------
+    private fun setupAccessibility() {
+        val content = binding.content
+        
+        // Apply comprehensive accessibility enhancements
+        accessibilityManager.applyAccessibilityEnhancements(content)
+        
+        // Setup keyboard navigation support
+        accessibilityManager.setupKeyboardNavigation(content)
+        
+        // Log accessibility status for debugging
+        val isAccessibilityEnabled = accessibilityManager.isAccessibilityEnabled()
+        val isHighContrast = accessibilityManager.isHighContrastMode()
+        
+        Log.d(TAG, "Accessibility enabled: $isAccessibilityEnabled, High contrast: $isHighContrast")
+        
+        // Apply additional enhancements based on accessibility state
+        if (isAccessibilityEnabled) {
+            enhanceForScreenReaders()
+        }
+        
+        if (isHighContrast) {
+            applyHighContrastOptimizations()
+        }
+    }
+
+    private fun enhanceForScreenReaders() {
+        // Add comprehensive content descriptions
+        binding.name.contentDescription = "Application name: ${binding.name.text}"
+        binding.version.contentDescription = "Application version: ${binding.version.text}"
+        
+        // Enhance input field descriptions
+        binding.config.contentDescription = "Channel configuration URL input field"
+        binding.channel.contentDescription = "Default channel number input field"
+        binding.server.contentDescription = "Server address display"
+        
+        // Add section announcements
+        binding.root.announceForAccessibility("Settings page loaded with configuration, preferences, and action sections")
+    }
+
+    private fun applyHighContrastOptimizations() {
+        // Additional high contrast optimizations beyond the AccessibilityManager
+        val resources = requireContext().resources
+        
+        // Increase focus indicator prominence
+        settingsFocusManager.setHighContrastMode(true)
+        
+        // Ensure glass effects don't interfere with high contrast
+        val glassyBackground = binding.root.findViewById<GlassyBackgroundView>(R.id.glassy_background)
+        glassyBackground?.setBlurEnabled(false) // Disable blur in high contrast mode
+    }
+
+
+    // ------------------------------------------------------------
+    //  RESPONSIVE LAYOUT OPTIMIZATION
+    // ------------------------------------------------------------
+    private fun setupResponsiveLayout() {
+        val container = binding.container
+        val content = binding.content
+        
+        // Apply TV-specific container constraints
+        responsiveLayoutManager.applyTVContainerConstraints(container)
+        
+        // Apply adaptive layout based on screen characteristics
+        responsiveLayoutManager.applyAdaptiveLayout(content)
+        
+        // Apply density-specific optimizations
+        responsiveLayoutManager.applyDensityOptimizations(content)
+        
+        // Log screen characteristics for debugging
+        val screenCategory = responsiveLayoutManager.getScreenSizeCategory()
+        val scaleFactor = responsiveLayoutManager.calculateScaleFactor()
+        val isTv = responsiveLayoutManager.isTVDevice()
+        
+        Log.d(TAG, "Screen category: $screenCategory, Scale factor: $scaleFactor, Is TV: $isTv")
     }
 
 
@@ -432,6 +555,9 @@ class SettingFragment : Fragment() {
         
         // Cleanup focus animations
         settingsFocusManager.cleanup(binding.content)
+        
+        // Stop performance monitoring
+        performanceManager.stopMonitoring()
         
         _binding = null
     }

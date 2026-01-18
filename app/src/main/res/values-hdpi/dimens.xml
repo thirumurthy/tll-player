@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- High Density Screen Optimizations -->
+    
+    <!-- Glass Card Dimensions - Slightly larger for HDPI -->
+    <dimen name="glass_card_padding">28dp</dimen>
+    <dimen name="glass_card_margin">18dp</dimen>
+    <dimen name="glass_card_elevation">10dp</dimen>
+    <dimen name="glass_card_corner_radius">18dp</dimen>
+    
+    <!-- Focus Animation Dimensions -->
+    <dimen name="focus_elevation">18dp</dimen>
+    <dimen name="normal_elevation">10dp</dimen>
+    
+    <!-- TV UI Dimensions - Optimized for HDPI -->
+    <dimen name="tv_min_touch_target">52dp</dimen>
+    <dimen name="tv_text_size_large">20sp</dimen>
+    <dimen name="tv_text_size_medium">18sp</dimen>
+    <dimen name="tv_text_size_small">16sp</dimen>
+    <dimen name="tv_section_spacing">36dp</dimen>
+    <dimen name="tv_item_spacing">18dp</dimen>
+    
+    <!-- Toggle Switch Dimensions -->
+    <dimen name="toggle_track_width">56dp</dimen>
+    <dimen name="toggle_track_height">36dp</dimen>
+    <dimen name="toggle_thumb_size">32dp</dimen>
+    <dimen name="toggle_thumb_focused_size">40dp</dimen>
+    <dimen name="toggle_padding">10dp</dimen>
+    
+    <!-- Settings Layout Dimensions -->
+    <dimen name="settings_container_padding">36dp</dimen>
+    <dimen name="glass_card_spacing">24dp</dimen>
+    <dimen name="settings_section_title_size">15sp</dimen>
+    <dimen name="settings_item_height">60dp</dimen>
+    <dimen name="settings_button_height">52dp</dimen>
+</resources>

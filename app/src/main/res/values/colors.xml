@@ -75,5 +75,9 @@
     <!-- Additional UI Colors -->
     <color name="accent_blue">#00B0FF</color> <!-- Bright blue for section headers -->
     <color name="info_text_hint">#99FFFFFF</color> <!-- 60% white for hints -->
+    
+    <!-- Fallback colors for low-end devices -->
+    <color name="glass_card_background_fallback">#E6263238</color> <!-- 90% dark blue-gray -->
+    <color name="glass_border_fallback">#4DFFFFFF</color> <!-- 30% white border -->
 
 </resources>

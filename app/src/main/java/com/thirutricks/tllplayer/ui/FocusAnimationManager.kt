@@ -29,6 +29,10 @@ class FocusAnimationManager(private val context: Context) {
         private const val ENHANCED_SCALE = 1.12f
         private const val BUTTON_SCALE = 1.06f
         private const val CARD_SCALE = 1.03f
+        
+        // High contrast mode settings
+        private const val HIGH_CONTRAST_SCALE = 1.15f
+        private const val HIGH_CONTRAST_ELEVATION = 24f
     }
 
     private val interpolator = AccelerateDecelerateInterpolator()
@@ -36,6 +40,7 @@ class FocusAnimationManager(private val context: Context) {
     private val decelerateInterpolator = DecelerateInterpolator()
     
     private var tvUiUtils: TvUiUtils? = null
+    private var isHighContrastMode = false
 
     /**
      * Initialize with TvUiUtils for audio feedback
@@ -52,6 +57,13 @@ class FocusAnimationManager(private val context: Context) {
     }
 
     /**
+     * Set high contrast mode for enhanced focus indicators
+     */
+    fun setHighContrastMode(enabled: Boolean) {
+        isHighContrastMode = enabled
+    }
+
+    /**
      * Apply focus animation with custom scale values
      */
     fun applyCustomFocusAnimation(
@@ -60,15 +72,25 @@ class FocusAnimationManager(private val context: Context) {
         focusScale: Float = FOCUS_SCALE,
         animationDuration: Long = ANIMATION_DURATION
     ) {
-        val targetScale = if (hasFocus) focusScale else NORMAL_SCALE
-        val targetElevation = if (hasFocus) FOCUS_ELEVATION else NORMAL_ELEVATION
+        // Adjust scale and elevation for high contrast mode
+        val adjustedScale = if (isHighContrastMode && hasFocus) {
+            maxOf(focusScale, HIGH_CONTRAST_SCALE)
+        } else {
+            if (hasFocus) focusScale else NORMAL_SCALE
+        }
+        
+        val adjustedElevation = if (isHighContrastMode && hasFocus) {
+            HIGH_CONTRAST_ELEVATION
+        } else {
+            if (hasFocus) FOCUS_ELEVATION else NORMAL_ELEVATION
+        }
 
         // Cancel any existing animations
         view.animate().cancel()
 
-        val scaleXAnimator = ObjectAnimator.ofFloat(view, "scaleX", targetScale)
-        val scaleYAnimator = ObjectAnimator.ofFloat(view, "scaleY", targetScale)
-        val elevationAnimator = ObjectAnimator.ofFloat(view, "elevation", targetElevation)
+        val scaleXAnimator = ObjectAnimator.ofFloat(view, "scaleX", adjustedScale)
+        val scaleYAnimator = ObjectAnimator.ofFloat(view, "scaleY", adjustedScale)
+        val elevationAnimator = ObjectAnimator.ofFloat(view, "elevation", adjustedElevation)
 
         val animatorSet = AnimatorSet().apply {
             playTogether(scaleXAnimator, scaleYAnimator, elevationAnimator)

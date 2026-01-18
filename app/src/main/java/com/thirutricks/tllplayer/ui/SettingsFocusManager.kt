@@ -15,6 +15,7 @@ class SettingsFocusManager(private val context: Context) {
 
     private val focusAnimationManager = FocusAnimationManager(context)
     private var tvUiUtils: TvUiUtils? = null
+    private var isHighContrastMode = false
 
     /**
      * Initialize with TvUiUtils for audio feedback
@@ -184,6 +185,14 @@ class SettingsFocusManager(private val context: Context) {
             }
             parent = parent.parent
         }
+    }
+
+    /**
+     * Set high contrast mode for enhanced focus indicators
+     */
+    fun setHighContrastMode(enabled: Boolean) {
+        isHighContrastMode = enabled
+        focusAnimationManager.setHighContrastMode(enabled)
     }
 
     /**

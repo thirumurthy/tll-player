@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Extra Large Screen TV Optimizations (10+ inch tablets, large TVs) -->
+    
+    <!-- Glass Card Dimensions - Maximum visibility for large screens -->
+    <dimen name="glass_card_padding">40dp</dimen>
+    <dimen name="glass_card_margin">24dp</dimen>
+    <dimen name="glass_card_elevation">16dp</dimen>
+    <dimen name="glass_card_corner_radius">24dp</dimen>
+    
+    <!-- Focus Animation Dimensions - Very prominent for large screens -->
+    <dimen name="focus_elevation">24dp</dimen>
+    <dimen name="normal_elevation">16dp</dimen>
+    
+    <!-- TV UI Dimensions - Optimized for large screen 10-foot viewing -->
+    <dimen name="tv_min_touch_target">64dp</dimen>
+    <dimen name="tv_text_size_large">26sp</dimen>
+    <dimen name="tv_text_size_medium">24sp</dimen>
+    <dimen name="tv_text_size_small">22sp</dimen>
+    <dimen name="tv_section_spacing">48dp</dimen>
+    <dimen name="tv_item_spacing">24dp</dimen>
+    
+    <!-- Toggle Switch Dimensions - Large for big screen TV -->
+    <dimen name="toggle_track_width">76dp</dimen>
+    <dimen name="toggle_track_height">48dp</dimen>
+    <dimen name="toggle_thumb_size">44dp</dimen>
+    <dimen name="toggle_thumb_focused_size">52dp</dimen>
+    <dimen name="toggle_padding">16dp</dimen>
+    
+    <!-- Settings Layout Dimensions - Very spacious for large screens -->
+    <dimen name="settings_container_padding">48dp</dimen>
+    <dimen name="glass_card_spacing">36dp</dimen>
+    <dimen name="settings_section_title_size">18sp</dimen>
+    <dimen name="settings_item_height">72dp</dimen>
+    <dimen name="settings_button_height">64dp</dimen>
+</resources>

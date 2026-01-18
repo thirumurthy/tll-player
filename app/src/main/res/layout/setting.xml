@@ -13,7 +13,7 @@
     <ScrollView
         android:id="@+id/container"
         android:layout_width="wrap_content"
-        android:minWidth="900dp"
+        android:minWidth="@dimen/tv_settings_min_width"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:padding="@dimen/settings_container_padding"
