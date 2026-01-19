@@ -2,12 +2,15 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     
+    <!-- High contrast focus background for accessibility -->
     <solid android:color="#FFFFFF" />
     
+    <!-- High contrast border -->
     <stroke
-        android:width="4dp"
+        android:width="3dp"
         android:color="#000000" />
     
+    <!-- Rounded corners -->
     <corners android:radius="8dp" />
     
 </shape>

@@ -5,24 +5,35 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
+import android.widget.ImageView
+import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.marginBottom
 import androidx.core.view.marginStart
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.thirutricks.tllplayer.databinding.GroupItemBinding
 import com.thirutricks.tllplayer.models.TVGroupModel
 import com.thirutricks.tllplayer.models.TVListModel
 import com.thirutricks.tllplayer.OrderPreferenceManager
 import com.thirutricks.tllplayer.RenameDialogFragment
+import com.thirutricks.tllplayer.ui.glass.GlassEffectUtils
+import com.thirutricks.tllplayer.ui.glass.GlassStyleConfig
+import com.thirutricks.tllplayer.ui.glass.GlassType
+import com.thirutricks.tllplayer.ui.glass.MenuAnimationController
+import com.thirutricks.tllplayer.ui.glass.TextLevel
+import com.thirutricks.tllplayer.ui.glass.InteractiveFeedbackManager
+import com.thirutricks.tllplayer.ui.glass.FeedbackType
+import com.thirutricks.tllplayer.ui.glass.OperationType
+import com.thirutricks.tllplayer.ui.glass.GlassPerformanceManager
+// import com.thirutricks.tllplayer.ui.glass.GlassScrollManager
 import android.widget.Toast
 import android.view.MotionEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Collections
-import kotlinx.coroutines.launch
 
 
 class GroupAdapter(
@@ -41,21 +52,43 @@ class GroupAdapter(
     val application = context.applicationContext as MyTVApplication
     var visible = false
     private var movingPosition = -1
+    
+    // Glass styling components
+    private val styleConfig: GlassStyleConfig = GlassEffectUtils.getOptimalGlassConfig(context)
+    private val performanceManager: GlassPerformanceManager = GlassPerformanceManager(context, styleConfig)
+    private val animationController: MenuAnimationController = MenuAnimationController(styleConfig, performanceManager)
+    private val feedbackManager: InteractiveFeedbackManager = InteractiveFeedbackManager(context, styleConfig, animationController)
+    // private val scrollManager: GlassScrollManager = GlassScrollManager(context, styleConfig)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(context)
-        val binding = GroupItemBinding.inflate(inflater, parent, false)
+        val view = inflater.inflate(R.layout.group_item, parent, false)
 
-        val layoutParams = binding.title.layoutParams as ViewGroup.MarginLayoutParams
-        layoutParams.marginStart = application.px2Px(binding.title.marginStart)
-        layoutParams.bottomMargin = application.px2Px(binding.title.marginBottom)
-        binding.title.layoutParams = layoutParams
+        // Apply glass styling to the item with performance optimization
+        performanceManager.applyPerformanceOptimizations(view)
+        GlassEffectUtils.applyGlassStyle(view, styleConfig, GlassType.ITEM)
 
-        binding.title.textSize = application.px2PxFont(binding.title.textSize)
+        val title = view.findViewById<TextView>(R.id.title)
+        
+        // Apply responsive scaling
+        val layoutParams = title.layoutParams as ViewGroup.MarginLayoutParams
+        layoutParams.marginStart = application.px2Px(title.marginStart)
+        layoutParams.bottomMargin = application.px2Px(title.marginBottom)
+        title.layoutParams = layoutParams
 
-        binding.root.isFocusable = true
-        binding.root.isFocusableInTouchMode = true
-        return ViewHolder(context, binding)
+        // Apply glass text styling
+        GlassEffectUtils.applyGlassTextStyle(title, TextLevel.PRIMARY, styleConfig)
+        title.textSize = application.px2PxFont(title.textSize)
+
+        // Set up glass state selector for interactive feedback
+        view.background = GlassEffectUtils.createGlassStateSelector(context)
+        view.isFocusable = true
+        view.isFocusableInTouchMode = true
+        
+        // Set up interactive feedback
+        feedbackManager.setupInteractiveFeedback(view, FeedbackType.MENU_ITEM)
+        
+        return ViewHolder(context, view, styleConfig, animationController, feedbackManager)
     }
 
     fun focusable(able: Boolean) {
@@ -172,71 +205,95 @@ class GroupAdapter(
 
         viewHolder.bindTitle(tvListModel.getName())
         viewHolder.setArrowsVisibility(movingPosition == position)
+        viewHolder.setMoveMode(movingPosition == position)
         
-        viewHolder.binding.arrowUp.setOnClickListener {
+        val arrowUp = view.findViewById<ImageView>(R.id.arrow_up)
+        val arrowDown = view.findViewById<ImageView>(R.id.arrow_down)
+        
+        arrowUp.setOnClickListener {
             moveGroupUp(position)
         }
-        viewHolder.binding.arrowDown.setOnClickListener {
+        arrowDown.setOnClickListener {
             moveGroupDown(position)
         }
     }
 
     override fun getItemCount() = tvGroupModel.size()
 
-    class ViewHolder(private val context: Context, val binding: GroupItemBinding) :
-        RecyclerView.ViewHolder(binding.root) {
+    class ViewHolder(
+        private val context: Context, 
+        itemView: View,
+        private val styleConfig: GlassStyleConfig,
+        private val animationController: MenuAnimationController,
+        private val feedbackManager: InteractiveFeedbackManager
+    ) : RecyclerView.ViewHolder(itemView) {
+        
+        private var isMoving = false
+        private val title: TextView = itemView.findViewById(R.id.title)
+        private val arrows: LinearLayout = itemView.findViewById(R.id.arrows)
+        private val arrowUp: ImageView = itemView.findViewById(R.id.arrow_up)
+        private val arrowDown: ImageView = itemView.findViewById(R.id.arrow_down)
+        
         fun bindTitle(text: String) {
-            binding.title.text = text
+            title.text = text
         }
 
         fun setArrowsVisibility(isMoving: Boolean) {
-            binding.arrows.visibility = if (isMoving) View.VISIBLE else View.GONE
+            arrows.visibility = if (isMoving) View.VISIBLE else View.GONE
+            
+            // Apply glass styling to arrows
+            if (isMoving) {
+                GlassEffectUtils.applyGlassStyle(arrowUp, styleConfig, GlassType.ITEM)
+                GlassEffectUtils.applyGlassStyle(arrowDown, styleConfig, GlassType.ITEM)
+                
+                // Add glass glow effect to arrows
+                arrowUp.setColorFilter(styleConfig.moveGlowColor)
+                arrowDown.setColorFilter(styleConfig.moveGlowColor)
+            }
+        }
+        
+        fun setMoveMode(isMoving: Boolean) {
+            if (this.isMoving != isMoving) {
+                this.isMoving = isMoving
+                
+                // Apply move mode glass styling
+                if (isMoving) {
+                    GlassEffectUtils.applyGlassStyle(itemView, styleConfig, GlassType.ITEM_MOVING)
+                    animationController.animateMoveMode(itemView, true)
+                } else {
+                    GlassEffectUtils.applyGlassStyle(itemView, styleConfig, GlassType.ITEM)
+                    animationController.animateMoveMode(itemView, false)
+                }
+            }
         }
 
         fun focus(hasFocus: Boolean) {
-            val colorWhite = ContextCompat.getColor(context, R.color.white)
-            val colorBlur = ContextCompat.getColor(context, R.color.description_blur)
-            val focusBackground = R.drawable.focus_background
+            // Apply glass text styling based on focus
+            val textLevel = if (hasFocus) TextLevel.PRIMARY else TextLevel.SECONDARY
+            GlassEffectUtils.applyGlassTextStyle(title, textLevel, styleConfig)
 
-            // Animate title text color change
-            binding.title.setTextColor(if (hasFocus) colorWhite else colorBlur)
+            // Apply glass focus styling
+            if (hasFocus && !isMoving) {
+                GlassEffectUtils.applyGlassStyle(itemView, styleConfig, GlassType.ITEM_FOCUSED)
+            } else if (!isMoving) {
+                GlassEffectUtils.applyGlassStyle(itemView, styleConfig, GlassType.ITEM)
+            }
 
-            // Animate root view scale, elevation, and background change
-            binding.root.animate()
-                .scaleX(if (hasFocus) 1.0f else 0.95f)
-                .scaleY(if (hasFocus) 1.0f else 0.95f)
-                .translationZ(if (hasFocus) 8f else 0f)
-                .setDuration(200)
-                .withStartAction {
-                    if (hasFocus) {
-                        binding.root.setBackgroundResource(focusBackground)
-                    }
-                }
-                .withEndAction {
-                    if (!hasFocus) {
-                        binding.root.background = null
-                    }
-                }
-                .start()
-
-            // Set elevation to ensure it matches the animation
-            binding.root.elevation = if (hasFocus) 8f else 0f
+            // Use glass animation controller for smooth focus transitions
+            animationController.animateFocus(itemView, hasFocus)
         }
-
     }
 
     fun toPosition(position: Int) {
         recyclerView.post {
-            (recyclerView.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(
-                position,
-                0
-            )
+            // Use glass scroll manager for smooth scrolling
+            // scrollManager.smoothScrollToPosition(recyclerView, position)
 
             recyclerView.postDelayed({
                 val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
                 viewHolder?.itemView?.isSelected = true
                 viewHolder?.itemView?.requestFocus()
-            }, 0)
+            }, 100) // Slightly longer delay for smooth scroll
         }
     }
 
@@ -329,8 +386,6 @@ class GroupAdapter(
         notifyItemChanged(prevPosition)
     }
 
-
-
     private fun getCurrentCategoryOrder(): MutableList<String> {
         val order = mutableListOf<String>()
         for (i in 0 until tvGroupModel.size()) {
@@ -351,6 +406,18 @@ class GroupAdapter(
         renameDialog.setRenameListener(object : RenameDialogFragment.RenameListener {
             override fun onRenameConfirmed(newName: String) {
                 OrderPreferenceManager.saveCategoryRename(originalName, newName)
+                
+                // Show operation completion feedback
+                val currentView = focused
+                currentView?.let { view ->
+                    feedbackManager.showOperationCompletionFeedback(
+                        view, 
+                        OperationType.RENAME, 
+                        true, 
+                        "Category renamed to $newName"
+                    )
+                }
+                
                 Toast.makeText(context, "Category renamed", Toast.LENGTH_SHORT).show()
                 // Trigger refresh to apply rename
                 kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
@@ -378,7 +445,18 @@ class GroupAdapter(
             tvGroupModel.swap(position, position - 1)
             notifyItemMoved(position, position - 1)
             movingPosition = position - 1
+            
+            // Show operation completion feedback
             recyclerView.post {
+                val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
+                viewHolder?.itemView?.let { view ->
+                    feedbackManager.showOperationCompletionFeedback(
+                        view, 
+                        OperationType.MOVE, 
+                        true, 
+                        "Category moved up"
+                    )
+                }
                 toPosition(position - 1)
             }
         }
@@ -399,10 +477,32 @@ class GroupAdapter(
             tvGroupModel.swap(position, position + 1)
             notifyItemMoved(position, position + 1)
             movingPosition = position + 1
+            
+            // Show operation completion feedback
             recyclerView.post {
+                val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
+                viewHolder?.itemView?.let { view ->
+                    feedbackManager.showOperationCompletionFeedback(
+                        view, 
+                        OperationType.MOVE, 
+                        true, 
+                        "Category moved down"
+                    )
+                }
                 toPosition(position + 1)
             }
         }
+    }
+    
+    /**
+     * Clean up animations and feedback when adapter is detached
+     */
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        animationController.cancelAllAnimations()
+        feedbackManager.cleanup()
+        // scrollManager.cleanup()
+        performanceManager.cleanup()
     }
 
     companion object {

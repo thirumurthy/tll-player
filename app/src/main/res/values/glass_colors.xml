@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Glass Background Colors -->
+    <color name="glass_background_primary">#26FFFFFF</color>
+    <color name="glass_background_secondary">#1AFFFFFF</color>
+    <color name="glass_background_tertiary">#0DFFFFFF</color>
+    
+    <!-- Glass Border Colors -->
+    <color name="glass_border_primary">#4DFFFFFF</color>
+    <color name="glass_border_secondary">#33FFFFFF</color>
+    <color name="glass_border_tertiary">#1AFFFFFF</color>
+    
+    <!-- Glass Highlight Colors -->
+    <color name="glass_highlight_primary">#33FFFFFF</color>
+    <color name="glass_highlight_secondary">#26FFFFFF</color>
+    <color name="glass_highlight_tertiary">#1AFFFFFF</color>
+    
+    <!-- Focus and Interaction Colors -->
+    <color name="glass_focus_glow">#802196F3</color>
+    <color name="glass_focus_background">#33FFFFFF</color>
+    <color name="glass_move_glow">#804CAF50</color>
+    <color name="glass_move_background">#4DFFFFFF</color>
+    
+    <!-- Text Colors for Glass UI -->
+    <color name="glass_text_primary">#FFFFFF</color>
+    <color name="glass_text_secondary">#CCFFFFFF</color>
+    <color name="glass_text_tertiary">#99FFFFFF</color>
+    <color name="glass_text_disabled">#66FFFFFF</color>
+    
+    <!-- Menu Overlay Colors -->
+    <color name="glass_menu_overlay">#99000000</color>
+    <color name="glass_dialog_backdrop">#B3000000</color>
+    
+    <!-- List Item Specific Colors -->
+    <color name="glass_item_background">@color/glass_background_primary</color>
+    <color name="glass_icon_background">@color/glass_background_secondary</color>
+    <color name="glass_favorite_active">#FFE91E63</color>
+    <color name="glass_favorite_inactive">@color/glass_text_tertiary</color>
+</resources>

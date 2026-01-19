@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="@dimen/glass_dialog_margin"
+    app:cardCornerRadius="@dimen/glass_corner_radius_large"
+    app:cardElevation="@dimen/glass_elevation_high"
+    app:cardBackgroundColor="@android:color/transparent">
+
+    <!-- Glass Background Layer -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/glass_panel_background" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/glass_dialog_padding"
+        android:gravity="center">
+
+        <!-- Dialog Title -->
+        <TextView
+            android:id="@+id/dialog_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="Channel Options"
+            android:textColor="@color/glass_text_primary"
+            android:textSize="@dimen/glass_text_size_large"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:shadowColor="@color/glass_background_primary"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="2"
+            android:layout_marginBottom="@dimen/glass_dialog_title_margin" />
+
+        <!-- Button Container -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:layout_marginTop="@dimen/glass_dialog_button_margin">
+
+            <!-- Move Button -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/glass_button_spacing"
+                app:cardCornerRadius="@dimen/glass_corner_radius"
+                app:cardElevation="@dimen/glass_elevation_default"
+                app:cardBackgroundColor="@android:color/transparent">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/tv_button_glass" />
+
+                <Button
+                    android:id="@+id/btn_move"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/glass_button_height"
+                    android:background="@android:color/transparent"
+                    android:text="Move"
+                    android:textColor="@color/glass_text_primary"
+                    android:textSize="@dimen/glass_text_size_medium"
+                    android:fontFamily="sans-serif-medium"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:paddingStart="@dimen/glass_button_padding_horizontal"
+                    android:paddingEnd="@dimen/glass_button_padding_horizontal"
+                    android:minWidth="@dimen/glass_button_min_width" />
+            </androidx.cardview.widget.CardView>
+
+            <!-- Rename Button -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/glass_button_spacing"
+                android:layout_marginEnd="@dimen/glass_button_spacing"
+                app:cardCornerRadius="@dimen/glass_corner_radius"
+                app:cardElevation="@dimen/glass_elevation_default"
+                app:cardBackgroundColor="@android:color/transparent">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/tv_button_glass" />
+
+                <Button
+                    android:id="@+id/btn_rename"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/glass_button_height"
+                    android:background="@android:color/transparent"
+                    android:text="Rename"
+                    android:textColor="@color/glass_text_primary"
+                    android:textSize="@dimen/glass_text_size_medium"
+                    android:fontFamily="sans-serif-medium"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:paddingStart="@dimen/glass_button_padding_horizontal"
+                    android:paddingEnd="@dimen/glass_button_padding_horizontal"
+                    android:minWidth="@dimen/glass_button_min_width" />
+            </androidx.cardview.widget.CardView>
+
+            <!-- Cancel Button -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/glass_button_spacing"
+                app:cardCornerRadius="@dimen/glass_corner_radius"
+                app:cardElevation="@dimen/glass_elevation_default"
+                app:cardBackgroundColor="@android:color/transparent">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/tv_button_glass" />
+
+                <Button
+                    android:id="@+id/btn_cancel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="@dimen/glass_button_height"
+                    android:background="@android:color/transparent"
+                    android:text="Cancel"
+                    android:textColor="@color/glass_text_secondary"
+                    android:textSize="@dimen/glass_text_size_medium"
+                    android:fontFamily="sans-serif-medium"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:paddingStart="@dimen/glass_button_padding_horizontal"
+                    android:paddingEnd="@dimen/glass_button_padding_horizontal"
+                    android:minWidth="@dimen/glass_button_min_width" />
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Focus Indicator Overlay -->
+    <View
+        android:id="@+id/focus_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/transparent"
+        android:visibility="gone" />
+
+</androidx.cardview.widget.CardView>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TV-optimized Glass Corner Radius -->
+    <dimen name="glass_corner_radius_large">20dp</dimen>
+    <dimen name="glass_corner_radius_medium">16dp</dimen>
+    <dimen name="glass_corner_radius_small">12dp</dimen>
+    
+    <!-- TV-optimized Menu Layout Dimensions -->
+    <dimen name="glass_menu_padding">32dp</dimen>
+    <dimen name="glass_panel_margin">24dp</dimen>
+    <dimen name="glass_panel_padding">16dp</dimen>
+    <dimen name="glass_item_padding">12dp</dimen>
+    <dimen name="glass_item_margin">6dp</dimen>
+    
+    <!-- TV-optimized Category Panel Dimensions -->
+    <dimen name="glass_category_panel_width">280dp</dimen>
+    <dimen name="glass_category_item_height">64dp</dimen>
+    <dimen name="glass_category_item_padding_horizontal">20dp</dimen>
+    <dimen name="glass_category_item_padding_vertical">16dp</dimen>
+    
+    <!-- TV-optimized Channel Panel Dimensions -->
+    <dimen name="glass_channel_panel_width">480dp</dimen>
+    <dimen name="glass_channel_item_height">80dp</dimen>
+    <dimen name="glass_channel_item_padding_horizontal">20dp</dimen>
+    <dimen name="glass_channel_item_padding_vertical">12dp</dimen>
+    <dimen name="glass_channel_logo_size">56dp</dimen>
+    
+    <!-- TV-optimized Typography Dimensions -->
+    <dimen name="glass_text_size_large">22sp</dimen>
+    <dimen name="glass_text_size_medium">18sp</dimen>
+    <dimen name="glass_text_size_small">16sp</dimen>
+    <dimen name="glass_text_size_caption">14sp</dimen>
+    
+    <!-- TV-optimized Animation and Interaction -->
+    <dimen name="glass_focus_scale">1.08</dimen>
+    <dimen name="glass_move_indicator_size">28dp</dimen>
+    <dimen name="glass_arrow_size">20dp</dimen>
+</resources>

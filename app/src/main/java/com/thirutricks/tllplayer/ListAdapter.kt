@@ -13,6 +13,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.FOCUS_BEFORE_DESCENDANTS
 import android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS
+import android.widget.TextView
+import android.widget.ImageView
+import android.widget.LinearLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
 import androidx.core.view.marginStart
@@ -21,11 +24,20 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.thirutricks.tllplayer.databinding.ListItemBinding
 import com.thirutricks.tllplayer.models.TVListModel
 import com.thirutricks.tllplayer.models.TVModel
 import com.thirutricks.tllplayer.OrderPreferenceManager
 import com.thirutricks.tllplayer.RenameDialogFragment
+import com.thirutricks.tllplayer.ui.glass.GlassEffectUtils
+import com.thirutricks.tllplayer.ui.glass.GlassStyleConfig
+import com.thirutricks.tllplayer.ui.glass.GlassType
+import com.thirutricks.tllplayer.ui.glass.MenuAnimationController
+import com.thirutricks.tllplayer.ui.glass.TextLevel
+import com.thirutricks.tllplayer.ui.glass.InteractiveFeedbackManager
+import com.thirutricks.tllplayer.ui.glass.FeedbackType
+import com.thirutricks.tllplayer.ui.glass.OperationType
+import com.thirutricks.tllplayer.ui.glass.GlassPerformanceManager
+// import com.thirutricks.tllplayer.ui.glass.GlassScrollManager
 import android.widget.Toast
 import android.view.MotionEvent
 import java.util.Collections
@@ -50,31 +62,63 @@ class ListAdapter(
 
     val application = context.applicationContext as MyTVApplication
     private var movingPosition = -1
+    
+    // Glass styling components
+    private val styleConfig: GlassStyleConfig = GlassEffectUtils.getOptimalGlassConfig(context)
+    private val performanceManager: GlassPerformanceManager = GlassPerformanceManager(context, styleConfig)
+    private val animationController: MenuAnimationController = MenuAnimationController(styleConfig, performanceManager)
+    private val feedbackManager: InteractiveFeedbackManager = InteractiveFeedbackManager(context, styleConfig, animationController)
+    // private val scrollManager: GlassScrollManager = GlassScrollManager(context, styleConfig)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = LayoutInflater.from(context)
-        val binding = ListItemBinding.inflate(inflater, parent, false)
+        val view = inflater.inflate(R.layout.list_item, parent, false)
 
-        binding.icon.layoutParams.width = application.px2Px(binding.icon.layoutParams.width)
-        binding.icon.layoutParams.height = application.px2Px(binding.icon.layoutParams.height)
-        binding.icon.setPadding(application.px2Px(binding.icon.paddingTop))
+        // Apply glass styling to the item with performance optimization
+        performanceManager.applyPerformanceOptimizations(view)
+        GlassEffectUtils.applyGlassStyle(view, styleConfig, GlassType.ITEM)
 
-        val layoutParams = binding.title.layoutParams as ViewGroup.MarginLayoutParams
-        layoutParams.marginStart = application.px2Px(binding.title.marginStart)
-        binding.title.layoutParams = layoutParams
+        val icon = view.findViewById<ImageView>(R.id.icon)
+        val title = view.findViewById<TextView>(R.id.title)
+        val heart = view.findViewById<ImageView>(R.id.heart)
+        val description = view.findViewById<TextView>(R.id.description)
 
-        binding.heart.layoutParams.width = application.px2Px(binding.heart.layoutParams.width)
-        binding.heart.layoutParams.height = application.px2Px(binding.heart.layoutParams.height)
+        // Apply responsive scaling for icon
+        icon.layoutParams.width = application.px2Px(icon.layoutParams.width)
+        icon.layoutParams.height = application.px2Px(icon.layoutParams.height)
+        icon.setPadding(application.px2Px(icon.paddingTop))
 
-        binding.title.textSize = application.px2PxFont(binding.title.textSize)
+        // Apply responsive scaling for title
+        val layoutParams = title.layoutParams as ViewGroup.MarginLayoutParams
+        layoutParams.marginStart = application.px2Px(title.marginStart)
+        title.layoutParams = layoutParams
 
-        val layoutParamsHeart = binding.heart.layoutParams as ViewGroup.MarginLayoutParams
-        layoutParamsHeart.marginStart = application.px2Px(binding.heart.marginStart)
-        binding.heart.layoutParams = layoutParamsHeart
+        // Apply responsive scaling for heart
+        heart.layoutParams.width = application.px2Px(heart.layoutParams.width)
+        heart.layoutParams.height = application.px2Px(heart.layoutParams.height)
 
-        binding.description.textSize = application.px2PxFont(binding.description.textSize)
+        // Apply glass text styling
+        GlassEffectUtils.applyGlassTextStyle(title, TextLevel.PRIMARY, styleConfig)
+        title.textSize = application.px2PxFont(title.textSize)
 
-        return ViewHolder(context, binding)
+        val layoutParamsHeart = heart.layoutParams as ViewGroup.MarginLayoutParams
+        layoutParamsHeart.marginStart = application.px2Px(heart.marginStart)
+        heart.layoutParams = layoutParamsHeart
+
+        // Apply glass text styling for description
+        GlassEffectUtils.applyGlassTextStyle(description, TextLevel.SECONDARY, styleConfig)
+        description.textSize = application.px2PxFont(description.textSize)
+
+        // Set up glass state selector for interactive feedback
+        view.background = GlassEffectUtils.createGlassStateSelector(context)
+        view.isFocusable = true
+        view.isFocusableInTouchMode = true
+
+        // Set up interactive feedback
+        feedbackManager.setupInteractiveFeedback(view, FeedbackType.MENU_ITEM)
+        feedbackManager.setupInteractiveFeedback(heart, FeedbackType.BUTTON)
+
+        return ViewHolder(context, view, styleConfig, animationController, feedbackManager)
     }
 
     fun focusable(able: Boolean) {
@@ -140,7 +184,8 @@ class ListAdapter(
 
         viewHolder.like(tvModel.like.value as Boolean)
 
-        viewHolder.binding.heart.setOnClickListener {
+        val heart = view.findViewById<ImageView>(R.id.heart)
+        heart.setOnClickListener {
             tvModel.setLike(!(tvModel.like.value as Boolean))
             viewHolder.like(tvModel.like.value as Boolean)
         }
@@ -244,26 +289,44 @@ class ListAdapter(
         viewHolder.bindImage(tvModel.tv.logo, tvModel.tv.id)
 
         viewHolder.setArrows(movingPosition == position)
+        viewHolder.setMoveMode(movingPosition == position)
         
-        viewHolder.binding.arrowUp.setOnClickListener {
+        val arrowUp = view.findViewById<ImageView>(R.id.arrow_up)
+        val arrowDown = view.findViewById<ImageView>(R.id.arrow_down)
+        
+        arrowUp.setOnClickListener {
             moveChannelUp(position)
         }
-        viewHolder.binding.arrowDown.setOnClickListener {
+        arrowDown.setOnClickListener {
             moveChannelDown(position)
         }
     }
 
     override fun getItemCount() = tvListModel.size()
 
-    class ViewHolder(private val context: Context, val binding: ListItemBinding) :
-        RecyclerView.ViewHolder(binding.root), OnSharedPreferenceChangeListener {
+    class ViewHolder(
+        private val context: Context, 
+        itemView: View,
+        private val styleConfig: GlassStyleConfig,
+        private val animationController: MenuAnimationController,
+        private val feedbackManager: InteractiveFeedbackManager
+    ) : RecyclerView.ViewHolder(itemView), OnSharedPreferenceChangeListener {
+
+        private var isMoving = false
+        private val title: TextView = itemView.findViewById(R.id.title)
+        private val icon: ImageView = itemView.findViewById(R.id.icon)
+        private val heart: ImageView = itemView.findViewById(R.id.heart)
+        private val description: TextView = itemView.findViewById(R.id.description)
+        private val arrows: LinearLayout = itemView.findViewById(R.id.arrows)
+        private val arrowUp: ImageView = itemView.findViewById(R.id.arrow_up)
+        private val arrowDown: ImageView = itemView.findViewById(R.id.arrow_down)
 
         init {
             SP.setOnSharedPreferenceChangeListener(this)
         }
 
         fun bindTitle(text: String) {
-            binding.title.text = text
+            title.text = text
         }
 
         fun bindImage(url: String?, id: Int) {
@@ -274,7 +337,7 @@ class ListAdapter(
                 val canvas = Canvas(bitmap)
 
                 val paint = Paint().apply {
-                    color = Color.WHITE
+                    color = styleConfig.textPrimaryColor
                     textSize = 32f
                     textAlign = Paint.Align.CENTER
                 }
@@ -282,70 +345,100 @@ class ListAdapter(
                 val x = width / 2f
                 val y = height / 2f - (paint.descent() + paint.ascent()) / 2
                 canvas.drawText(text, x, y, paint)
+                
+                // Apply glass styling to generated channel number
                 Glide.with(context)
                     .load(BitmapDrawable(context.resources, bitmap))
                     .centerInside()
-                    .into(binding.icon)
-//                binding.imageView.setImageDrawable(null)
+                    .into(icon)
             } else {
                 Glide.with(context)
                     .load(url)
                     .centerInside()
-//                    .error(BitmapDrawable(context.resources, bitmap))
-                    .into(binding.icon)
+                    .into(icon)
             }
+            
+            // Apply glass frame to icon
+            GlassEffectUtils.applyGlassStyle(icon, styleConfig, GlassType.ITEM)
         }
 
         fun focus(hasFocus: Boolean) {
-            val colorWhite = ContextCompat.getColor(context, R.color.white)
-            val colorTitleBlur = ContextCompat.getColor(context, R.color.title_blur)
-            val colorDescriptionBlur = ContextCompat.getColor(context, R.color.description_blur)
+            // Apply glass text styling based on focus
+            val titleLevel = if (hasFocus) TextLevel.PRIMARY else TextLevel.SECONDARY
+            val descriptionLevel = if (hasFocus) TextLevel.SECONDARY else TextLevel.TERTIARY
+            
+            GlassEffectUtils.applyGlassTextStyle(title, titleLevel, styleConfig)
+            GlassEffectUtils.applyGlassTextStyle(description, descriptionLevel, styleConfig)
 
-            // Text color change
-            binding.title.setTextColor(if (hasFocus) colorWhite else colorTitleBlur)
-            binding.description.setTextColor(if (hasFocus) colorWhite else colorDescriptionBlur)
+            // Apply glass focus styling
+            if (hasFocus && !isMoving) {
+                GlassEffectUtils.applyGlassStyle(itemView, styleConfig, GlassType.ITEM_FOCUSED)
+            } else if (!isMoving) {
+                GlassEffectUtils.applyGlassStyle(itemView, styleConfig, GlassType.ITEM)
+            }
 
-            // Cancel any ongoing animations to avoid clashing
-            binding.root.animate().cancel()
-
-            // Apply background immediately to avoid flicker
-            binding.root.setBackgroundResource(
-                if (hasFocus) R.drawable.focus_background else R.drawable.blur_background
-            )
-
-            // Animate scale and elevation
-            binding.root.animate()
-                .scaleX(if (hasFocus) 1.05f else 0.95f)
-                .scaleY(if (hasFocus) 1.05f else 1.0f)
-                .setDuration(200)
-                .start()
-
-            // Set elevation (not animated—applied directly)
-            binding.root.elevation = if (hasFocus) 10f else 0f
+            // Use glass animation controller for smooth focus transitions
+            animationController.animateFocus(itemView, hasFocus)
         }
 
-
-
         fun like(liked: Boolean) {
+            val heartIcon = if (liked) R.drawable.ic_heart else R.drawable.ic_heart_empty
+            heart.setImageDrawable(ContextCompat.getDrawable(context, heartIcon))
+            
+            // Apply glass styling to heart with enhanced animation
             if (liked) {
-                binding.heart.setImageDrawable(
-                    ContextCompat.getDrawable(
-                        context,
-                        R.drawable.ic_heart
-                    )
+                // Animate heart with glass glow effect
+                animationController.animateHeartLike(heart, true)
+                heart.setColorFilter(styleConfig.favoriteActiveColor)
+                
+                // Show operation completion feedback
+                feedbackManager.showOperationCompletionFeedback(
+                    heart, 
+                    OperationType.FAVORITE, 
+                    true, 
+                    "Added to favorites"
                 )
             } else {
-                binding.heart.setImageDrawable(
-                    ContextCompat.getDrawable(
-                        context,
-                        R.drawable.ic_heart_empty
-                    )
+                animationController.animateHeartLike(heart, false)
+                heart.setColorFilter(styleConfig.favoriteInactiveColor)
+                
+                // Show operation completion feedback
+                feedbackManager.showOperationCompletionFeedback(
+                    heart, 
+                    OperationType.UNFAVORITE, 
+                    true, 
+                    "Removed from favorites"
                 )
             }
         }
 
         fun setArrows(isMoving: Boolean) {
-            binding.arrows.visibility = if (isMoving) View.VISIBLE else View.GONE
+            arrows.visibility = if (isMoving) View.VISIBLE else View.GONE
+            
+            // Apply glass styling to arrows
+            if (isMoving) {
+                GlassEffectUtils.applyGlassStyle(arrowUp, styleConfig, GlassType.ITEM)
+                GlassEffectUtils.applyGlassStyle(arrowDown, styleConfig, GlassType.ITEM)
+                
+                // Add glass glow effect to arrows
+                arrowUp.setColorFilter(styleConfig.moveGlowColor)
+                arrowDown.setColorFilter(styleConfig.moveGlowColor)
+            }
+        }
+        
+        fun setMoveMode(isMoving: Boolean) {
+            if (this.isMoving != isMoving) {
+                this.isMoving = isMoving
+                
+                // Apply move mode glass styling
+                if (isMoving) {
+                    GlassEffectUtils.applyGlassStyle(itemView, styleConfig, GlassType.ITEM_MOVING)
+                    animationController.animateMoveMode(itemView, true)
+                } else {
+                    GlassEffectUtils.applyGlassStyle(itemView, styleConfig, GlassType.ITEM)
+                    animationController.animateMoveMode(itemView, false)
+                }
+            }
         }
 
         override fun onSharedPreferenceChanged(key: String) {
@@ -354,24 +447,24 @@ class ListAdapter(
                 SP.KEY_EPG -> {
                     if (SP.epg.isNullOrEmpty()) {
                         val constraintSet = ConstraintSet()
-                        constraintSet.clone(binding.root)
+                        constraintSet.clone(itemView as androidx.constraintlayout.widget.ConstraintLayout)
 
-                        constraintSet.connect(binding.title.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
-                        constraintSet.connect(binding.heart.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
+                        constraintSet.connect(title.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
+                        constraintSet.connect(heart.id, ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM)
 
-                        constraintSet.applyTo(binding.root)
+                        constraintSet.applyTo(itemView as androidx.constraintlayout.widget.ConstraintLayout)
 
-                        binding.description.visibility = View.GONE
+                        description.visibility = View.GONE
                     } else {
                         val constraintSet = ConstraintSet()
-                        constraintSet.clone(binding.root)
+                        constraintSet.clone(itemView as androidx.constraintlayout.widget.ConstraintLayout)
 
-                        constraintSet.clear(binding.title.id, ConstraintSet.BOTTOM)
-                        constraintSet.clear(binding.heart.id, ConstraintSet.BOTTOM)
+                        constraintSet.clear(title.id, ConstraintSet.BOTTOM)
+                        constraintSet.clear(heart.id, ConstraintSet.BOTTOM)
 
-                        constraintSet.applyTo(binding.root)
+                        constraintSet.applyTo(itemView as androidx.constraintlayout.widget.ConstraintLayout)
 
-                        binding.description.visibility = View.VISIBLE
+                        description.visibility = View.VISIBLE
                     }
                 }
             }
@@ -380,16 +473,14 @@ class ListAdapter(
 
     fun toPosition(position: Int) {
         recyclerView.post {
-            (recyclerView.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(
-                position,
-                0
-            )
+            // Use glass scroll manager for smooth scrolling
+            // scrollManager.smoothScrollToPosition(recyclerView, position)
 
             recyclerView.postDelayed({
                 val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
                 viewHolder?.itemView?.isSelected = true
                 viewHolder?.itemView?.requestFocus()
-            }, 0)
+            }, 100) // Slightly longer delay for smooth scroll
         }
     }
 
@@ -525,6 +616,17 @@ class ListAdapter(
                 viewHolder?.itemView?.requestFocus()
             }
         }
+    }
+    
+    /**
+     * Clean up animations and feedback when adapter is detached
+     */
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        animationController.cancelAllAnimations()
+        feedbackManager.cleanup()
+        // scrollManager.cleanup()
+        performanceManager.cleanup()
     }
 
     companion object {

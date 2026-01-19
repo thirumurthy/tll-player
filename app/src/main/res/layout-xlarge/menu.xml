@@ -24,10 +24,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_margin="@dimen/glass_panel_margin" />
 
-    <!-- Categories Panel Container -->
+    <!-- Categories Panel Container - Larger for xlarge screens -->
     <androidx.cardview.widget.CardView
         android:id="@+id/category_panel_container"
-        android:layout_width="@dimen/glass_category_panel_width"
+        android:layout_width="320dp"
         android:layout_height="0dp"
         android:layout_marginStart="@dimen/glass_panel_margin"
         android:layout_marginTop="@dimen/glass_panel_margin"
@@ -56,10 +56,10 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- Channels Panel Container -->
+    <!-- Channels Panel Container - Larger for xlarge screens -->
     <androidx.cardview.widget.CardView
         android:id="@+id/channel_panel_container"
-        android:layout_width="@dimen/glass_channel_panel_width"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="@dimen/glass_item_margin"
         android:layout_marginTop="@dimen/glass_panel_margin"
@@ -89,7 +89,7 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- Panel Transition Overlay (for smooth transitions) -->
+    <!-- Panel Transition Overlay -->
     <View
         android:id="@+id/transition_overlay"
         android:layout_width="0dp"
