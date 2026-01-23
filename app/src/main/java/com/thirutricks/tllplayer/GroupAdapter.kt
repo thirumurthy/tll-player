@@ -286,14 +286,12 @@ class GroupAdapter(
 
     fun toPosition(position: Int) {
         recyclerView.post {
-            // Use glass scroll manager for smooth scrolling
-            // scrollManager.smoothScrollToPosition(recyclerView, position)
-
-            recyclerView.postDelayed({
-                val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
-                viewHolder?.itemView?.isSelected = true
-                viewHolder?.itemView?.requestFocus()
-            }, 100) // Slightly longer delay for smooth scroll
+            // Immediate focus change without delay for better responsiveness
+            val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
+            viewHolder?.itemView?.let { itemView ->
+                itemView.isSelected = true
+                itemView.requestFocus()
+            }
         }
     }
 
@@ -446,18 +444,17 @@ class GroupAdapter(
             notifyItemMoved(position, position - 1)
             movingPosition = position - 1
             
-            // Show operation completion feedback
+            // Immediate focus change without delay
+            toPosition(position - 1)
+            
+            // Show lightweight feedback without heavy animations
             recyclerView.post {
                 val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
                 viewHolder?.itemView?.let { view ->
-                    feedbackManager.showOperationCompletionFeedback(
-                        view, 
-                        OperationType.MOVE, 
-                        true, 
-                        "Category moved up"
-                    )
+                    // Quick visual feedback without long delays
+                    view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                    Toast.makeText(context, "Category moved up", Toast.LENGTH_SHORT).show()
                 }
-                toPosition(position - 1)
             }
         }
     }
@@ -478,18 +475,17 @@ class GroupAdapter(
             notifyItemMoved(position, position + 1)
             movingPosition = position + 1
             
-            // Show operation completion feedback
+            // Immediate focus change without delay
+            toPosition(position + 1)
+            
+            // Show lightweight feedback without heavy animations
             recyclerView.post {
                 val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
                 viewHolder?.itemView?.let { view ->
-                    feedbackManager.showOperationCompletionFeedback(
-                        view, 
-                        OperationType.MOVE, 
-                        true, 
-                        "Category moved down"
-                    )
+                    // Quick visual feedback without long delays
+                    view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                    Toast.makeText(context, "Category moved down", Toast.LENGTH_SHORT).show()
                 }
-                toPosition(position + 1)
             }
         }
     }

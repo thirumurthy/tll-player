@@ -16,7 +16,7 @@ class ChannelFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val handler = Handler()
-    private val delay: Long = 3000
+    private val delay: Long = 1500  // Reduced from 3000ms to 1500ms for faster channel switching
     private var channel = 0
 
     override fun onCreateView(

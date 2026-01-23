@@ -242,7 +242,10 @@ class MainActivity : FragmentActivity() {
             settingsErrorRecovery = SettingsErrorRecovery(this, resourceValidator, crashDiagnosticManager)
             
             // Log initial state
-            val fragmentState = crashDiagnosticManager.captureFragmentState(fragment = settingFragment)
+            val fragmentState = crashDiagnosticManager.captureFragmentState(
+                fragmentManager = supportFragmentManager,
+                fragment = settingFragment
+            )
             Log.d(TAG, "Settings fragment initial state: isAttached=${fragmentState.isFragmentAttached}")
             
             Log.i(TAG, "MainActivity crash prevention systems initialized successfully")
@@ -442,13 +445,13 @@ class MainActivity : FragmentActivity() {
             channelFragment.show(tvModel  as TVModel)
         }
 
-        // Auto-hide loader after timeout backup
+        // Auto-hide loader after timeout backup (reduced from 6000ms to 1500ms for faster channel switching)
         handler.removeCallbacksAndMessages("loader_timeout")
         handler.postAtTime({
             if (tvModel.tv.id == TVList.position.value) {
                 hideFragment(loadingFragment)
             }
-        }, "loader_timeout", SystemClock.uptimeMillis() + 6000)
+        }, "loader_timeout", SystemClock.uptimeMillis() + 1500)
     }
 
     private fun setupCollectionObservers() {
@@ -768,7 +771,10 @@ class MainActivity : FragmentActivity() {
                 
                 // Log diagnostic information
                 if (::crashDiagnosticManager.isInitialized) {
-                    val fragmentState = crashDiagnosticManager.captureFragmentState(fragment = settingFragment)
+                    val fragmentState = crashDiagnosticManager.captureFragmentState(
+                        fragmentManager = supportFragmentManager,
+                        fragment = settingFragment
+                    )
                     Log.d(TAG, "Settings shown - Fragment state: isAttached=${fragmentState.isFragmentAttached}")
                 }
             } else {
@@ -845,7 +851,10 @@ class MainActivity : FragmentActivity() {
                 
                 // Log diagnostic information
                 if (::crashDiagnosticManager.isInitialized) {
-                    val fragmentState = crashDiagnosticManager.captureFragmentState(fragment = settingFragment)
+                    val fragmentState = crashDiagnosticManager.captureFragmentState(
+                        fragmentManager = supportFragmentManager,
+                        fragment = settingFragment
+                    )
                     Log.d(TAG, "Settings hidden - Fragment state: isAttached=${fragmentState.isFragmentAttached}")
                 }
             } else {
