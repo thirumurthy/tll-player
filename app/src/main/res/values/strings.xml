@@ -16,4 +16,6 @@
     <string name="title_channel_check">Remove dead channels</string>
     <string name="title_watch_last">Play last channel on startup</string>
     <string name="title_force_high_quality">Force High Video Quality</string>
+    <string name="channels_in_category">Channels in selected category</string>
+    <string name="channels_in_category_with_name">Channels in %1$s</string>
 </resources>

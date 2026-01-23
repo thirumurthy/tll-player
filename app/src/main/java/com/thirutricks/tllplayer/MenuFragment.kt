@@ -150,6 +150,9 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
         // Set up glass scrolling for channels with category-specific memory
         val categoryId = tvListModel.getName()
         // glassScrollManager.setupGlassScrolling(binding.list, categoryId)
+        
+        // Initialize category label
+        updateCategoryLabel(tvListModel.getName())
     }
 
     fun update() {
@@ -184,9 +187,24 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
                 (binding.list.adapter as ListAdapter).update(tvListModel)
             }
             
+            // Update category label with selected category name
+            updateCategoryLabel(tvListModel.getName())
+            
         // Update scroll manager with new category
         val categoryId = tvListModel.getName()
         // glassScrollManager.setupGlassScrolling(binding.list, categoryId)
+        }
+    }
+    
+    private fun updateCategoryLabel(categoryName: String) {
+        val categoryLabel = binding.root.findViewById<android.widget.TextView>(R.id.category_label)
+        categoryLabel?.let {
+            val labelText = if (categoryName.isNotEmpty()) {
+                getString(R.string.channels_in_category_with_name, categoryName)
+            } else {
+                getString(R.string.channels_in_category)
+            }
+            it.text = labelText
         }
     }
 

@@ -56,12 +56,60 @@
 
     </androidx.cardview.widget.CardView>
 
+    <!-- Visual Connection Between Panels -->
+    <LinearLayout
+        android:id="@+id/panel_connector"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="@dimen/glass_panel_margin"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/category_panel_container"
+        app:layout_constraintEnd_toStartOf="@id/channel_panel_container"
+        >
+
+        <!-- Connection Line -->
+        <View
+            android:id="@+id/connection_line"
+            android:layout_width="@dimen/glass_connection_line_width"
+            android:layout_height="2dp"
+            android:background="@color/glass_connection_line"
+            android:alpha="0.6" />
+
+        <!-- Directional Arrow -->
+        <TextView
+            android:id="@+id/connection_arrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="▶"
+            android:textColor="@color/glass_connection_line"
+            android:textSize="@dimen/glass_connection_arrow_size"
+            android:alpha="0.8"
+            android:layout_marginStart="2dp" />
+
+    </LinearLayout>
+
+    <!-- Category Label -->
+    <TextView
+        android:id="@+id/category_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/channels_in_category"
+        android:textColor="@color/glass_text_secondary"
+        android:textSize="@dimen/glass_label_text_size"
+        android:alpha="0.7"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@id/channel_panel_container"
+        app:layout_constraintStart_toStartOf="@id/channel_panel_container"
+        app:layout_constraintEnd_toEndOf="@id/channel_panel_container" />
+
     <!-- Channels Panel Container -->
     <androidx.cardview.widget.CardView
         android:id="@+id/channel_panel_container"
         android:layout_width="@dimen/glass_channel_panel_width"
         android:layout_height="0dp"
-        android:layout_marginStart="@dimen/glass_item_margin"
+        android:layout_marginStart="@dimen/glass_reduced_gap"
         android:layout_marginTop="@dimen/glass_panel_margin"
         android:layout_marginBottom="@dimen/glass_panel_margin"
         android:layout_marginEnd="@dimen/glass_panel_margin"

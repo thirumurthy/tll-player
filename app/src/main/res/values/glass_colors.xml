@@ -41,4 +41,8 @@
     <color name="glass_icon_background">@color/glass_background_secondary</color>
     <color name="glass_favorite_active">#FFE91E63</color>
     <color name="glass_favorite_inactive">@color/glass_text_tertiary</color>
+    
+    <!-- Visual Connection Colors -->
+    <color name="glass_connection_line">#80FFFFFF</color>
+    <color name="glass_connection_arrow">#CCFFFFFF</color>
 </resources>
