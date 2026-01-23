@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Main glass background -->
+    <!-- Main glass background - darker for better text contrast -->
     <item>
         <shape>
-            <solid android:color="#1AFFFFFF" />
+            <solid android:color="@color/glass_background_dark_primary" />
             <corners android:radius="12dp" />
         </shape>
     </item>

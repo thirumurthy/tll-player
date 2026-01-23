@@ -22,6 +22,12 @@ import com.thirutricks.tllplayer.ui.SettingsFocusManager
 import com.thirutricks.tllplayer.ui.ResponsiveLayoutManager
 import com.thirutricks.tllplayer.ui.SettingsAccessibilityManager
 import com.thirutricks.tllplayer.ui.PerformanceOptimizationManager
+import com.thirutricks.tllplayer.ui.SettingsResourceManager
+import com.thirutricks.tllplayer.ui.ResourceValidator
+import com.thirutricks.tllplayer.ui.RecoveryAction
+import com.thirutricks.tllplayer.ui.CrashDiagnosticManager
+import com.thirutricks.tllplayer.ui.SafeFragmentManager
+import com.thirutricks.tllplayer.ui.SettingsErrorRecovery
 import com.thirutricks.tllplayer.OrderPreferenceManager
 import com.thirutricks.tllplayer.R
 import android.widget.Toast
@@ -38,6 +44,10 @@ class SettingFragment : Fragment() {
     private lateinit var responsiveLayoutManager: ResponsiveLayoutManager
     private lateinit var accessibilityManager: SettingsAccessibilityManager
     private lateinit var performanceManager: PerformanceOptimizationManager
+    private lateinit var settingsResourceManager: SettingsResourceManager
+    private lateinit var crashDiagnosticManager: CrashDiagnosticManager
+    private lateinit var safeFragmentManager: SafeFragmentManager
+    private lateinit var settingsErrorRecovery: SettingsErrorRecovery
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,6 +56,19 @@ class SettingFragment : Fragment() {
     ): View {
 
         _binding = SettingBinding.inflate(inflater, container, false)
+
+        // Initialize crash prevention systems first
+        initializeCrashPreventionSystems()
+
+        // Initialize SettingsResourceManager first for pre-flight validation
+        settingsResourceManager = SettingsResourceManager(requireContext())
+        
+        // Perform comprehensive resource validation before proceeding
+        val validationPassed = performPreFlightValidation()
+        if (!validationPassed) {
+            Log.e(TAG, "Pre-flight validation failed, using emergency fallback UI")
+            return createEmergencySettingsUI(container)
+        }
 
         tvUiUtils = TvUiUtils(requireContext())
         tvUiUtils?.initSounds(R.raw.focus, R.raw.click)  // SOUND FEEDBACK
@@ -75,6 +98,260 @@ class SettingFragment : Fragment() {
         (activity as MainActivity).ready(TAG)
         // SP.config = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
         return binding.root
+    }
+
+    // ------------------------------------------------------------
+    //  CRASH PREVENTION SYSTEMS INITIALIZATION
+    // ------------------------------------------------------------
+    
+    /**
+     * Initialize all crash prevention systems before any UI operations
+     */
+    private fun initializeCrashPreventionSystems() {
+        try {
+            Log.i(TAG, "Initializing comprehensive crash prevention systems")
+            
+            // Initialize ResourceValidator first
+            val resourceValidator = ResourceValidator(requireContext())
+            
+            // Initialize CrashDiagnosticManager first
+            crashDiagnosticManager = CrashDiagnosticManager(requireContext(), resourceValidator)
+            
+            // Initialize SafeFragmentManager with diagnostic support
+            safeFragmentManager = SafeFragmentManager(requireActivity(), crashDiagnosticManager)
+            
+            // Initialize SettingsErrorRecovery
+            settingsErrorRecovery = SettingsErrorRecovery(requireContext(), resourceValidator, crashDiagnosticManager)
+            
+            // Capture initial fragment state for diagnostics
+            val fragmentState = crashDiagnosticManager.captureFragmentState(fragment = this)
+            Log.d(TAG, "Initial fragment state captured: isAttached=${fragmentState.isFragmentAttached}")
+            
+            // Validate settings resources comprehensively
+            val resourceValidation = crashDiagnosticManager.validateSettingsResources()
+            Log.d(TAG, "Resource validation completed: ${resourceValidation.customComponentsAvailable}")
+            
+            if (!resourceValidation.customComponentsAvailable) {
+                Log.w(TAG, "Custom components not available, fallback mode will be used")
+                Log.d(TAG, "Missing drawables: ${resourceValidation.missingDrawables}")
+            }
+            
+            Log.i(TAG, "Crash prevention systems initialized successfully")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Critical error initializing crash prevention systems", e)
+            
+            // Try to initialize minimal systems
+            try {
+                val resourceValidator = ResourceValidator(requireContext())
+                crashDiagnosticManager = CrashDiagnosticManager(requireContext(), resourceValidator)
+                crashDiagnosticManager.logCrashDetails(e, "initializeCrashPreventionSystems")
+            } catch (e2: Exception) {
+                Log.e(TAG, "Cannot initialize even basic crash prevention", e2)
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    //  PRE-FLIGHT VALIDATION AND CRASH PREVENTION
+    // ------------------------------------------------------------
+    
+    /**
+     * Perform comprehensive pre-flight validation of all settings resources
+     */
+    private fun performPreFlightValidation(): Boolean {
+        return try {
+            Log.i(TAG, "Starting settings pre-flight validation")
+            
+            // Use crash diagnostic manager for comprehensive validation
+            val resourceValidation = if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.validateSettingsResources()
+            } else {
+                Log.w(TAG, "CrashDiagnosticManager not initialized, using basic validation")
+                null
+            }
+            
+            val validationPassed = settingsResourceManager.performPreFlightValidation()
+            val report = settingsResourceManager.getValidationReport()
+            
+            if (validationPassed && report != null) {
+                Log.i(TAG, "Pre-flight validation completed successfully")
+                Log.d(TAG, "Validation report: All resources available = ${report.allResourcesAvailable}")
+                
+                if (!report.allResourcesAvailable) {
+                    Log.w(TAG, "Some resources missing, but fallbacks available")
+                    Log.d(TAG, "Missing resources: ${report.missingResources}")
+                    Log.d(TAG, "Recommended action: ${report.recommendedAction}")
+                    
+                    // Log additional diagnostic information if available
+                    resourceValidation?.let { rv ->
+                        Log.d(TAG, "Diagnostic validation - Custom components: ${rv.customComponentsAvailable}")
+                        Log.d(TAG, "Missing drawables: ${rv.missingDrawables}")
+                    }
+                }
+                
+                // Log diagnostic information
+                settingsResourceManager.logDiagnostics()
+                
+                // Generate comprehensive diagnostic report
+                if (::crashDiagnosticManager.isInitialized) {
+                    val diagnosticReport = crashDiagnosticManager.generateDiagnosticReport()
+                    Log.d(TAG, "Diagnostic report generated with ${diagnosticReport.componentStates.size} components")
+                }
+                
+                true
+            } else {
+                Log.e(TAG, "Pre-flight validation failed")
+                
+                // Log failure details using crash diagnostic manager
+                if (::crashDiagnosticManager.isInitialized) {
+                    crashDiagnosticManager.logCrashDetails(
+                        RuntimeException("Pre-flight validation failed"),
+                        "performPreFlightValidation",
+                        "ValidationFailed"
+                    )
+                }
+                
+                false
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Critical error during pre-flight validation", e)
+            
+            // Use crash diagnostic manager to log the error
+            if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.logCrashDetails(e, "performPreFlightValidation")
+            }
+            
+            false
+        }
+    }
+
+    /**
+     * Create emergency settings UI when normal initialization fails
+     */
+    private fun createEmergencySettingsUI(container: ViewGroup?): View {
+        return try {
+            Log.w(TAG, "Creating emergency settings UI")
+            
+            // Use SettingsErrorRecovery if available
+            val emergencyView = if (::settingsErrorRecovery.isInitialized) {
+                settingsErrorRecovery.createEmergencySettingsUI()
+            } else {
+                createBasicEmergencyUI()
+            }
+            
+            // Log emergency UI creation
+            if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.logCrashDetails(
+                    RuntimeException("Emergency UI created due to initialization failure"),
+                    "createEmergencySettingsUI",
+                    "EmergencyMode"
+                )
+            }
+            
+            Log.i(TAG, "Emergency settings UI created successfully")
+            emergencyView
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Critical error creating emergency UI", e)
+            
+            // Log the error if possible
+            if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.logCrashDetails(e, "createEmergencySettingsUI")
+            }
+            
+            // Return absolute minimal view
+            createBasicEmergencyUI()
+        }
+    }
+
+    /**
+     * Create basic emergency UI as last resort
+     */
+    private fun createBasicEmergencyUI(): View {
+        return try {
+            // Create a simple LinearLayout with basic settings
+            val emergencyLayout = android.widget.LinearLayout(requireContext()).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                setPadding(32, 32, 32, 32)
+            }
+            
+            // Add title
+            val titleText = android.widget.TextView(requireContext()).apply {
+                text = "Settings (Safe Mode)"
+                textSize = 24f
+                setPadding(0, 0, 0, 32)
+            }
+            emergencyLayout.addView(titleText)
+            
+            // Add basic message
+            val messageText = android.widget.TextView(requireContext()).apply {
+                text = "Settings are running in safe mode due to missing resources. Basic functionality is available."
+                textSize = 16f
+                setPadding(0, 0, 0, 32)
+            }
+            emergencyLayout.addView(messageText)
+            
+            // Add basic exit button with safe fragment management
+            val exitButton = android.widget.Button(requireContext()).apply {
+                text = "Exit Settings"
+                setOnClickListener {
+                    safeExitSettings()
+                }
+            }
+            emergencyLayout.addView(exitButton)
+            
+            emergencyLayout
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Critical error creating basic emergency UI", e)
+            // Return absolute minimal view
+            android.widget.TextView(requireContext()).apply {
+                text = "Settings unavailable. Press BACK to exit."
+                textSize = 18f
+                setPadding(32, 32, 32, 32)
+            }
+        }
+    }
+
+    /**
+     * Safely exit settings using SafeFragmentManager
+     */
+    private fun safeExitSettings() {
+        try {
+            if (::safeFragmentManager.isInitialized) {
+                val success = safeFragmentManager.safeHideFragment(this)
+                if (success) {
+                    (activity as? MainActivity)?.showTime()
+                } else {
+                    Log.w(TAG, "Safe fragment hide failed, using fallback")
+                    fallbackExitSettings()
+                }
+            } else {
+                fallbackExitSettings()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in safe exit settings", e)
+            if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.logCrashDetails(e, "safeExitSettings")
+            }
+            fallbackExitSettings()
+        }
+    }
+
+    /**
+     * Fallback exit settings method
+     */
+    private fun fallbackExitSettings() {
+        try {
+            requireActivity().supportFragmentManager.beginTransaction()
+                .hide(this@SettingFragment)
+                .commitAllowingStateLoss()
+            (activity as? MainActivity)?.showTime()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in fallback exit settings", e)
+        }
     }
 
     // ------------------------------------------------------------
@@ -144,25 +421,110 @@ class SettingFragment : Fragment() {
     //  MODERN FOCUS ANIMATION SYSTEM
     // ------------------------------------------------------------
     private fun setupFocusAnimations() {
-        // Setup focus handling for the entire settings layout
-        settingsFocusManager.setupSettingsFocus(binding.content)
-        
-        // Initialize modern toggle switches with audio feedback
-        val toggleSwitches = listOf(
-            binding.switchChannelReversal,
-            binding.switchChannelNum,
-            binding.switchTime,
-            binding.switchBootStartup,
-            binding.switchConfigAutoLoad,
-            binding.switchChannelCheck,
-            binding.switchWatchLast,
-            binding.switchForceHighQuality
-        )
-        
-        toggleSwitches.forEach { switch ->
-            if (switch is ModernToggleSwitch) {
-                switch.initializeWithAudio(tvUiUtils!!)
+        try {
+            // Setup focus handling for the entire settings layout
+            settingsFocusManager.setupSettingsFocus(binding.content)
+            
+            // Use SettingsResourceManager to safely initialize toggle switches
+            val initializedCount = settingsResourceManager.safeInitializeToggleSwitches(
+                binding.content, 
+                tvUiUtils
+            )
+            
+            Log.i(TAG, "Successfully initialized $initializedCount toggle switches")
+            
+            // Validate that critical switches are working
+            validateToggleSwitchInitialization()
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in setupFocusAnimations, using fallback", e)
+            setupFallbackFocusAnimations()
+        }
+    }
+
+    /**
+     * Validate that toggle switches were properly initialized
+     */
+    private fun validateToggleSwitchInitialization() {
+        try {
+            val toggleSwitches = listOf(
+                binding.switchChannelReversal,
+                binding.switchChannelNum,
+                binding.switchTime,
+                binding.switchBootStartup,
+                binding.switchConfigAutoLoad,
+                binding.switchChannelCheck,
+                binding.switchWatchLast,
+                binding.switchForceHighQuality
+            )
+            
+            var validSwitches = 0
+            toggleSwitches.forEach { switch ->
+                try {
+                    // Test basic functionality
+                    val currentState = switch.isChecked
+                    switch.isEnabled = true
+                    
+                    if (switch is ModernToggleSwitch) {
+                        val isInFallbackMode = switch.isInFallbackMode()
+                        Log.d(TAG, "ModernToggleSwitch validation - Fallback mode: $isInFallbackMode")
+                    }
+                    
+                    validSwitches++
+                } catch (e: Exception) {
+                    Log.w(TAG, "Toggle switch validation failed", e)
+                }
             }
+            
+            Log.i(TAG, "Toggle switch validation completed: $validSwitches/${toggleSwitches.size} switches valid")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during toggle switch validation", e)
+        }
+    }
+
+    /**
+     * Fallback focus animations when full system fails
+     */
+    private fun setupFallbackFocusAnimations() {
+        try {
+            Log.w(TAG, "Setting up fallback focus animations")
+            
+            val toggleSwitches = listOf(
+                binding.switchChannelReversal,
+                binding.switchChannelNum,
+                binding.switchTime,
+                binding.switchBootStartup,
+                binding.switchConfigAutoLoad,
+                binding.switchChannelCheck,
+                binding.switchWatchLast,
+                binding.switchForceHighQuality
+            )
+            
+            toggleSwitches.forEach { switch ->
+                try {
+                    // Basic focus animation
+                    switch.setOnFocusChangeListener { view, hasFocus ->
+                        try {
+                            val scale = if (hasFocus) 1.05f else 1.0f
+                            view.animate()
+                                .scaleX(scale)
+                                .scaleY(scale)
+                                .setDuration(200)
+                                .start()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Error in fallback focus animation", e)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error setting up fallback animation for switch", e)
+                }
+            }
+            
+            Log.i(TAG, "Fallback focus animations setup completed")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Critical error in fallback focus animations", e)
         }
     }
 
@@ -553,13 +915,58 @@ class SettingFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         
-        // Cleanup focus animations
-        settingsFocusManager.cleanup(binding.content)
-        
-        // Stop performance monitoring
-        performanceManager.stopMonitoring()
-        
-        _binding = null
+        try {
+            Log.d(TAG, "Starting SettingFragment cleanup")
+            
+            // Use SafeFragmentManager to cancel pending operations
+            if (::safeFragmentManager.isInitialized) {
+                safeFragmentManager.cancelPendingOperations()
+                Log.d(TAG, "SafeFragmentManager cleanup completed")
+            }
+            
+            // Cleanup focus animations
+            if (::settingsFocusManager.isInitialized) {
+                settingsFocusManager.cleanup(binding.content)
+                Log.d(TAG, "Focus manager cleanup completed")
+            }
+            
+            // Stop performance monitoring
+            if (::performanceManager.isInitialized) {
+                performanceManager.stopMonitoring()
+                Log.d(TAG, "Performance manager cleanup completed")
+            }
+            
+            // Log final diagnostics if resource manager is available
+            if (::settingsResourceManager.isInitialized) {
+                Log.d(TAG, "Final resource manager diagnostics:")
+                settingsResourceManager.logDiagnostics()
+            }
+            
+            // Generate final diagnostic report
+            if (::crashDiagnosticManager.isInitialized) {
+                val finalReport = crashDiagnosticManager.generateDiagnosticReport()
+                Log.d(TAG, "Final diagnostic report: ${finalReport.componentStates.size} components tracked")
+                
+                // Log cleanup completion
+                crashDiagnosticManager.logCrashDetails(
+                    RuntimeException("SettingFragment cleanup completed"),
+                    "onDestroyView",
+                    "CleanupCompleted"
+                )
+            }
+            
+            Log.i(TAG, "SettingFragment cleanup completed successfully")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during cleanup", e)
+            
+            // Log cleanup error if possible
+            if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.logCrashDetails(e, "onDestroyView")
+            }
+        } finally {
+            _binding = null
+        }
     }
 
     companion object {

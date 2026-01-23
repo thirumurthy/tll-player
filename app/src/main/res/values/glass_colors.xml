@@ -5,6 +5,11 @@
     <color name="glass_background_secondary">#1AFFFFFF</color>
     <color name="glass_background_tertiary">#0DFFFFFF</color>
     
+    <!-- Glass Background Colors - Dark variants for better text contrast -->
+    <color name="glass_background_dark_primary">#CC1A1A1A</color>
+    <color name="glass_background_dark_secondary">#B31A1A1A</color>
+    <color name="glass_background_dark_tertiary">#991A1A1A</color>
+    
     <!-- Glass Border Colors -->
     <color name="glass_border_primary">#4DFFFFFF</color>
     <color name="glass_border_secondary">#33FFFFFF</color>

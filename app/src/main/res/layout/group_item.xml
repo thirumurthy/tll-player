@@ -6,7 +6,6 @@
     android:layout_height="@dimen/glass_category_item_height"
     android:layout_marginStart="@dimen/glass_item_margin"
     android:layout_marginEnd="@dimen/glass_item_margin"
-    android:layout_marginTop="@dimen/glass_item_margin"
     android:layout_marginBottom="@dimen/glass_item_margin"
     android:focusable="true"
     android:clickable="true"

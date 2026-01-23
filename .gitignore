@@ -17,3 +17,7 @@ local.properties
 files
 
 keystore.properties
+
+
+# Exclude testing folder
+testing/

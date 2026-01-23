@@ -27,6 +27,10 @@ import androidx.fragment.app.FragmentActivity
 import com.thirutricks.tllplayer.models.TVList
 import com.thirutricks.tllplayer.models.TVModel
 import com.thirutricks.tllplayer.RootCheckUtil
+import com.thirutricks.tllplayer.ui.CrashDiagnosticManager
+import com.thirutricks.tllplayer.ui.SafeFragmentManager
+import com.thirutricks.tllplayer.ui.SettingsErrorRecovery
+import com.thirutricks.tllplayer.ui.ResourceValidator
 
 
 class MainActivity : FragmentActivity() {
@@ -48,6 +52,11 @@ class MainActivity : FragmentActivity() {
     private var trackSelectionFragment = TrackSelectionFragment()
 
     private lateinit var updateManager: UpdateManager
+    
+    // Crash prevention systems for settings
+    private lateinit var crashDiagnosticManager: CrashDiagnosticManager
+    private lateinit var safeFragmentManager: SafeFragmentManager
+    private lateinit var settingsErrorRecovery: SettingsErrorRecovery
 
 
 
@@ -164,6 +173,9 @@ class MainActivity : FragmentActivity() {
                 .hide(timeFragment)
                 .hide(webFragment)
                 .commitNow()
+                
+            // Initialize crash prevention systems for settings
+            initializeCrashPreventionSystems()
         } else {
              // restore fragments
              val fragments = supportFragmentManager.fragments
@@ -208,6 +220,45 @@ class MainActivity : FragmentActivity() {
 
         updateManager = UpdateManager(this, this.appVersionCode)
         updateManager.checkAndUpdate()
+    }
+
+    /**
+     * Initialize crash prevention systems for safe settings operations
+     */
+    private fun initializeCrashPreventionSystems() {
+        try {
+            Log.i(TAG, "Initializing MainActivity crash prevention systems")
+            
+            // Initialize ResourceValidator first
+            val resourceValidator = ResourceValidator(this)
+            
+            // Initialize CrashDiagnosticManager
+            crashDiagnosticManager = CrashDiagnosticManager(this, resourceValidator)
+            
+            // Initialize SafeFragmentManager with diagnostic support
+            safeFragmentManager = SafeFragmentManager(this, crashDiagnosticManager)
+            
+            // Initialize SettingsErrorRecovery
+            settingsErrorRecovery = SettingsErrorRecovery(this, resourceValidator, crashDiagnosticManager)
+            
+            // Log initial state
+            val fragmentState = crashDiagnosticManager.captureFragmentState(fragment = settingFragment)
+            Log.d(TAG, "Settings fragment initial state: isAttached=${fragmentState.isFragmentAttached}")
+            
+            Log.i(TAG, "MainActivity crash prevention systems initialized successfully")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing crash prevention systems", e)
+            
+            // Try to initialize minimal diagnostic system
+            try {
+                val resourceValidator = ResourceValidator(this)
+                crashDiagnosticManager = CrashDiagnosticManager(this, resourceValidator)
+                crashDiagnosticManager.logCrashDetails(e, "initializeCrashPreventionSystems")
+            } catch (e2: Exception) {
+                Log.e(TAG, "Cannot initialize even basic crash prevention", e2)
+            }
+        }
     }
 
     override fun onResumeFragments() {
@@ -580,10 +631,44 @@ class MainActivity : FragmentActivity() {
     }
 
     private val hideSetting = Runnable {
-        if (!isFinishing && !supportFragmentManager.isStateSaved) {
-            if (!settingFragment.isHidden) {
-                supportFragmentManager.beginTransaction().hide(settingFragment).commitAllowingStateLoss()
-                showTime()
+        try {
+            Log.d(TAG, "Auto-hiding settings fragment")
+            
+            if (!isFinishing && !supportFragmentManager.isStateSaved) {
+                if (!settingFragment.isHidden) {
+                    // Use safe fragment operations
+                    val success = if (::safeFragmentManager.isInitialized) {
+                        safeFragmentManager.safeHideFragment(settingFragment)
+                    } else {
+                        // Fallback to commitAllowingStateLoss
+                        try {
+                            supportFragmentManager.beginTransaction()
+                                .hide(settingFragment)
+                                .commitAllowingStateLoss()
+                            true
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error in fallback hide settings", e)
+                            false
+                        }
+                    }
+                    
+                    if (success) {
+                        showTime()
+                        Log.d(TAG, "Settings auto-hidden successfully")
+                    } else {
+                        Log.w(TAG, "Failed to auto-hide settings")
+                    }
+                }
+            } else {
+                Log.w(TAG, "Cannot auto-hide settings: activity finishing or state saved")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in auto-hide settings", e)
+            
+            // Log error
+            if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.logCrashDetails(e, "hideSetting")
             }
         }
     }
@@ -660,14 +745,78 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun showSetting() {
-        if (!menuFragment.isHidden) {
-            return
-        }
+        try {
+            Log.d(TAG, "Attempting to show settings fragment")
+            
+            if (!menuFragment.isHidden) {
+                Log.d(TAG, "Menu fragment is visible, cannot show settings")
+                return
+            }
 
-        supportFragmentManager.beginTransaction()
-            .show(settingFragment)
-            .commit()
-        settingActive()
+            // Use SafeFragmentManager if available
+            val success = if (::safeFragmentManager.isInitialized) {
+                Log.d(TAG, "Using SafeFragmentManager to show settings")
+                safeFragmentManager.safeShowFragment(settingFragment, R.id.main_browse_fragment, "settings")
+            } else {
+                Log.w(TAG, "SafeFragmentManager not available, using fallback")
+                showSettingFallback()
+            }
+            
+            if (success) {
+                settingActive()
+                Log.i(TAG, "Settings fragment shown successfully")
+                
+                // Log diagnostic information
+                if (::crashDiagnosticManager.isInitialized) {
+                    val fragmentState = crashDiagnosticManager.captureFragmentState(fragment = settingFragment)
+                    Log.d(TAG, "Settings shown - Fragment state: isAttached=${fragmentState.isFragmentAttached}")
+                }
+            } else {
+                Log.e(TAG, "Failed to show settings fragment")
+                
+                // Try error recovery
+                if (::settingsErrorRecovery.isInitialized) {
+                    Log.d(TAG, "Attempting settings error recovery")
+                    settingsErrorRecovery.handleComponentInitializationError("SettingsFragment", 
+                        RuntimeException("Failed to show settings fragment"))
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing settings fragment", e)
+            
+            // Log error and attempt recovery
+            if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.logCrashDetails(e, "showSetting")
+            }
+            
+            // Try fallback method
+            showSettingFallback()
+        }
+    }
+
+    /**
+     * Fallback method to show settings when safe operations fail
+     */
+    private fun showSettingFallback(): Boolean {
+        return try {
+            Log.w(TAG, "Using fallback method to show settings")
+            
+            if (isFinishing || supportFragmentManager.isStateSaved) {
+                Log.w(TAG, "Activity finishing or state saved, cannot show settings")
+                return false
+            }
+            
+            supportFragmentManager.beginTransaction()
+                .show(settingFragment)
+                .commitAllowingStateLoss()
+            
+            true
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Fallback settings show failed", e)
+            false
+        }
     }
 
     fun hideMenuFragment() {
@@ -678,10 +827,72 @@ class MainActivity : FragmentActivity() {
     }
 
     private fun hideSettingFragment() {
-        supportFragmentManager.beginTransaction()
-            .hide(settingFragment)
-            .commit()
-        showTime()
+        try {
+            Log.d(TAG, "Attempting to hide settings fragment")
+            
+            // Use SafeFragmentManager if available
+            val success = if (::safeFragmentManager.isInitialized) {
+                Log.d(TAG, "Using SafeFragmentManager to hide settings")
+                safeFragmentManager.safeHideFragment(settingFragment)
+            } else {
+                Log.w(TAG, "SafeFragmentManager not available, using fallback")
+                hideSettingFallback()
+            }
+            
+            if (success) {
+                showTime()
+                Log.i(TAG, "Settings fragment hidden successfully")
+                
+                // Log diagnostic information
+                if (::crashDiagnosticManager.isInitialized) {
+                    val fragmentState = crashDiagnosticManager.captureFragmentState(fragment = settingFragment)
+                    Log.d(TAG, "Settings hidden - Fragment state: isAttached=${fragmentState.isFragmentAttached}")
+                }
+            } else {
+                Log.e(TAG, "Failed to hide settings fragment")
+                
+                // Still try to show time even if hide failed
+                showTime()
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error hiding settings fragment", e)
+            
+            // Log error
+            if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.logCrashDetails(e, "hideSettingFragment")
+            }
+            
+            // Try fallback method
+            hideSettingFallback()
+            showTime()
+        }
+    }
+
+    /**
+     * Fallback method to hide settings when safe operations fail
+     */
+    private fun hideSettingFallback(): Boolean {
+        return try {
+            Log.w(TAG, "Using fallback method to hide settings")
+            
+            if (isFinishing || supportFragmentManager.isStateSaved) {
+                Log.w(TAG, "Activity finishing or state saved, using commitAllowingStateLoss")
+                supportFragmentManager.beginTransaction()
+                    .hide(settingFragment)
+                    .commitAllowingStateLoss()
+            } else {
+                supportFragmentManager.beginTransaction()
+                    .hide(settingFragment)
+                    .commit()
+            }
+            
+            true
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Fallback settings hide failed", e)
+            false
+        }
     }
 
      private fun showAudioSelector() {

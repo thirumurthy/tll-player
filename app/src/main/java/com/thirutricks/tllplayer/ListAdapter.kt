@@ -114,9 +114,8 @@ class ListAdapter(
         view.isFocusable = true
         view.isFocusableInTouchMode = true
 
-        // Set up interactive feedback
+        // Set up interactive feedback for the item (not the heart)
         feedbackManager.setupInteractiveFeedback(view, FeedbackType.MENU_ITEM)
-        feedbackManager.setupInteractiveFeedback(heart, FeedbackType.BUTTON)
 
         return ViewHolder(context, view, styleConfig, animationController, feedbackManager)
     }
@@ -185,10 +184,10 @@ class ListAdapter(
         viewHolder.like(tvModel.like.value as Boolean)
 
         val heart = view.findViewById<ImageView>(R.id.heart)
-        heart.setOnClickListener {
-            tvModel.setLike(!(tvModel.like.value as Boolean))
-            viewHolder.like(tvModel.like.value as Boolean)
-        }
+        // Heart icon is now purely visual - no click functionality
+        heart.isFocusable = false
+        heart.isFocusableInTouchMode = false
+        heart.isClickable = false
 
         if (!defaultFocused && position == defaultFocus) {
             view.requestFocus()
@@ -385,30 +384,14 @@ class ListAdapter(
             val heartIcon = if (liked) R.drawable.ic_heart else R.drawable.ic_heart_empty
             heart.setImageDrawable(ContextCompat.getDrawable(context, heartIcon))
             
-            // Apply glass styling to heart with enhanced animation
+            // Apply glass styling to heart - purely visual, no feedback messages
             if (liked) {
                 // Animate heart with glass glow effect
                 animationController.animateHeartLike(heart, true)
                 heart.setColorFilter(styleConfig.favoriteActiveColor)
-                
-                // Show operation completion feedback
-                feedbackManager.showOperationCompletionFeedback(
-                    heart, 
-                    OperationType.FAVORITE, 
-                    true, 
-                    "Added to favorites"
-                )
             } else {
                 animationController.animateHeartLike(heart, false)
                 heart.setColorFilter(styleConfig.favoriteInactiveColor)
-                
-                // Show operation completion feedback
-                feedbackManager.showOperationCompletionFeedback(
-                    heart, 
-                    OperationType.UNFAVORITE, 
-                    true, 
-                    "Removed from favorites"
-                )
             }
         }
 

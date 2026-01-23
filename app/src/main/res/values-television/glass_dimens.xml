@@ -10,13 +10,13 @@
     <dimen name="glass_panel_margin">24dp</dimen>
     <dimen name="glass_panel_padding">16dp</dimen>
     <dimen name="glass_item_padding">12dp</dimen>
-    <dimen name="glass_item_margin">6dp</dimen>
+    <dimen name="glass_item_margin">1dp</dimen>
     
     <!-- TV-optimized Category Panel Dimensions -->
     <dimen name="glass_category_panel_width">280dp</dimen>
-    <dimen name="glass_category_item_height">64dp</dimen>
+    <dimen name="glass_category_item_height">48dp</dimen>
     <dimen name="glass_category_item_padding_horizontal">20dp</dimen>
-    <dimen name="glass_category_item_padding_vertical">16dp</dimen>
+    <dimen name="glass_category_item_padding_vertical">12dp</dimen>
     
     <!-- TV-optimized Channel Panel Dimensions -->
     <dimen name="glass_channel_panel_width">480dp</dimen>
@@ -35,4 +35,7 @@
     <dimen name="glass_focus_scale">1.08</dimen>
     <dimen name="glass_move_indicator_size">28dp</dimen>
     <dimen name="glass_arrow_size">20dp</dimen>
+
+    <!-- Dialog Dimensions -->
+    <dimen name="glass_dialog_width">550dp</dimen>
 </resources>

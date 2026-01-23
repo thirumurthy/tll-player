@@ -81,6 +81,14 @@ class ChannelOptionsDialogFragment : DialogFragment() {
         return dialog
     }
     
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.setLayout(
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         if (::glassDialogManager.isInitialized) {
