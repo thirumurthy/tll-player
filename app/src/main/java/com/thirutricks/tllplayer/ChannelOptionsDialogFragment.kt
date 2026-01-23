@@ -17,6 +17,7 @@ class ChannelOptionsDialogFragment : DialogFragment() {
     interface ChannelOptionsListener {
         fun onMoveSelected()
         fun onRenameSelected()
+        fun onFavouriteSelected()
         fun onCancelSelected()
     }
 
@@ -50,6 +51,7 @@ class ChannelOptionsDialogFragment : DialogFragment() {
         val titleText = view.findViewById<android.widget.TextView>(R.id.dialog_title)
         val btnMove = view.findViewById<Button>(R.id.btn_move)
         val btnRename = view.findViewById<Button>(R.id.btn_rename)
+        val btnFavourite = view.findViewById<Button>(R.id.btn_favourite)
         val btnCancel = view.findViewById<Button>(R.id.btn_cancel)
 
         titleText?.text = "Channel Options: $channelName"
@@ -61,6 +63,11 @@ class ChannelOptionsDialogFragment : DialogFragment() {
 
         btnRename?.setOnClickListener {
             listener?.onRenameSelected()
+            dismiss()
+        }
+
+        btnFavourite?.setOnClickListener {
+            listener?.onFavouriteSelected()
             dismiss()
         }
 

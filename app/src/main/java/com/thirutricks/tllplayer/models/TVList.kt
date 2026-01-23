@@ -44,7 +44,8 @@ object TVList {
         _importProgress.value = 0
 
         groupModel.addTVListModel(TVListModel("My Collection", 0))
-        groupModel.addTVListModel(TVListModel("All channels", 1))
+        groupModel.addTVListModel(TVListModel("Favourites", 1))
+        groupModel.addTVListModel(TVListModel("All channels", 2))
 
         appDirectory = context.filesDir
         CoroutineScope(Dispatchers.IO).launch {
@@ -303,7 +304,7 @@ object TVList {
         // Triple<CategoryName, GroupIndex, List<TV>>
         val preparedGroups = mutableListOf<Triple<String, Int, List<TV>>>()
         
-        var groupIndex = 2
+        var groupIndex = 3
         // We will assign IDs and build TVModels in the main thread to be safe, 
         // OR we can assign IDs here if 'id' in TV is just an Int and not LiveData.
         // TV.id is Int. So checks are fine.
@@ -376,8 +377,17 @@ object TVList {
 
             listModel = listModelNew
 
-            // All channels
-            groupModel.getTVListModel(1)?.setTVListModel(listModel)
+            // Populate Favourites category (index 1)
+            val favouriteChannels = mutableListOf<TVModel>()
+            for (tvModel in listModelNew) {
+                if (SP.getLike(tvModel.tv.id)) {
+                    favouriteChannels.add(tvModel)
+                }
+            }
+            groupModel.getTVListModel(1)?.setTVListModel(favouriteChannels)
+
+            // All channels (now index 2)
+            groupModel.getTVListModel(2)?.setTVListModel(listModel)
 
             Log.i(TAG, "groupModel ${groupModel.size()}")
             
@@ -495,5 +505,18 @@ object TVList {
 
     fun size(): Int {
         return listModel.size
+    }
+
+    fun refreshFavourites() {
+        CoroutineScope(Dispatchers.Main).launch {
+            val favouriteChannels = mutableListOf<TVModel>()
+            for (tvModel in listModel) {
+                if (SP.getLike(tvModel.tv.id)) {
+                    favouriteChannels.add(tvModel)
+                }
+            }
+            groupModel.getTVListModel(1)?.setTVListModel(favouriteChannels)
+            groupModel.setChange()
+        }
     }
 }

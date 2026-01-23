@@ -42,9 +42,10 @@ class TVGroupModel : ViewModel() {
     }
 
     fun clear() {
-        _tvGroupModel.value = mutableListOf(getTVListModel(0)!!, getTVListModel(1)!!)
+        _tvGroupModel.value = mutableListOf(getTVListModel(0)!!, getTVListModel(1)!!, getTVListModel(2)!!)
         setPosition(0)
-        getTVListModel(1)?.clear()
+        getTVListModel(1)?.clear() // Clear Favourites
+        getTVListModel(2)?.clear() // Clear All channels
     }
 
     fun getTVListModel(): TVListModel? {

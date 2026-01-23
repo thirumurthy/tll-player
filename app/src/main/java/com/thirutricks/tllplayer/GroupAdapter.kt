@@ -18,6 +18,8 @@ import com.thirutricks.tllplayer.models.TVGroupModel
 import com.thirutricks.tllplayer.models.TVListModel
 import com.thirutricks.tllplayer.OrderPreferenceManager
 import com.thirutricks.tllplayer.RenameDialogFragment
+import com.thirutricks.tllplayer.SP
+import android.widget.Toast
 import com.thirutricks.tllplayer.ui.glass.GlassEffectUtils
 import com.thirutricks.tllplayer.ui.glass.GlassStyleConfig
 import com.thirutricks.tllplayer.ui.glass.GlassType
@@ -28,7 +30,6 @@ import com.thirutricks.tllplayer.ui.glass.FeedbackType
 import com.thirutricks.tllplayer.ui.glass.OperationType
 import com.thirutricks.tllplayer.ui.glass.GlassPerformanceManager
 // import com.thirutricks.tllplayer.ui.glass.GlassScrollManager
-import android.widget.Toast
 import android.view.MotionEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -388,7 +389,7 @@ class GroupAdapter(
         val order = mutableListOf<String>()
         for (i in 0 until tvGroupModel.size()) {
             val model = tvGroupModel.getTVListModel(i)
-            if (model != null && i > 1) { // Skip "My Collection" and "All channels"
+            if (model != null && i > 2) { // Skip "My Collection", "Favourites", and "All channels"
                 // Get original name (before rename)
                 val displayName = model.getName()
                 val renames = OrderPreferenceManager.getCategoryRenames()
@@ -429,13 +430,13 @@ class GroupAdapter(
     }
 
     private fun moveGroupUp(position: Int) {
-        if (position <= 2) {
+        if (position <= 3) {
             Toast.makeText(context, "Cannot move this category up", Toast.LENGTH_SHORT).show()
             return
         }
 
         val currentOrder = getCurrentCategoryOrder()
-        val index = position - 2
+        val index = position - 3
 
         if (index > 0) {
             Collections.swap(currentOrder, index, index - 1)
@@ -466,7 +467,7 @@ class GroupAdapter(
         }
 
         val currentOrder = getCurrentCategoryOrder()
-        val index = position - 2
+        val index = position - 3
 
         if (index < currentOrder.size - 1) {
             Collections.swap(currentOrder, index, index + 1)

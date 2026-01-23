@@ -33,6 +33,8 @@ object SP {
 
     private const val KEY_LIKE = "like"
 
+    private const val KEY_FAVORITE_CATEGORY = "favorite_category"
+
     const val KEY_EPG = "epg"
 
     private const val KEY_CONFIG_CHANNEL_CHECK = "config_channel_check"
@@ -159,5 +161,24 @@ object SP {
 
     fun setAudioTrack(channelKey: String, index: Int) {
         sp.edit().putInt(KEY_AUDIO_TRACK_PREFIX + channelKey, index).apply()
+    }
+
+    fun getFavoriteCategory(categoryName: String): Boolean {
+        val stringSet = sp.getStringSet(KEY_FAVORITE_CATEGORY, emptySet())
+        return stringSet?.contains(categoryName) ?: false
+    }
+
+    fun setFavoriteCategory(categoryName: String, favorite: Boolean) {
+        val stringSet = sp.getStringSet(KEY_FAVORITE_CATEGORY, emptySet())?.toMutableSet() ?: mutableSetOf()
+        if (favorite) {
+            stringSet.add(categoryName)
+        } else {
+            stringSet.remove(categoryName)
+        }
+        sp.edit().putStringSet(KEY_FAVORITE_CATEGORY, stringSet).apply()
+    }
+
+    fun deleteFavoriteCategories() {
+        sp.edit().remove(KEY_FAVORITE_CATEGORY).apply()
     }
 }

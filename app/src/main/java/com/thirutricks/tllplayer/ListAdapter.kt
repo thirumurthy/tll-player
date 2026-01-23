@@ -490,6 +490,24 @@ class ListAdapter(
                 showRenameDialog(tvModel)
             }
 
+            override fun onFavouriteSelected() {
+                // Toggle favourite status for this channel
+                val currentLiked = tvModel.like.value ?: false
+                tvModel.setLike(!currentLiked)
+                
+                // Save to preferences
+                SP.setLike(tvModel.tv.id, !currentLiked)
+                
+                // Update the UI immediately
+                notifyItemChanged(position)
+                
+                // Refresh the Favourites category
+                com.thirutricks.tllplayer.models.TVList.refreshFavourites()
+                
+                val message = if (!currentLiked) "Added to favourites" else "Removed from favourites"
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+
             override fun onCancelSelected() {
                 // Do nothing
             }
