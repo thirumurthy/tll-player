@@ -598,4 +598,18 @@ object TVList {
             Log.i(TAG, "Channel list rebuilt from categories. Total channels: ${listModel.size}")
         }
     }
+
+    fun removeChannel(tv: TV) {
+        if (!::list.isInitialized) return
+        
+        val mutableList = list.toMutableList()
+        val removed = mutableList.removeIf { it === tv || (it.group == tv.group && it.title == tv.title && it.uris == tv.uris) }
+        
+        if (removed) {
+            list = mutableList
+            CoroutineScope(Dispatchers.Main).launch {
+                refreshModels()
+            }
+        }
+    }
 }

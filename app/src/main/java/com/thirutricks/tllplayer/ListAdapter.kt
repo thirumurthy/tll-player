@@ -84,30 +84,30 @@ class ListAdapter(
         val description = view.findViewById<TextView>(R.id.description)
 
         // Apply responsive scaling for icon
-        icon.layoutParams.width = application.px2Px(icon.layoutParams.width)
-        icon.layoutParams.height = application.px2Px(icon.layoutParams.height)
-        icon.setPadding(application.px2Px(icon.paddingTop))
+        // icon.layoutParams.width = application.px2Px(icon.layoutParams.width)
+        // icon.layoutParams.height = application.px2Px(icon.layoutParams.height)
+        // icon.setPadding(application.px2Px(icon.paddingTop))
 
         // Apply responsive scaling for title
-        val layoutParams = title.layoutParams as ViewGroup.MarginLayoutParams
-        layoutParams.marginStart = application.px2Px(title.marginStart)
-        title.layoutParams = layoutParams
+        // val layoutParams = title.layoutParams as ViewGroup.MarginLayoutParams
+        // layoutParams.marginStart = application.px2Px(title.marginStart)
+        // title.layoutParams = layoutParams
 
         // Apply responsive scaling for heart
-        heart.layoutParams.width = application.px2Px(heart.layoutParams.width)
-        heart.layoutParams.height = application.px2Px(heart.layoutParams.height)
+        // heart.layoutParams.width = application.px2Px(heart.layoutParams.width)
+        // heart.layoutParams.height = application.px2Px(heart.layoutParams.height)
 
         // Apply glass text styling
         GlassEffectUtils.applyGlassTextStyle(title, TextLevel.PRIMARY, styleConfig)
-        title.textSize = application.px2PxFont(title.textSize)
+        // title.textSize = application.px2PxFont(title.textSize)
 
         val layoutParamsHeart = heart.layoutParams as ViewGroup.MarginLayoutParams
-        layoutParamsHeart.marginStart = application.px2Px(heart.marginStart)
+        // layoutParamsHeart.marginStart = application.px2Px(heart.marginStart)
         heart.layoutParams = layoutParamsHeart
 
         // Apply glass text styling for description
         GlassEffectUtils.applyGlassTextStyle(description, TextLevel.SECONDARY, styleConfig)
-        description.textSize = application.px2PxFont(description.textSize)
+        // description.textSize = application.px2PxFont(description.textSize)
 
         // Set up glass state selector for interactive feedback
         view.background = GlassEffectUtils.createGlassStateSelector(context)
@@ -513,6 +513,12 @@ class ListAdapter(
                 
                 val message = if (!currentLiked) "Added to favourites" else "Removed from favourites"
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onDeleteSelected() {
+                // Delete the channel
+                com.thirutricks.tllplayer.models.TVList.removeChannel(tvModel.tv)
+                Toast.makeText(context, "Channel deleted", Toast.LENGTH_SHORT).show()
             }
 
             override fun onCancelSelected() {

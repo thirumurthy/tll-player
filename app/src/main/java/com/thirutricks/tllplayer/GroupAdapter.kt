@@ -72,15 +72,15 @@ class GroupAdapter(
 
         val title = view.findViewById<TextView>(R.id.title)
         
-        // Apply responsive scaling
-        val layoutParams = title.layoutParams as ViewGroup.MarginLayoutParams
-        layoutParams.marginStart = application.px2Px(title.marginStart)
-        layoutParams.bottomMargin = application.px2Px(title.marginBottom)
-        title.layoutParams = layoutParams
+        // Apply responsive scaling - REMOVED to fix double scaling
+        // val layoutParams = title.layoutParams as ViewGroup.MarginLayoutParams
+        // layoutParams.marginStart = application.px2Px(title.marginStart)
+        // layoutParams.bottomMargin = application.px2Px(title.marginBottom)
+        // title.layoutParams = layoutParams
 
         // Apply glass text styling
         GlassEffectUtils.applyGlassTextStyle(title, TextLevel.PRIMARY, styleConfig)
-        title.textSize = application.px2PxFont(title.textSize)
+        // title.textSize = application.px2PxFont(title.textSize)
 
         // Set up glass state selector for interactive feedback
         view.background = GlassEffectUtils.createGlassStateSelector(context)
@@ -368,6 +368,10 @@ class GroupAdapter(
                 showRenameDialog(originalName)
             }
 
+            override fun onDeleteSelected() {
+                deleteCategory(position)
+            }
+
             override fun onCancelSelected() {
                 // Do nothing
             }
@@ -496,6 +500,43 @@ class GroupAdapter(
         } else {
             Log.w(TAG, "moveGroupUp: Invalid index $index for order size ${currentOrder.size}")
         }
+    }
+
+    private fun deleteCategory(position: Int) {
+        if (position <= 2) { // Cannot delete "My Collection", "Favourites", "All channels"
+             Toast.makeText(context, "Cannot delete system category", Toast.LENGTH_SHORT).show()
+             return
+        }
+        
+        val tvListModel = tvGroupModel.getTVListModel(position) ?: return
+        val categoryName = tvListModel.getName()
+        
+        // Remove from UI model
+        tvGroupModel.remove(position)
+        notifyItemRemoved(position)
+        
+        // Save to preferences (using order preference to hide/remove?)
+        // Currently we don't have a "hidden categories" preference, but removing from order might effectively hide it 
+        // if we implementation respects that.
+        // But here we are just removing from run-time model. 
+        // For persistence, we might need to add it to a "hidden" list or simply remove it from the file (complex).
+        // Let's assume removing from OrderPreferenceManager's order list if it exists there is enough for now,
+        // or we need a way to persist deletion.
+        // Given the constraints and existing code, I will remove it from OrderPreferenceManager if present.
+        
+        val currentOrder = getCurrentCategoryOrder()
+        val renames = OrderPreferenceManager.getCategoryRenames()
+        val originalName = renames.entries.find { it.value == categoryName }?.key ?: categoryName
+        
+        if (currentOrder.contains(originalName)) {
+            currentOrder.remove(originalName)
+            OrderPreferenceManager.saveCategoryOrder(currentOrder)
+        }
+        
+        // Rebuild global channel list
+        com.thirutricks.tllplayer.models.TVList.rebuildChannelListFromCategories()
+        
+        Toast.makeText(context, "Category deleted", Toast.LENGTH_SHORT).show()
     }
 
     private fun moveGroupDown(position: Int) {

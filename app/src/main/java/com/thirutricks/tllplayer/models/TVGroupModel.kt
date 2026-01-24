@@ -80,4 +80,12 @@ class TVGroupModel : ViewModel() {
             _tvGroupModel.value = list
         }
     }
+
+    fun remove(index: Int) {
+        val list = _tvGroupModel.value?.toMutableList() ?: return
+        if (index in list.indices) {
+            list.removeAt(index)
+            _tvGroupModel.value = list
+        }
+    }
 }

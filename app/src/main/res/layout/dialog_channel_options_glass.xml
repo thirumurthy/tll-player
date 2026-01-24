@@ -62,6 +62,18 @@
             android:textSize="16sp"
             android:focusable="true" />
 
+        <!-- Delete Button -->
+        <Button
+            android:id="@+id/btn_delete"
+            android:layout_width="200dp"
+            android:layout_height="48dp"
+            android:layout_margin="4dp"
+            android:background="@drawable/tv_button_glass"
+            android:text="Delete"
+            android:textColor="@color/glass_text_primary"
+            android:textSize="16sp"
+            android:focusable="true" />
+
         <!-- Cancel Button -->
         <Button
             android:id="@+id/btn_cancel"

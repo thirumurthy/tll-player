@@ -144,6 +144,7 @@ dependencies {
     testImplementation("androidx.test.ext:junit:1.1.5")
     testImplementation("org.mockito:mockito-core:5.5.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.10")
     
     // Property-based testing
     testImplementation("io.kotest:kotest-runner-junit5:5.7.2")
