@@ -1,6 +1,7 @@
 package com.thirutricks.tllplayer
 
 import android.content.Context
+import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -382,14 +383,25 @@ class GroupAdapter(
     private fun stopMove() {
         val prevPosition = movingPosition
         movingPosition = -1
-        notifyItemChanged(prevPosition)
+        if (prevPosition >= 0) {
+            notifyItemChanged(prevPosition)
+        }
+    }
+    
+    /**
+     * Reset move state and refresh adapter after category moves
+     */
+    private fun resetMoveStateAndRefresh() {
+        movingPosition = -1
+        // Full refresh to ensure all positions are synchronized
+        notifyDataSetChanged()
     }
 
     private fun getCurrentCategoryOrder(): MutableList<String> {
         val order = mutableListOf<String>()
-        for (i in 0 until tvGroupModel.size()) {
+        for (i in 3 until tvGroupModel.size()) { // Start from index 3, skip first 3 categories
             val model = tvGroupModel.getTVListModel(i)
-            if (model != null && i > 2) { // Skip "My Collection", "Favourites", and "All channels"
+            if (model != null) {
                 // Get original name (before rename)
                 val displayName = model.getName()
                 val renames = OrderPreferenceManager.getCategoryRenames()
@@ -397,6 +409,7 @@ class GroupAdapter(
                 order.add(originalName)
             }
         }
+        Log.d(TAG, "getCurrentCategoryOrder: ${order.joinToString(", ")}")
         return order
     }
 
@@ -430,6 +443,8 @@ class GroupAdapter(
     }
 
     private fun moveGroupUp(position: Int) {
+        Log.d(TAG, "moveGroupUp: position=$position, movingPosition=$movingPosition")
+        
         if (position <= 3) {
             Toast.makeText(context, "Cannot move this category up", Toast.LENGTH_SHORT).show()
             return
@@ -437,8 +452,10 @@ class GroupAdapter(
 
         val currentOrder = getCurrentCategoryOrder()
         val index = position - 3
+        
+        Log.d(TAG, "moveGroupUp: index=$index, currentOrder size=${currentOrder.size}")
 
-        if (index > 0) {
+        if (index > 0 && index < currentOrder.size) {
             Collections.swap(currentOrder, index, index - 1)
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
             tvGroupModel.swap(position, position - 1)
@@ -446,15 +463,18 @@ class GroupAdapter(
             val newPosition = position - 1
             movingPosition = newPosition
             
+            Log.d(TAG, "moveGroupUp: swapped $position -> $newPosition")
+            
             // Notify the move first
             notifyItemMoved(position, newPosition)
             
             // Rebuild the entire channel list to reflect new category order
             com.thirutricks.tllplayer.models.TVList.rebuildChannelListFromCategories()
             
-            // Update the moved item to show arrows
+            // Update the moved item to show arrows and refresh adapter state
             recyclerView.post {
-                notifyItemChanged(newPosition)
+                // Refresh the entire adapter to sync positions
+                notifyDataSetChanged()
                 
                 // Focus the moved item after UI updates
                 recyclerView.postDelayed({
@@ -464,8 +484,10 @@ class GroupAdapter(
                         view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
                     }
                     Toast.makeText(context, "Category moved up", Toast.LENGTH_SHORT).show()
-                }, 50)
+                }, 100)
             }
+        } else {
+            Log.w(TAG, "moveGroupUp: Invalid index $index for order size ${currentOrder.size}")
         }
     }
 
@@ -492,9 +514,10 @@ class GroupAdapter(
             // Rebuild the entire channel list to reflect new category order
             com.thirutricks.tllplayer.models.TVList.rebuildChannelListFromCategories()
             
-            // Update the moved item to show arrows
+            // Update the moved item to show arrows and refresh adapter state
             recyclerView.post {
-                notifyItemChanged(newPosition)
+                // Refresh the entire adapter to sync positions
+                notifyDataSetChanged()
                 
                 // Focus the moved item after UI updates
                 recyclerView.postDelayed({
@@ -504,7 +527,7 @@ class GroupAdapter(
                         view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
                     }
                     Toast.makeText(context, "Category moved down", Toast.LENGTH_SHORT).show()
-                }, 50)
+                }, 100)
             }
         }
     }
