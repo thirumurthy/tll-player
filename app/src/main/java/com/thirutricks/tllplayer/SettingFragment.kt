@@ -93,6 +93,7 @@ class SettingFragment : Fragment() {
         setupResponsiveLayout() // ⭐ ADD RESPONSIVE LAYOUT OPTIMIZATION
         setupAccessibility()    // ⭐ ADD ACCESSIBILITY COMPLIANCE
         setupPerformanceOptimization() // ⭐ ADD PERFORMANCE OPTIMIZATION
+        setupKeyNavigation()    // ⭐ ADD PROPER KEY NAVIGATION
 
         updateManager = UpdateManager(requireContext(), requireContext().appVersionCode)
         (activity as MainActivity).ready(TAG)
@@ -353,6 +354,79 @@ class SettingFragment : Fragment() {
             Log.e(TAG, "Error in fallback exit settings", e)
         }
     }
+
+
+    // ------------------------------------------------------------
+    //  KEY NAVIGATION SETUP
+    // ------------------------------------------------------------
+    private fun setupKeyNavigation() {
+        try {
+            Log.d(TAG, "Setting up key navigation for settings")
+            
+            // Make the content container focusable and handle key events
+            binding.content.apply {
+                isFocusable = true
+                isFocusableInTouchMode = true
+                
+                // Set initial focus to the first toggle switch
+                post {
+                    binding.switchChannelReversal.requestFocus()
+                }
+            }
+            
+            // Setup focus order for all interactive elements
+            setupFocusOrder()
+            
+            Log.i(TAG, "Key navigation setup completed")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting up key navigation", e)
+            if (::crashDiagnosticManager.isInitialized) {
+                crashDiagnosticManager.logCrashDetails(e, "setupKeyNavigation")
+            }
+        }
+    }
+    
+    private fun setupFocusOrder() {
+        try {
+            // Define focus order for all interactive elements
+            val focusableElements = listOf(
+                binding.switchChannelReversal,
+                binding.switchChannelNum,
+                binding.switchTime,
+                binding.switchWatchLast,
+                binding.switchForceHighQuality,
+                binding.switchBootStartup,
+                binding.switchConfigAutoLoad,
+                binding.switchChannelCheck,
+                binding.config,
+                binding.confirmConfig,
+                binding.channel,
+                binding.confirmChannel,
+                binding.qrcode,
+                binding.clear,
+                binding.resetOrder,
+                binding.appreciate,
+                binding.exit
+            )
+            
+            // Set up next focus IDs for proper navigation
+            for (i in 0 until focusableElements.size - 1) {
+                focusableElements[i].nextFocusDownId = focusableElements[i + 1].id
+                focusableElements[i + 1].nextFocusUpId = focusableElements[i].id
+            }
+            
+            // Handle wrap-around navigation
+            focusableElements.first().nextFocusUpId = focusableElements.last().id
+            focusableElements.last().nextFocusDownId = focusableElements.first().id
+            
+            Log.d(TAG, "Focus order setup completed for ${focusableElements.size} elements")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting up focus order", e)
+        }
+    }
+
 
     // ------------------------------------------------------------
     //  MODERN UI SETUP
@@ -833,6 +907,11 @@ class SettingFragment : Fragment() {
             val config = binding.config
             config.text = SP.config?.let { Editable.Factory.getInstance().newEditable(it) }
                 ?: Editable.Factory.getInstance().newEditable("")
+            
+            // Ensure proper focus when settings becomes visible
+            binding.content.post {
+                binding.switchChannelReversal.requestFocus()
+            }
         }
     }
 

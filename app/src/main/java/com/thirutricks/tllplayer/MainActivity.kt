@@ -1083,8 +1083,12 @@ class MainActivity : FragmentActivity() {
                 if (!menuFragment.isHidden) {
                     return false
                 }
-                // For other overlays (settings, track selection), consume but don't act
-                return !trackSelectionFragment.isHidden || !settingFragment.isHidden 
+                // If settings is open, let it handle navigation - return false
+                if (!settingFragment.isHidden) {
+                    return false
+                }
+                // For track selection, consume but don't act
+                return !trackSelectionFragment.isHidden 
             }
 
             KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
@@ -1096,8 +1100,12 @@ class MainActivity : FragmentActivity() {
                 if (!menuFragment.isHidden) {
                     return false
                 }
-                // For other overlays (settings, track selection), consume but don't act
-                return !trackSelectionFragment.isHidden || !settingFragment.isHidden
+                // If settings is open, let it handle navigation - return false
+                if (!settingFragment.isHidden) {
+                    return false
+                }
+                // For track selection, consume but don't act
+                return !trackSelectionFragment.isHidden
             }
 
             KeyEvent.KEYCODE_DPAD_LEFT -> {
@@ -1105,7 +1113,11 @@ class MainActivity : FragmentActivity() {
                     showFragment(menuFragment)
                     return true
                 }
-                return !trackSelectionFragment.isHidden || !menuFragment.isHidden || !settingFragment.isHidden
+                // If settings is open, let it handle navigation - return false
+                if (!settingFragment.isHidden) {
+                    return false
+                }
+                return !trackSelectionFragment.isHidden || !menuFragment.isHidden
             }
 
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
@@ -1115,10 +1127,14 @@ class MainActivity : FragmentActivity() {
                     if (menuFragment.onKey(keyCode)) return true
                 }
                 
-                // 2. Short press handling moved to onKeyUp to avoid conflict with long press
-
+                // 2. If settings is open, let it handle navigation - return false
+                if (!settingFragment.isHidden) {
+                    return false
+                }
                 
-                return !trackSelectionFragment.isHidden || !menuFragment.isHidden || !settingFragment.isHidden
+                // 3. Short press handling moved to onKeyUp to avoid conflict with long press
+                
+                return !trackSelectionFragment.isHidden || !menuFragment.isHidden
 
 //                return true
             }

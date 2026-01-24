@@ -2,7 +2,17 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/setting"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/glass_menu_overlay">
+
+    <!-- Glass Menu Background with Blur Effect (matching menu.xml) -->
+    <View
+        android:id="@+id/menu_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/glass_menu_background"
+        android:elevation="@dimen/glass_elevation_low"
+        android:layout_margin="@dimen/glass_panel_margin" />
 
     <!-- Glassmorphism background -->
     <com.thirutricks.tllplayer.ui.GlassyBackgroundView
