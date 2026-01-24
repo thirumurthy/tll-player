@@ -588,6 +588,9 @@ class ListAdapter(
             // Notify the move first
             notifyItemMoved(index, newPosition)
             
+            // Reassign channel IDs after the move
+            com.thirutricks.tllplayer.models.TVList.reassignChannelIds()
+            
             // Update the moved item to show arrows
             recyclerView.post {
                 notifyItemChanged(newPosition)
@@ -627,6 +630,9 @@ class ListAdapter(
             
             // Notify the move first
             notifyItemMoved(index, newPosition)
+            
+            // Reassign channel IDs after the move
+            com.thirutricks.tllplayer.models.TVList.reassignChannelIds()
             
             // Update the moved item to show arrows
             recyclerView.post {

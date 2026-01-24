@@ -522,4 +522,71 @@ object TVList {
             groupModel.setChange()
         }
     }
+    
+    /**
+     * Reassign channel IDs after moves to maintain correct sequential numbering
+     */
+    fun reassignChannelIds() {
+        CoroutineScope(Dispatchers.Main).launch {
+            var id = 0
+            for (tvModel in listModel) {
+                tvModel.tv.id = id
+                id++
+            }
+            
+            // Update the current position if it's set
+            val currentPosition = position.value
+            if (currentPosition != null && currentPosition < listModel.size) {
+                SP.position = currentPosition
+            }
+            
+            Log.i(TAG, "Channel IDs reassigned. Total channels: ${listModel.size}")
+        }
+    }
+    
+    /**
+     * Rebuild the global channel list based on current category order
+     * This is needed when categories are moved to ensure correct channel numbering
+     */
+    fun rebuildChannelListFromCategories() {
+        CoroutineScope(Dispatchers.Main).launch {
+            val newListModel = mutableListOf<TVModel>()
+            var id = 0
+            
+            // Skip the first 3 categories (My Collection, Favourites, All channels)
+            // and rebuild from the actual content categories
+            for (i in 3 until groupModel.size()) {
+                val tvListModel = groupModel.getTVListModel(i)
+                if (tvListModel != null) {
+                    val channels = tvListModel.tvListModel.value ?: emptyList()
+                    for ((listIndex, tvModel) in channels.withIndex()) {
+                        // Update the channel ID and indices
+                        tvModel.tv.id = id
+                        tvModel.groupIndex = i
+                        tvModel.listIndex = listIndex
+                        
+                        newListModel.add(tvModel)
+                        id++
+                    }
+                }
+            }
+            
+            // Update the global list model
+            listModel = newListModel
+            
+            // Refresh the "All channels" category (index 2) with the new order
+            groupModel.getTVListModel(2)?.setTVListModel(newListModel)
+            
+            // Refresh favourites to maintain consistency
+            refreshFavourites()
+            
+            // Update the current position if it's set
+            val currentPosition = position.value
+            if (currentPosition != null && currentPosition < listModel.size) {
+                SP.position = currentPosition
+            }
+            
+            Log.i(TAG, "Channel list rebuilt from categories. Total channels: ${listModel.size}")
+        }
+    }
 }

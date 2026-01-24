@@ -449,6 +449,9 @@ class GroupAdapter(
             // Notify the move first
             notifyItemMoved(position, newPosition)
             
+            // Rebuild the entire channel list to reflect new category order
+            com.thirutricks.tllplayer.models.TVList.rebuildChannelListFromCategories()
+            
             // Update the moved item to show arrows
             recyclerView.post {
                 notifyItemChanged(newPosition)
@@ -485,6 +488,9 @@ class GroupAdapter(
             
             // Notify the move first
             notifyItemMoved(position, newPosition)
+            
+            // Rebuild the entire channel list to reflect new category order
+            com.thirutricks.tllplayer.models.TVList.rebuildChannelListFromCategories()
             
             // Update the moved item to show arrows
             recyclerView.post {

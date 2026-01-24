@@ -23,11 +23,6 @@
     <dimen name="glass_item_margin">2dp</dimen>
     <dimen name="glass_reduced_gap">8dp</dimen>
     
-    <!-- Visual Connection Elements -->
-    <dimen name="glass_connection_line_width">24dp</dimen>
-    <dimen name="glass_connection_arrow_size">14sp</dimen>
-    <dimen name="glass_label_text_size">12sp</dimen>
-    
     <!-- Category Panel Dimensions -->
     <dimen name="glass_category_panel_width">240dp</dimen>
     <dimen name="glass_category_item_height">40dp</dimen>
