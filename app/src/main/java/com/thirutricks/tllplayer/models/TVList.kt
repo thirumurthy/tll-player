@@ -396,6 +396,9 @@ object TVList {
     }
 
     private fun checkChannelsInBackground() {
+        // TEMPORARILY DISABLED: Automatic channel removal to prevent working channels from being removed
+        return
+        
         if (!SP.channelCheck) return
 
         CoroutineScope(Dispatchers.IO).launch {

@@ -442,20 +442,26 @@ class GroupAdapter(
             Collections.swap(currentOrder, index, index - 1)
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
             tvGroupModel.swap(position, position - 1)
-            notifyItemMoved(position, position - 1)
-            movingPosition = position - 1
             
-            // Immediate focus change without delay
-            toPosition(position - 1)
+            val newPosition = position - 1
+            movingPosition = newPosition
             
-            // Show lightweight feedback without heavy animations
+            // Notify the move first
+            notifyItemMoved(position, newPosition)
+            
+            // Update the moved item to show arrows
             recyclerView.post {
-                val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
-                viewHolder?.itemView?.let { view ->
-                    // Quick visual feedback without long delays
-                    view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                notifyItemChanged(newPosition)
+                
+                // Focus the moved item after UI updates
+                recyclerView.postDelayed({
+                    val viewHolder = recyclerView.findViewHolderForAdapterPosition(newPosition)
+                    viewHolder?.itemView?.let { view ->
+                        view.requestFocus()
+                        view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                    }
                     Toast.makeText(context, "Category moved up", Toast.LENGTH_SHORT).show()
-                }
+                }, 50)
             }
         }
     }
@@ -473,20 +479,26 @@ class GroupAdapter(
             Collections.swap(currentOrder, index, index + 1)
             OrderPreferenceManager.saveCategoryOrder(currentOrder)
             tvGroupModel.swap(position, position + 1)
-            notifyItemMoved(position, position + 1)
-            movingPosition = position + 1
             
-            // Immediate focus change without delay
-            toPosition(position + 1)
+            val newPosition = position + 1
+            movingPosition = newPosition
             
-            // Show lightweight feedback without heavy animations
+            // Notify the move first
+            notifyItemMoved(position, newPosition)
+            
+            // Update the moved item to show arrows
             recyclerView.post {
-                val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
-                viewHolder?.itemView?.let { view ->
-                    // Quick visual feedback without long delays
-                    view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                notifyItemChanged(newPosition)
+                
+                // Focus the moved item after UI updates
+                recyclerView.postDelayed({
+                    val viewHolder = recyclerView.findViewHolderForAdapterPosition(newPosition)
+                    viewHolder?.itemView?.let { view ->
+                        view.requestFocus()
+                        view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                    }
                     Toast.makeText(context, "Category moved down", Toast.LENGTH_SHORT).show()
-                }
+                }, 50)
             }
         }
     }

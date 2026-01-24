@@ -581,13 +581,26 @@ class ListAdapter(
 
             // Swap in model and notify adapter move
             tvListModel.swap(index, index - 1)
-            notifyItemMoved(index, index - 1)
-
-            movingPosition = position - 1
-            // Ensure focus follows the moved item
+            
+            val newPosition = position - 1
+            movingPosition = newPosition
+            
+            // Notify the move first
+            notifyItemMoved(index, newPosition)
+            
+            // Update the moved item to show arrows
             recyclerView.post {
-                val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
-                viewHolder?.itemView?.requestFocus()
+                notifyItemChanged(newPosition)
+                
+                // Focus the moved item after UI updates
+                recyclerView.postDelayed({
+                    val viewHolder = recyclerView.findViewHolderForAdapterPosition(newPosition)
+                    viewHolder?.itemView?.let { view ->
+                        view.requestFocus()
+                        view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                    }
+                    Toast.makeText(context, "Channel moved up", Toast.LENGTH_SHORT).show()
+                }, 50)
             }
         }
     }
@@ -608,13 +621,26 @@ class ListAdapter(
 
             // Swap in model and notify adapter move
             tvListModel.swap(index, index + 1)
-            notifyItemMoved(index, index + 1)
-
-            movingPosition = position + 1
-            // Ensure focus follows the moved item
+            
+            val newPosition = position + 1
+            movingPosition = newPosition
+            
+            // Notify the move first
+            notifyItemMoved(index, newPosition)
+            
+            // Update the moved item to show arrows
             recyclerView.post {
-                val viewHolder = recyclerView.findViewHolderForAdapterPosition(movingPosition)
-                viewHolder?.itemView?.requestFocus()
+                notifyItemChanged(newPosition)
+                
+                // Focus the moved item after UI updates
+                recyclerView.postDelayed({
+                    val viewHolder = recyclerView.findViewHolderForAdapterPosition(newPosition)
+                    viewHolder?.itemView?.let { view ->
+                        view.requestFocus()
+                        view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                    }
+                    Toast.makeText(context, "Channel moved down", Toast.LENGTH_SHORT).show()
+                }, 50)
             }
         }
     }
