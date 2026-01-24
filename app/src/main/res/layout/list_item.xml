@@ -53,7 +53,8 @@
             tools:text="Channel Name"
             android:ellipsize="end"
             android:textSize="@dimen/glass_text_size_primary"
-            android:fontFamily="sans-serif-medium"/>
+            android:textStyle="normal"
+            android:fontFamily="sans-serif"/>
 
         <ImageView
             android:id="@+id/heart"

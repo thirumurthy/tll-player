@@ -348,9 +348,16 @@ object TVList {
             groupIndex++
         }
 
-        // Update Phase (Main Thread)
+        // Update Phase (Main Thread) - Build new model completely before replacing
         withContext(Dispatchers.Main) {
-            groupModel.clear()
+            // Build the new group model completely before replacing the old one
+            val newGroupModel = TVGroupModel()
+            
+            // Add the fixed categories first
+            newGroupModel.addTVListModel(TVListModel("My Collection", 0))
+            newGroupModel.addTVListModel(TVListModel("Favourites", 1))
+            newGroupModel.addTVListModel(TVListModel("All channels", 2))
+            
             val listModelNew: MutableList<TVModel> = mutableListOf()
             var id = 0
             
@@ -372,10 +379,8 @@ object TVList {
                 }
 
                 tvListModel.setTVListModel(groupChannels)
-                groupModel.addTVListModel(tvListModel)
+                newGroupModel.addTVListModel(tvListModel)
             }
-
-            listModel = listModelNew
 
             // Populate Favourites category (index 1)
             val favouriteChannels = mutableListOf<TVModel>()
@@ -384,10 +389,14 @@ object TVList {
                     favouriteChannels.add(tvModel)
                 }
             }
-            groupModel.getTVListModel(1)?.setTVListModel(favouriteChannels)
+            newGroupModel.getTVListModel(1)?.setTVListModel(favouriteChannels)
 
             // All channels (now index 2)
-            groupModel.getTVListModel(2)?.setTVListModel(listModel)
+            newGroupModel.getTVListModel(2)?.setTVListModel(listModelNew)
+
+            // Now atomically replace the old model with the new one
+            groupModel.setTVListModelList(newGroupModel.tvGroupModel.value ?: emptyList())
+            listModel = listModelNew
 
             Log.i(TAG, "groupModel ${groupModel.size()}")
             

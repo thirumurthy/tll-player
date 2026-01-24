@@ -368,6 +368,13 @@ class ListAdapter(
             
             GlassEffectUtils.applyGlassTextStyle(title, titleLevel, styleConfig)
             GlassEffectUtils.applyGlassTextStyle(description, descriptionLevel, styleConfig)
+            
+            // Apply bold styling only when focused (selected)
+            if (hasFocus) {
+                title.setTypeface(title.typeface, android.graphics.Typeface.BOLD)
+            } else {
+                title.setTypeface(title.typeface, android.graphics.Typeface.NORMAL)
+            }
 
             // Apply glass focus styling
             if (hasFocus && !isMoving) {

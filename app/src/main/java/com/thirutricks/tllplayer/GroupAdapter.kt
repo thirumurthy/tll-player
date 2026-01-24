@@ -273,6 +273,13 @@ class GroupAdapter(
             // Apply glass text styling based on focus
             val textLevel = if (hasFocus) TextLevel.PRIMARY else TextLevel.SECONDARY
             GlassEffectUtils.applyGlassTextStyle(title, textLevel, styleConfig)
+            
+            // Apply bold styling only when focused (selected)
+            if (hasFocus) {
+                title.setTypeface(title.typeface, android.graphics.Typeface.BOLD)
+            } else {
+                title.setTypeface(title.typeface, android.graphics.Typeface.NORMAL)
+            }
 
             // Apply glass focus styling
             if (hasFocus && !isMoving) {

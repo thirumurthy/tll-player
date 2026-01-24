@@ -115,6 +115,12 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
     private fun setupAdapters() {
         val context = requireContext()
         
+        // Ensure we have valid data before setting up adapters
+        if (TVList.groupModel.size() == 0) {
+            Log.w(TAG, "Cannot setup adapters: groupModel is empty")
+            return
+        }
+        
         // Set up group adapter
         groupAdapter = GroupAdapter(
             context,
@@ -133,29 +139,37 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
         var tvListModel = TVList.groupModel.getTVListModel(TVList.groupModel.position.value!!)
         if (tvListModel == null) {
             TVList.groupModel.setPosition(0)
+            tvListModel = TVList.groupModel.getTVListModel(0)
         }
-        tvListModel = TVList.groupModel.getTVListModel(TVList.groupModel.position.value!!)
 
-        listAdapter = ListAdapter(
-            requireContext(),
-            binding.list,
-            tvListModel!!,
-        )
-        binding.list.adapter = listAdapter
-        binding.list.layoutManager = LinearLayoutManager(context)
-        listAdapter.focusable(false)
-        listAdapter.setItemListener(this)
-        listAdapter.attachItemTouchHelper()
-        
-        // Set up glass scrolling for channels with category-specific memory
-        val categoryId = tvListModel.getName()
-        // glassScrollManager.setupGlassScrolling(binding.list, categoryId)
+        if (tvListModel != null) {
+            listAdapter = ListAdapter(
+                requireContext(),
+                binding.list,
+                tvListModel,
+            )
+            binding.list.adapter = listAdapter
+            binding.list.layoutManager = LinearLayoutManager(context)
+            listAdapter.focusable(false)
+            listAdapter.setItemListener(this)
+            listAdapter.attachItemTouchHelper()
+            
+            // Set up glass scrolling for channels with category-specific memory
+            val categoryId = tvListModel.getName()
+            // glassScrollManager.setupGlassScrolling(binding.list, categoryId)
+        }
         
         // Glass effects are handled automatically by the container
     }
 
     fun update() {
         if (!::groupAdapter.isInitialized) return
+        
+        // Ensure we have valid data before updating
+        if (TVList.groupModel.size() == 0) {
+            Log.w(TAG, "Cannot update menu: groupModel is empty")
+            return
+        }
         
         // Use glass container's smooth content update
         glassMenuContainer.updatePanelContent(binding.group) {
@@ -165,8 +179,8 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
         var tvListModel = TVList.groupModel.getTVListModel(TVList.groupModel.position.value!!)
         if (tvListModel == null) {
             TVList.groupModel.setPosition(0)
+            tvListModel = TVList.groupModel.getTVListModel(0)
         }
-        tvListModel = TVList.groupModel.getTVListModel(TVList.groupModel.position.value!!)
 
         if (tvListModel != null) {
             glassMenuContainer.updatePanelContent(binding.list) {
@@ -181,16 +195,16 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
         val tvListModel = TVList.groupModel.getTVListModel()
         Log.i(TAG, "updateList tvListModel $position ${tvListModel?.size()}")
         
-        if (tvListModel != null) {
+        if (tvListModel != null && ::listAdapter.isInitialized) {
             glassMenuContainer.updatePanelContent(binding.list) {
                 (binding.list.adapter as ListAdapter).update(tvListModel)
             }
             
             // Glass effects update automatically on category change
             
-        // Update scroll manager with new category
-        val categoryId = tvListModel.getName()
-        // glassScrollManager.setupGlassScrolling(binding.list, categoryId)
+            // Update scroll manager with new category
+            val categoryId = tvListModel.getName()
+            // glassScrollManager.setupGlassScrolling(binding.list, categoryId)
         }
     }
 
