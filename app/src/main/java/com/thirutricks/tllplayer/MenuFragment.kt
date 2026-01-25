@@ -231,7 +231,42 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
     }
 
     override fun onItemClicked(position: Int) {
-        // Handle category item click
+        // Handle category item click - transition to channel list
+        showChannelList()
+    }
+
+    private fun showChannelList() {
+        if (!::listAdapter.isInitialized) return
+        
+        if (listAdapter.itemCount == 0) {
+            Toast.makeText(context, "No channel yet", Toast.LENGTH_LONG).show()
+            return
+        }
+        
+        // Smooth transition to channel panel
+        glassMenuContainer.transitionToPanel(PanelType.CHANNEL)
+        
+        groupAdapter.focusable(false)
+        listAdapter.focusable(true)
+
+        // Hide categories to expand channel list
+        binding.categoryPanelContainer?.visibility = View.GONE
+        binding.panelDivider?.visibility = View.GONE
+
+        val tvModel = TVList.getTVModel()
+        if (tvModel != null) {
+            if (tvModel.groupIndex == TVList.groupModel.position.value!!) {
+                Log.i(
+                    TAG,
+                    "list on show toPosition ${tvModel.tv.title} ${tvModel.listIndex}/${listAdapter.tvListModel.size()}"
+                )
+                listAdapter.toPosition(tvModel.listIndex)
+            } else {
+                listAdapter.toPosition(0)
+            }
+        } else {
+            listAdapter.toPosition(0)
+        }
     }
 
     override fun onItemFocusChange(tvModel: TVModel, hasFocus: Boolean) {
@@ -254,35 +289,7 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
     override fun onKey(keyCode: Int): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                if (listAdapter.itemCount == 0) {
-                    Toast.makeText(context, "No channel yet", Toast.LENGTH_LONG).show()
-                    return true
-                }
-                
-                // Smooth transition to channel panel
-                glassMenuContainer.transitionToPanel(PanelType.CHANNEL)
-                
-                groupAdapter.focusable(false)
-                listAdapter.focusable(true)
-
-                // Hide categories to expand channel list
-                binding.categoryPanelContainer?.visibility = View.GONE
-                binding.panelDivider?.visibility = View.GONE
-
-                val tvModel = TVList.getTVModel()
-                if (tvModel != null) {
-                    if (tvModel.groupIndex == TVList.groupModel.position.value!!) {
-                        Log.i(
-                            TAG,
-                            "list on show toPosition ${tvModel.tv.title} ${tvModel.listIndex}/${listAdapter.tvListModel.size()}"
-                        )
-                        listAdapter.toPosition(tvModel.listIndex)
-                    } else {
-                        listAdapter.toPosition(0)
-                    }
-                } else {
-                    listAdapter.toPosition(0)
-                }
+                showChannelList()
                 return true
             }
 

@@ -830,6 +830,11 @@ class MainActivity : FragmentActivity() {
             .hide(menuFragment)
             .commit()
         Log.i(TAG, "SP.time ${SP.time}")
+        
+        // Show info card after exiting menu
+        TVList.getTVModel()?.let {
+            infoFragment.show(it)
+        }
     }
 
     private fun hideSettingFragment() {

@@ -268,32 +268,8 @@ class GlassResponsiveManager(
     }
     
     private fun enhanceTVFocusIndicators(view: View) {
-        if (view.isFocusable) {
-            // Enhanced focus indicators for TV
-            view.setOnFocusChangeListener { focusedView, hasFocus ->
-                if (hasFocus) {
-                    // TV-optimized focus animation
-                    focusedView.animate()
-                        .scaleX(1.08f)
-                        .scaleY(1.08f)
-                        .setDuration(200)
-                        .start()
-                    
-                    // Apply enhanced glass focus styling
-                    GlassEffectUtils.applyGlassStyle(focusedView, styleConfig, GlassType.ITEM_FOCUSED)
-                } else {
-                    // Return to normal state
-                    focusedView.animate()
-                        .scaleX(1.0f)
-                        .scaleY(1.0f)
-                        .setDuration(150)
-                        .start()
-                    
-                    GlassEffectUtils.applyGlassStyle(focusedView, styleConfig, GlassType.ITEM)
-                }
-            }
-        }
-        
+        // Accessibility and focus management are now handled by adapters and MenuAnimationController
+        // for better performance and consistency.
         if (view is ViewGroup) {
             for (i in 0 until view.childCount) {
                 enhanceTVFocusIndicators(view.getChildAt(i))

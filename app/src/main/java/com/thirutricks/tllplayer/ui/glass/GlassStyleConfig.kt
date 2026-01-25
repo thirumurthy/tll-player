@@ -29,13 +29,13 @@ data class GlassStyleConfig(
     
     // Focus animation parameters
     val focusElevation: Float = 16f,
-    val focusScale: Float = 1.05f,
-    val focusAnimationDuration: Long = 200L,
+    val focusScale: Float = 1.02f,
+    val focusAnimationDuration: Long = 50L,
     
     // Move mode parameters
     val moveElevation: Float = 20f,
-    val moveScale: Float = 1.08f,
-    val moveAnimationDuration: Long = 300L,
+    val moveScale: Float = 1.05f,
+    val moveAnimationDuration: Long = 150L,
     
     // Color parameters
     @ColorInt val focusGlowColor: Int = Color.parseColor("#802196F3"),

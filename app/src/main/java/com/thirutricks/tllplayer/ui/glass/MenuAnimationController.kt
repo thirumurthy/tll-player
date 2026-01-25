@@ -116,7 +116,7 @@ class MenuAnimationController(
         onAnimationEnd: (() -> Unit)? = null
     ) {
         val animators = mutableListOf<Animator>()
-        val baseDuration = 150L
+        val baseDuration = 100L
         val optimizedDuration = performanceManager?.getOptimizedAnimationDuration(baseDuration) ?: baseDuration
         
         // Animate out the from panel if provided
@@ -233,7 +233,7 @@ class MenuAnimationController(
         
         view.alpha = startAlpha
         
-        val baseDuration = 100L
+        val baseDuration = 80L
         val optimizedDuration = performanceManager?.getOptimizedAnimationDuration(baseDuration) ?: baseDuration
         
         val fadeAnimator = ObjectAnimator.ofFloat(view, ALPHA, startAlpha, targetAlpha).apply {
