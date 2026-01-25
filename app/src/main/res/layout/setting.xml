@@ -14,12 +14,6 @@
         android:elevation="@dimen/glass_elevation_low"
         android:layout_margin="@dimen/glass_panel_margin" />
 
-    <!-- Glassmorphism background -->
-    <com.thirutricks.tllplayer.ui.GlassyBackgroundView
-        android:id="@+id/glassy_background"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
     <ScrollView
         android:id="@+id/container"
         android:layout_width="wrap_content"

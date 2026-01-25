@@ -98,6 +98,9 @@ class SettingsFocusManager(private val context: Context) {
                 tvUiUtils?.let { utils ->
                     toggle.initializeWithAudio(utils)
                 }
+                
+                // Add explicit focus handling for consistent animations
+                focusAnimationManager.setupFocusHandling(toggle, FocusAnimationManager.AnimationType.SUBTLE)
             }
         }
     }
@@ -133,14 +136,16 @@ class SettingsFocusManager(private val context: Context) {
     private fun getFocusableViewsInOrder(rootView: ViewGroup): List<View> {
         val focusableViews = mutableListOf<View>()
         
-        // Configuration section
+        // Configuration section - Top to bottom, left to right
         rootView.findViewById<Button>(R.id.qrcode)?.let { focusableViews.add(it) }
+        
         rootView.findViewById<Button>(R.id.confirm_config)?.let { focusableViews.add(it) }
         rootView.findViewById<EditText>(R.id.config)?.let { focusableViews.add(it) }
+        
         rootView.findViewById<Button>(R.id.confirm_channel)?.let { focusableViews.add(it) }
         rootView.findViewById<EditText>(R.id.channel)?.let { focusableViews.add(it) }
         
-        // Preferences section (toggles)
+        // Preferences section (toggles) - sequential order
         val toggleIds = listOf(
             R.id.switch_channel_reversal,
             R.id.switch_channel_num,
@@ -156,13 +161,13 @@ class SettingsFocusManager(private val context: Context) {
             rootView.findViewById<View>(id)?.let { focusableViews.add(it) }
         }
         
-        // Actions section
+        // Actions section - left to right row
         val actionIds = listOf(R.id.clear, R.id.reset_order, R.id.appreciate, R.id.exit)
         actionIds.forEach { id ->
             rootView.findViewById<View>(id)?.let { focusableViews.add(it) }
         }
         
-        return focusableViews.filter { it.isFocusable }
+        return focusableViews.filter { it.visibility == View.VISIBLE && it.isFocusable }
     }
 
     /**

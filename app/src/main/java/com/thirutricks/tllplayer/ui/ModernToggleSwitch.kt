@@ -31,7 +31,9 @@ class ModernToggleSwitch @JvmOverloads constructor(
         private const val TAG = "ModernToggleSwitch"
         private const val ANIMATION_DURATION = 200L
         private const val THUMB_ANIMATION_DURATION = 250L
-        private const val GLOW_ANIMATION_DURATION = 150L
+        private const val GLOW_ANIMATION_DURATION = 250L // Increased for better visibility
+        private const val FOCUS_SCALE = 1.08f // Increased from subtle 1.05f
+        private const val FOCUS_ELEVATION = 12f
     }
 
     init {
@@ -345,26 +347,45 @@ class ModernToggleSwitch @JvmOverloads constructor(
                 val focusedThumb = getValidatedDrawable(R.drawable.modern_toggle_thumb_focused, "modern_toggle_thumb_focused")
                 thumbDrawable = focusedThumb
                 
-                // Apply focus animation from manager
-                focusAnimationManager?.applySubtleFocusAnimation(this, true)
+                // Apply a more prominent focus animation than standard subtle
+                animate().cancel()
+                animate()
+                    .scaleX(FOCUS_SCALE)
+                    .scaleY(FOCUS_SCALE)
+                    .translationZ(FOCUS_ELEVATION)
+                    .setDuration(ANIMATION_DURATION)
+                    .setInterpolator(OvershootInterpolator(1.2f))
+                    .start()
                 
-                // Add subtle glow animation
+                // Add strong glow animation
                 safeAnimateGlow(true)
+                
+                // Play focus sound
+                focusAnimationManager?.initializeWithAudio(ResourceValidator(context).let { 
+                    val utils = TvUiUtils(context)
+                    utils.initSounds(R.raw.focus, R.raw.click)
+                    utils
+                })
             } else {
                 // Revert to normal thumb drawable
                 val normalThumb = getValidatedDrawable(R.drawable.modern_toggle_thumb, "modern_toggle_thumb")
                 thumbDrawable = normalThumb
                 
-                // Remove focus animation
-                focusAnimationManager?.applySubtleFocusAnimation(this, false)
+                // Return to normal scale and elevation
+                animate().cancel()
+                animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .translationZ(0f)
+                    .setDuration(ANIMATION_DURATION)
+                    .start()
                 
                 // Remove glow effect
                 safeAnimateGlow(false)
             }
             
         } catch (e: Exception) {
-            Log.w(TAG, "Error in focus animation, using basic focus handling", e)
-            focusAnimationManager?.applySubtleFocusAnimation(this, hasFocus)
+            Log.w(TAG, "Error in focus animation", e)
         }
     }
 

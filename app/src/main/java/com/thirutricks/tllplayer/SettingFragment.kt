@@ -30,6 +30,8 @@ import com.thirutricks.tllplayer.ui.SafeFragmentManager
 import com.thirutricks.tllplayer.ui.SettingsErrorRecovery
 import com.thirutricks.tllplayer.OrderPreferenceManager
 import com.thirutricks.tllplayer.R
+import com.thirutricks.tllplayer.ui.glass.GlassEffectUtils
+import com.thirutricks.tllplayer.ui.glass.GlassType
 import android.widget.Toast
 
 class SettingFragment : Fragment() {
@@ -363,69 +365,21 @@ class SettingFragment : Fragment() {
         try {
             Log.d(TAG, "Setting up key navigation for settings")
             
-            // Make the content container focusable and handle key events
+            // Focus management is now primarily handled by settingsFocusManager
+            // We just ensure the root is focusable and request initial focus
             binding.content.apply {
                 isFocusable = true
                 isFocusableInTouchMode = true
-                
-                // Set initial focus to the first toggle switch
-                post {
-                    binding.switchChannelReversal.requestFocus()
-                }
             }
             
-            // Setup focus order for all interactive elements
-            setupFocusOrder()
-            
-            Log.i(TAG, "Key navigation setup completed")
+            Log.i(TAG, "Key navigation setup delegated to SettingsFocusManager")
             
         } catch (e: Exception) {
             Log.e(TAG, "Error setting up key navigation", e)
-            if (::crashDiagnosticManager.isInitialized) {
-                crashDiagnosticManager.logCrashDetails(e, "setupKeyNavigation")
-            }
         }
     }
     
-    private fun setupFocusOrder() {
-        try {
-            // Define focus order for all interactive elements
-            val focusableElements = listOf(
-                binding.switchChannelReversal,
-                binding.switchChannelNum,
-                binding.switchTime,
-                binding.switchWatchLast,
-                binding.switchForceHighQuality,
-                binding.switchBootStartup,
-                binding.switchConfigAutoLoad,
-                binding.switchChannelCheck,
-                binding.config,
-                binding.confirmConfig,
-                binding.channel,
-                binding.confirmChannel,
-                binding.qrcode,
-                binding.clear,
-                binding.resetOrder,
-                binding.appreciate,
-                binding.exit
-            )
-            
-            // Set up next focus IDs for proper navigation
-            for (i in 0 until focusableElements.size - 1) {
-                focusableElements[i].nextFocusDownId = focusableElements[i + 1].id
-                focusableElements[i + 1].nextFocusUpId = focusableElements[i].id
-            }
-            
-            // Handle wrap-around navigation
-            focusableElements.first().nextFocusUpId = focusableElements.last().id
-            focusableElements.last().nextFocusDownId = focusableElements.first().id
-            
-            Log.d(TAG, "Focus order setup completed for ${focusableElements.size} elements")
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Error setting up focus order", e)
-        }
-    }
+    // Removing manual setupFocusOrder as it's handled by SettingsFocusManager
 
 
     // ------------------------------------------------------------
@@ -474,20 +428,34 @@ class SettingFragment : Fragment() {
     //  GLASSMORPHISM BACKGROUND SETUP
     // ------------------------------------------------------------
     private fun setupGlassyBackground() {
-        val glassyBackground = binding.root.findViewById<GlassyBackgroundView>(R.id.glassy_background)
-        glassyBackground?.let {
-            it.setGlassIntensity(0.8f)
-            it.setBlurEnabled(true)
-        }
-        
-        // Initialize glass cards with audio feedback
-        val headerCard = binding.root.findViewById<GlassCard>(R.id.header_card)
-        val configCard = binding.root.findViewById<GlassCard>(R.id.configuration_card)
-        val preferencesCard = binding.root.findViewById<GlassCard>(R.id.preferences_card)
-        val actionsCard = binding.root.findViewById<GlassCard>(R.id.actions_card)
-        
-        listOf(headerCard, configCard, preferencesCard, actionsCard).forEach { card ->
-            card?.initializeWithAudio(tvUiUtils!!)
+        try {
+            val menuBackground = binding.root.findViewById<View>(R.id.menu_background)
+            menuBackground?.let {
+                // Apply look that matches MenuFragment using the centralized utility
+                GlassEffectUtils.applyGlassBackground(
+                    it, 
+                    GlassType.MENU, 
+                    requireContext()
+                )
+                
+                // Match the transparency levels from MenuFragment's GlassStyleConfig
+                it.alpha = 0.85f // Matching the visible intensity users expect
+                it.elevation = 4f
+            }
+            
+            // Initialize glass cards with consistent audio feedback
+            val headerCard = binding.root.findViewById<GlassCard>(R.id.header_card)
+            val configCard = binding.root.findViewById<GlassCard>(R.id.configuration_card)
+            val preferencesCard = binding.root.findViewById<GlassCard>(R.id.preferences_card)
+            val actionsCard = binding.root.findViewById<GlassCard>(R.id.actions_card)
+            
+            listOf(headerCard, configCard, preferencesCard, actionsCard).forEach { card ->
+                card?.initializeWithAudio(tvUiUtils!!)
+            }
+            
+            Log.i(TAG, "Unified glass background setup completed")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting up unified background", e)
         }
     }
 
@@ -608,7 +576,7 @@ class SettingFragment : Fragment() {
     // ------------------------------------------------------------
     private fun setupPerformanceOptimization() {
         val content = binding.content
-        val glassyBackground = binding.root.findViewById<GlassyBackgroundView>(R.id.glassy_background)
+        val menuBackground = binding.root.findViewById<View>(R.id.menu_background)
         
         // Start performance monitoring
         performanceManager.startMonitoring(content)
@@ -616,8 +584,11 @@ class SettingFragment : Fragment() {
         // Apply performance optimizations based on device capabilities
         performanceManager.applyPerformanceOptimizations(content)
         
-        // Optimize GPU usage for blur effects
-        performanceManager.optimizeGpuUsage(glassyBackground)
+        // Optimize GPU usage for background effects (formerly glassyBackground)
+        // If it's a simple View, the optimizer might need adjustments, but for now we pass it
+        if (menuBackground is GlassyBackgroundView) {
+            performanceManager.optimizeGpuUsage(menuBackground)
+        }
         
         // Create fallback rendering for lower-end devices
         performanceManager.createFallbackRendering(content)
@@ -678,8 +649,10 @@ class SettingFragment : Fragment() {
         settingsFocusManager.setHighContrastMode(true)
         
         // Ensure glass effects don't interfere with high contrast
-        val glassyBackground = binding.root.findViewById<GlassyBackgroundView>(R.id.glassy_background)
-        glassyBackground?.setBlurEnabled(false) // Disable blur in high contrast mode
+        val menuBackground = binding.root.findViewById<View>(R.id.menu_background)
+        if (menuBackground is GlassyBackgroundView) {
+            menuBackground.setBlurEnabled(false) // Disable blur in high contrast mode
+        }
     }
 
 
