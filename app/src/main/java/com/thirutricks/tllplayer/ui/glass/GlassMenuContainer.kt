@@ -105,9 +105,9 @@ class GlassMenuContainer @JvmOverloads constructor(
             val isTelevision = manager.isTVDevice()
             
             if (isTelevision || isLargeScreen) {
-                // Use television-optimized dimensions
-                val padding = (32 * density).toInt()
-                setPadding(padding, padding, padding, padding)
+                // Use television-optimized dimensions from resources (handled by XML)
+                // val padding = context.resources.getDimensionPixelSize(R.dimen.glass_menu_padding)
+                // setPadding(padding, padding, padding, padding)
             }
         }
     }

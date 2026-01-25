@@ -119,14 +119,19 @@ class GroupAdapter(
         }
 
         val onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
-            listener?.onItemFocusChange(tvListModel, hasFocus)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition == RecyclerView.NO_POSITION) return@OnFocusChangeListener
+            
+            val latestTvListModel = tvGroupModel.getTVListModel(currentPosition) ?: tvListModel
+            
+            listener?.onItemFocusChange(latestTvListModel, hasFocus)
 
             if (hasFocus) {
                 viewHolder.focus(true)
                 focused = view
                 if (visible) {
-                    if (position != tvGroupModel.position.value) {
-                        tvGroupModel.setPosition(position)
+                    if (currentPosition != tvGroupModel.position.value) {
+                        tvGroupModel.setPosition(currentPosition)
                     }
                 } else {
                     visible = true
@@ -139,21 +144,34 @@ class GroupAdapter(
         view.onFocusChangeListener = onFocusChangeListener
 
         view.setOnClickListener { _ ->
-            if (movingPosition == position) {
-                stopMove()
-            } else {
-                listener?.onItemClicked(position)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                if (movingPosition == currentPosition) {
+                    stopMove()
+                } else {
+                    listener?.onItemClicked(currentPosition)
+                }
             }
         }
 
         view.setOnLongClickListener {
-            showCategoryOptions(position, tvListModel)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                // Ensure we get the correct model for the current position
+                val currentModel = tvGroupModel.getTVListModel(currentPosition) 
+                if (currentModel != null) {
+                    showCategoryOptions(currentPosition, currentModel)
+                }
+            }
             true
         }
 
         view.setOnKeyListener { _, keyCode, event: KeyEvent? ->
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition == RecyclerView.NO_POSITION) return@setOnKeyListener false
+            
             if (event?.action == KeyEvent.ACTION_DOWN) {
-                if (keyCode == KeyEvent.KEYCODE_DPAD_UP && position == 0) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_UP && currentPosition == 0) {
                     val p = getItemCount() - 1
 
                     (recyclerView.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(
@@ -168,7 +186,7 @@ class GroupAdapter(
                     }, 100)
                 }
 
-                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && position == getItemCount() - 1) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && currentPosition == getItemCount() - 1) {
                     val p = 0
 
                     (recyclerView.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(
@@ -183,14 +201,14 @@ class GroupAdapter(
                     }, 100)
                 }
 
-                if (movingPosition != -1 && movingPosition == position) {
+                if (movingPosition != -1 && movingPosition == currentPosition) {
                     when (keyCode) {
                         KeyEvent.KEYCODE_DPAD_UP -> {
-                            moveGroupUp(position)
+                            moveGroupUp(currentPosition)
                             return@setOnKeyListener true
                         }
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
-                            moveGroupDown(position)
+                            moveGroupDown(currentPosition)
                             return@setOnKeyListener true
                         }
                         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
@@ -206,17 +224,23 @@ class GroupAdapter(
         }
 
         viewHolder.bindTitle(tvListModel.getName())
-        viewHolder.setArrowsVisibility(movingPosition == position)
+        viewHolder.setArrowsVisibility(movingPosition == position) // Initial bind can use position
         viewHolder.setMoveMode(movingPosition == position)
         
         val arrowUp = view.findViewById<ImageView>(R.id.arrow_up)
         val arrowDown = view.findViewById<ImageView>(R.id.arrow_down)
         
         arrowUp.setOnClickListener {
-            moveGroupUp(position)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                moveGroupUp(currentPosition)
+            }
         }
         arrowDown.setOnClickListener {
-            moveGroupDown(position)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                moveGroupDown(currentPosition)
+            }
         }
         
         // Reset focus state to prevent style recycling issues
@@ -409,6 +433,9 @@ class GroupAdapter(
         if (prevPosition >= 0) {
             notifyItemChanged(prevPosition)
         }
+        
+        // Rebuild global channel list after move is finished to ensure consistency
+        com.thirutricks.tllplayer.models.TVList.rebuildChannelListFromCategories()
     }
     
     /**
@@ -491,14 +518,8 @@ class GroupAdapter(
             // Notify the move first
             notifyItemMoved(position, newPosition)
             
-            // Rebuild the entire channel list to reflect new category order
-            com.thirutricks.tllplayer.models.TVList.rebuildChannelListFromCategories()
-            
             // Update the moved item to show arrows and refresh adapter state
             recyclerView.post {
-                // Refresh the entire adapter to sync positions
-                notifyDataSetChanged()
-                
                 // Focus the moved item after UI updates
                 recyclerView.postDelayed({
                     val viewHolder = recyclerView.findViewHolderForAdapterPosition(newPosition)
@@ -507,7 +528,7 @@ class GroupAdapter(
                         view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
                     }
                     Toast.makeText(context, "Category moved up", Toast.LENGTH_SHORT).show()
-                }, 100)
+                }, 50)
             }
         } else {
             Log.w(TAG, "moveGroupUp: Invalid index $index for order size ${currentOrder.size}")
@@ -571,14 +592,8 @@ class GroupAdapter(
             // Notify the move first
             notifyItemMoved(position, newPosition)
             
-            // Rebuild the entire channel list to reflect new category order
-            com.thirutricks.tllplayer.models.TVList.rebuildChannelListFromCategories()
-            
             // Update the moved item to show arrows and refresh adapter state
             recyclerView.post {
-                // Refresh the entire adapter to sync positions
-                notifyDataSetChanged()
-                
                 // Focus the moved item after UI updates
                 recyclerView.postDelayed({
                     val viewHolder = recyclerView.findViewHolderForAdapterPosition(newPosition)
@@ -587,7 +602,7 @@ class GroupAdapter(
                         view.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
                     }
                     Toast.makeText(context, "Category moved down", Toast.LENGTH_SHORT).show()
-                }, 100)
+                }, 50)
             }
         }
     }

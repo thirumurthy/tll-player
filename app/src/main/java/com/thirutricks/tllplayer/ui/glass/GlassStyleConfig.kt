@@ -9,9 +9,9 @@ import androidx.annotation.ColorInt
  */
 data class GlassStyleConfig(
     // Background transparency levels
-    val backgroundAlpha: Float = 0.15f,
-    val panelBackgroundAlpha: Float = 0.10f,
-    val itemBackgroundAlpha: Float = 0.05f,
+    val backgroundAlpha: Float = 0.20f,
+    val panelBackgroundAlpha: Float = 0.15f,
+    val itemBackgroundAlpha: Float = 0.08f,
     
     // Border transparency levels
     val borderAlpha: Float = 0.30f,

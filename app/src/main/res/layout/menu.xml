@@ -11,13 +11,13 @@
     android:padding="@dimen/glass_menu_padding"
     >
 
-    <!-- Guideline for 60% width -->
+    <!-- Guideline for Responsive width -->
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/menu_end_guideline"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.6" />
+        app:layout_constraintGuide_percent="@dimen/glass_menu_width_percent" />
 
     <!-- Glass Menu Background with Blur Effect -->
     <View
@@ -29,7 +29,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="@id/menu_end_guideline"
+        app:layout_constraintEnd_toEndOf="@id/channel_panel_container"
         android:layout_margin="@dimen/glass_panel_margin" />
 
     <!-- Categories Panel Container -->
@@ -59,7 +59,11 @@
             android:background="@drawable/glass_panel_background"
             android:scrollbars="vertical"
             android:scrollbarStyle="outsideOverlay"
-            android:fadeScrollbars="true"
+            android:fadeScrollbars="false"
+            android:scrollbarThumbVertical="@drawable/glass_scrollbar_thumb"
+            android:scrollbarTrackVertical="@drawable/glass_scrollbar_track"
+            android:scrollbarSize="4dp"
+            android:scrollbarAlwaysDrawVerticalTrack="true"
             android:overScrollMode="ifContentScrolls" />
 
     </androidx.cardview.widget.CardView>
@@ -96,6 +100,9 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/category_panel_container"
         app:layout_constraintEnd_toEndOf="@id/menu_end_guideline"
+        app:layout_constraintWidth_max="@dimen/glass_channel_panel_max_width"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintHorizontal_bias="0.0"
         >
 
         <!-- Channels List -->
@@ -108,7 +115,11 @@
             android:background="@drawable/glass_panel_background"
             android:scrollbars="vertical"
             android:scrollbarStyle="outsideOverlay"
-            android:fadeScrollbars="true"
+            android:fadeScrollbars="false"
+            android:scrollbarThumbVertical="@drawable/glass_scrollbar_thumb"
+            android:scrollbarTrackVertical="@drawable/glass_scrollbar_track"
+            android:scrollbarSize="4dp"
+            android:scrollbarAlwaysDrawVerticalTrack="true"
             android:overScrollMode="ifContentScrolls" />
 
     </androidx.cardview.widget.CardView>

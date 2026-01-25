@@ -78,7 +78,6 @@ class ListAdapter(
         performanceManager.applyPerformanceOptimizations(view)
         GlassEffectUtils.applyGlassStyle(view, styleConfig, GlassType.ITEM)
 
-        val icon = view.findViewById<ImageView>(R.id.icon)
         val title = view.findViewById<TextView>(R.id.title)
         val heart = view.findViewById<ImageView>(R.id.heart)
         val description = view.findViewById<TextView>(R.id.description)
@@ -148,8 +147,8 @@ class ListAdapter(
             }
 
             override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
-                val from = viewHolder.adapterPosition
-                val to = target.adapterPosition
+                val from = viewHolder.bindingAdapterPosition
+                val to = target.bindingAdapterPosition
 
                 val categoryName = tvListModel.getName()
                 val currentOrder = getCurrentChannelOrder()
@@ -195,14 +194,18 @@ class ListAdapter(
         }
 
         val onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
-            listener?.onItemFocusChange(tvModel, hasFocus)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition == RecyclerView.NO_POSITION) return@OnFocusChangeListener
+            
+            val currentModel = tvListModel.getTVModel(currentPosition) ?: tvModel
+            listener?.onItemFocusChange(currentModel, hasFocus)
 
             if (hasFocus) {
                 viewHolder.focus(true)
                 focused = view
                 if (visible) {
-                    if (position != tvListModel.position.value) {
-                        tvListModel.setPosition(position)
+                    if (currentPosition != tvListModel.position.value) {
+                        tvListModel.setPosition(currentPosition)
                     }
                 } else {
                     visible = true
@@ -215,21 +218,32 @@ class ListAdapter(
         view.onFocusChangeListener = onFocusChangeListener
 
         view.setOnClickListener { _ ->
-            if (movingPosition == position) {
-                stopMove()
-            } else {
-                listener?.onItemClicked(tvModel)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                if (movingPosition == currentPosition) {
+                    stopMove()
+                } else {
+                    val currentModel = tvListModel.getTVModel(currentPosition) ?: tvModel
+                    listener?.onItemClicked(currentModel)
+                }
             }
         }
 
         view.setOnLongClickListener {
-            showChannelOptions(position, tvModel)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                val currentModel = tvListModel.getTVModel(currentPosition) ?: tvModel
+                showChannelOptions(currentPosition, currentModel)
+            }
             true
         }
 
         view.setOnKeyListener { _, keyCode, event: KeyEvent? ->
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition == RecyclerView.NO_POSITION) return@setOnKeyListener false
+            
             if (event?.action == KeyEvent.ACTION_DOWN) {
-                if (keyCode == KeyEvent.KEYCODE_DPAD_UP && position == 0) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_UP && currentPosition == 0) {
                     val p = getItemCount() - 1
 
                     (recyclerView.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(
@@ -244,7 +258,7 @@ class ListAdapter(
                     }, 100)
                 }
 
-                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && position == getItemCount() - 1) {
+                if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && currentPosition == getItemCount() - 1) {
                     val p = 0
 
                     (recyclerView.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(
@@ -259,14 +273,14 @@ class ListAdapter(
                     }, 100)
                 }
 
-                if (movingPosition != -1 && movingPosition == position) {
+                if (movingPosition != -1 && movingPosition == currentPosition) {
                     when (keyCode) {
                         KeyEvent.KEYCODE_DPAD_UP -> {
-                            moveChannelUp(position)
+                            moveChannelUp(currentPosition)
                             return@setOnKeyListener true
                         }
                         KeyEvent.KEYCODE_DPAD_DOWN -> {
-                            moveChannelDown(position)
+                            moveChannelDown(currentPosition)
                             return@setOnKeyListener true
                         }
                         KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
@@ -287,17 +301,23 @@ class ListAdapter(
 
         viewHolder.bindImage(tvModel.tv.logo, tvModel.tv.id)
 
-        viewHolder.setArrows(movingPosition == position)
+        viewHolder.setArrows(movingPosition == position) // Initial bind can use position
         viewHolder.setMoveMode(movingPosition == position)
         
         val arrowUp = view.findViewById<ImageView>(R.id.arrow_up)
         val arrowDown = view.findViewById<ImageView>(R.id.arrow_down)
         
         arrowUp.setOnClickListener {
-            moveChannelUp(position)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                moveChannelUp(currentPosition)
+            }
         }
         arrowDown.setOnClickListener {
-            moveChannelDown(position)
+            val currentPosition = viewHolder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                moveChannelDown(currentPosition)
+            }
         }
         
         // Reset focus state to prevent style recycling issues
@@ -616,8 +636,6 @@ class ListAdapter(
             
             // Update the moved item to show arrows
             recyclerView.post {
-                notifyItemChanged(newPosition)
-                
                 // Focus the moved item after UI updates
                 recyclerView.postDelayed({
                     val viewHolder = recyclerView.findViewHolderForAdapterPosition(newPosition)
@@ -659,8 +677,6 @@ class ListAdapter(
             
             // Update the moved item to show arrows
             recyclerView.post {
-                notifyItemChanged(newPosition)
-                
                 // Focus the moved item after UI updates
                 recyclerView.postDelayed({
                     val viewHolder = recyclerView.findViewHolderForAdapterPosition(newPosition)

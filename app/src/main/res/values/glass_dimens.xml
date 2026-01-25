@@ -31,6 +31,7 @@
     
     <!-- Channel Panel Dimensions -->
     <dimen name="glass_channel_panel_width">400dp</dimen>
+    <dimen name="glass_channel_panel_max_width">500dp</dimen>
     <dimen name="glass_channel_item_height">72dp</dimen>
     <dimen name="glass_channel_item_padding_horizontal">16dp</dimen>
     <dimen name="glass_channel_item_padding_vertical">12dp</dimen>
@@ -78,4 +79,7 @@
     <dimen name="glass_input_height">56dp</dimen>
     <dimen name="glass_input_padding">16dp</dimen>
     <dimen name="glass_input_margin">16dp</dimen>
+
+    <!-- UI Composition -->
+    <item name="glass_menu_width_percent" format="float" type="dimen">0.7</item>
 </resources>
