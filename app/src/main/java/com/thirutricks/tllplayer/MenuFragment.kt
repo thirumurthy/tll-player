@@ -265,6 +265,10 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
                 groupAdapter.focusable(false)
                 listAdapter.focusable(true)
 
+                // Hide categories to expand channel list
+                binding.categoryPanelContainer?.visibility = View.GONE
+                binding.panelDivider?.visibility = View.GONE
+
                 val tvModel = TVList.getTVModel()
                 if (tvModel != null) {
                     if (tvModel.groupIndex == TVList.groupModel.position.value!!) {
@@ -293,6 +297,10 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
     override fun onKey(listAdapter: ListAdapter, keyCode: Int): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_LEFT -> {
+                // Show categories again
+                binding.categoryPanelContainer?.visibility = View.VISIBLE
+                binding.panelDivider?.visibility = View.VISIBLE
+                
                 // Smooth transition to category panel
                 glassMenuContainer.transitionToPanel(PanelType.CATEGORY)
                 

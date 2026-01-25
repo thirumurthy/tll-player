@@ -241,7 +241,7 @@ class ListAdapter(
                         val v = recyclerView.findViewHolderForAdapterPosition(p)
                         v?.itemView?.isSelected = true
                         v?.itemView?.requestFocus()
-                    }, 0)
+                    }, 100)
                 }
 
                 if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && position == getItemCount() - 1) {
@@ -256,7 +256,7 @@ class ListAdapter(
                         val v = recyclerView.findViewHolderForAdapterPosition(p)
                         v?.itemView?.isSelected = true
                         v?.itemView?.requestFocus()
-                    }, 0)
+                    }, 100)
                 }
 
                 if (movingPosition != -1 && movingPosition == position) {
@@ -298,6 +298,14 @@ class ListAdapter(
         }
         arrowDown.setOnClickListener {
             moveChannelDown(position)
+        }
+        
+        // Reset focus state to prevent style recycling issues
+        if (view.hasFocus()) {
+            viewHolder.focus(true)
+            focused = view
+        } else {
+            viewHolder.focus(false)
         }
     }
 
@@ -465,6 +473,8 @@ class ListAdapter(
         recyclerView.post {
             // Use glass scroll manager for smooth scrolling
             // scrollManager.smoothScrollToPosition(recyclerView, position)
+            // Scroll to position first
+             (recyclerView.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(position, 0)
 
             recyclerView.postDelayed({
                 val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)

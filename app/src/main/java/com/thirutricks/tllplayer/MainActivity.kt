@@ -1087,8 +1087,11 @@ class MainActivity : FragmentActivity() {
                 if (!settingFragment.isHidden) {
                     return false
                 }
-                // For track selection, consume but don't act
-                return !trackSelectionFragment.isHidden 
+                // For track selection, let it handle navigation - return false
+                if (!trackSelectionFragment.isHidden) {
+                    return false
+                }
+                return false
             }
 
             KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
@@ -1104,8 +1107,11 @@ class MainActivity : FragmentActivity() {
                 if (!settingFragment.isHidden) {
                     return false
                 }
-                // For track selection, consume but don't act
-                return !trackSelectionFragment.isHidden
+                // For track selection, let it handle navigation - return false
+                if (!trackSelectionFragment.isHidden) {
+                    return false
+                }
+                return false
             }
 
             KeyEvent.KEYCODE_DPAD_LEFT -> {
@@ -1117,7 +1123,10 @@ class MainActivity : FragmentActivity() {
                 if (!settingFragment.isHidden) {
                     return false
                 }
-                return !trackSelectionFragment.isHidden || !menuFragment.isHidden
+                if (!trackSelectionFragment.isHidden) {
+                    return false
+                }
+                return !menuFragment.isHidden
             }
 
             KeyEvent.KEYCODE_DPAD_RIGHT -> {

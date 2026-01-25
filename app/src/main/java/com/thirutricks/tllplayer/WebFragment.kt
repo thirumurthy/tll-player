@@ -992,7 +992,17 @@ class WebFragment : Fragment() {
                 for (i in 0 until group.length) {
                     val format = group.getTrackFormat(i)
                     val lang = format.language ?: ""
-                    val label = format.label ?: if (lang.isNotEmpty()) lang else "Audio ${trackIndex + 1}"
+                    var displayLang = lang
+                    if (lang.isNotEmpty()) {
+                        try {
+                            val locale = java.util.Locale(lang)
+                            displayLang = locale.getDisplayLanguage(java.util.Locale.ENGLISH)
+                            if (displayLang.isEmpty()) displayLang = lang
+                        } catch (e: Exception) {
+                           // ignore
+                        }
+                    }
+                    val label = format.label ?: if (displayLang.isNotEmpty()) displayLang else "Audio ${trackIndex + 1}"
                     tracks.add(AudioTrack(trackIndex, label, group.isTrackSelected(i)))
                     trackIndex++
                 }

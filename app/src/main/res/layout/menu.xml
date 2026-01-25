@@ -11,6 +11,14 @@
     android:padding="@dimen/glass_menu_padding"
     >
 
+    <!-- Guideline for 60% width -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/menu_end_guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.6" />
+
     <!-- Glass Menu Background with Blur Effect -->
     <View
         android:id="@+id/menu_background"
@@ -21,7 +29,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/menu_end_guideline"
         android:layout_margin="@dimen/glass_panel_margin" />
 
     <!-- Categories Panel Container -->
@@ -75,7 +83,7 @@
     <!-- Channels Panel Container -->
     <androidx.cardview.widget.CardView
         android:id="@+id/channel_panel_container"
-        android:layout_width="@dimen/glass_channel_panel_width"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="@dimen/glass_item_margin"
         android:layout_marginTop="@dimen/glass_panel_margin"
@@ -87,7 +95,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/category_panel_container"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/menu_end_guideline"
         >
 
         <!-- Channels List -->

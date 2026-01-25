@@ -165,7 +165,7 @@ class GroupAdapter(
                         val v = recyclerView.findViewHolderForAdapterPosition(p)
                         v?.itemView?.isSelected = true
                         v?.itemView?.requestFocus()
-                    }, 0)
+                    }, 100)
                 }
 
                 if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && position == getItemCount() - 1) {
@@ -180,7 +180,7 @@ class GroupAdapter(
                         val v = recyclerView.findViewHolderForAdapterPosition(p)
                         v?.itemView?.isSelected = true
                         v?.itemView?.requestFocus()
-                    }, 0)
+                    }, 100)
                 }
 
                 if (movingPosition != -1 && movingPosition == position) {
@@ -217,6 +217,14 @@ class GroupAdapter(
         }
         arrowDown.setOnClickListener {
             moveGroupDown(position)
+        }
+        
+        // Reset focus state to prevent style recycling issues
+        if (view.hasFocus()) {
+            viewHolder.focus(true)
+            focused = view
+        } else {
+            viewHolder.focus(false)
         }
     }
 
@@ -295,12 +303,16 @@ class GroupAdapter(
 
     fun toPosition(position: Int) {
         recyclerView.post {
-            // Immediate focus change without delay for better responsiveness
-            val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
-            viewHolder?.itemView?.let { itemView ->
-                itemView.isSelected = true
-                itemView.requestFocus()
-            }
+            // Scroll to position first
+            (recyclerView.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(position, 0)
+            
+            recyclerView.postDelayed({
+                val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
+                viewHolder?.itemView?.let { itemView ->
+                    itemView.isSelected = true
+                    itemView.requestFocus()
+                }
+            }, 100)
         }
     }
 

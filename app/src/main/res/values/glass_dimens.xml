@@ -17,27 +17,27 @@
     
     <!-- Menu Layout Dimensions -->
     <dimen name="glass_menu_padding">24dp</dimen>
-    <dimen name="glass_panel_margin">16dp</dimen>
-    <dimen name="glass_panel_padding">12dp</dimen>
-    <dimen name="glass_item_padding">8dp</dimen>
-    <dimen name="glass_item_margin">2dp</dimen>
+    <dimen name="glass_panel_margin">20dp</dimen>
+    <dimen name="glass_panel_padding">16dp</dimen>
+    <dimen name="glass_item_padding">12dp</dimen>
+    <dimen name="glass_item_margin">6dp</dimen>
     <dimen name="glass_reduced_gap">8dp</dimen>
     
     <!-- Category Panel Dimensions -->
-    <dimen name="glass_category_panel_width">240dp</dimen>
-    <dimen name="glass_category_item_height">40dp</dimen>
-    <dimen name="glass_category_item_padding_horizontal">16dp</dimen>
-    <dimen name="glass_category_item_padding_vertical">8dp</dimen>
+    <dimen name="glass_category_panel_width">260dp</dimen>
+    <dimen name="glass_category_item_height">54dp</dimen>
+    <dimen name="glass_category_item_padding_horizontal">20dp</dimen>
+    <dimen name="glass_category_item_padding_vertical">12dp</dimen>
     
     <!-- Channel Panel Dimensions -->
     <dimen name="glass_channel_panel_width">400dp</dimen>
     <dimen name="glass_channel_item_height">72dp</dimen>
     <dimen name="glass_channel_item_padding_horizontal">16dp</dimen>
-    <dimen name="glass_channel_item_padding_vertical">8dp</dimen>
+    <dimen name="glass_channel_item_padding_vertical">12dp</dimen>
     <dimen name="glass_channel_logo_size">48dp</dimen>
     
     <!-- Typography Dimensions -->
-    <dimen name="glass_text_size_large">18sp</dimen>
+    <dimen name="glass_text_size_large">20sp</dimen>
     <dimen name="glass_text_size_medium">16sp</dimen>
     <dimen name="glass_text_size_small">14sp</dimen>
     <dimen name="glass_text_size_caption">12sp</dimen>
@@ -53,8 +53,8 @@
     <dimen name="glass_elevation_small">2dp</dimen>
     <dimen name="glass_item_spacing">@dimen/glass_item_margin</dimen>
     <dimen name="glass_content_padding">@dimen/glass_item_padding</dimen>
-    <dimen name="glass_content_spacing">12dp</dimen>
-    <dimen name="glass_icon_size">40dp</dimen>
+    <dimen name="glass_content_spacing">16dp</dimen>
+    <dimen name="glass_icon_size">48dp</dimen>
     <dimen name="glass_icon_size_small">24dp</dimen>
     <dimen name="glass_icon_corner_radius">@dimen/glass_corner_radius_small</dimen>
     <dimen name="glass_text_size_primary">@dimen/glass_text_size_medium</dimen>
