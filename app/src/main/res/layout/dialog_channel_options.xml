@@ -1,62 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:background="@android:drawable/dialog_holo_light_frame"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:theme="@style/Theme.MyTV1">
+    android:minWidth="400dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="24dp"
+    app:cardBackgroundColor="@android:color/transparent">
 
-    <TextView
-        android:id="@+id/dialog_title"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="Channel Options"
-        android:textColor="@android:color/black"
-        android:textSize="22sp"
-        android:textStyle="bold" />
+        android:background="@drawable/dialog_glass_background"
+        android:padding="32dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:gravity="center"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/btn_move"
+        <TextView
+            android:id="@+id/dialog_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/tv_button_bg"
-            android:text="Move"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:textColor="@android:color/white" />
+            android:text="Channel Options"
+            android:textColor="@android:color/white"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-        <Button
-            android:id="@+id/btn_rename"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/tv_button_bg"
-            android:text="Rename"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:textColor="@android:color/white" />
+            android:layout_marginTop="32dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/dialog_title"
+            app:layout_constraintBottom_toBottomOf="parent">
 
-        <Button
-            android:id="@+id/btn_cancel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:background="@drawable/tv_button_bg"
-            android:text="Cancel"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:textColor="@android:color/white" />
-    </LinearLayout>
+            <Button
+                android:id="@+id/btn_move"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/tv_button_bg"
+                android:text="Move"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:textColor="@android:color/white"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp" />
 
-</LinearLayout>
+            <Button
+                android:id="@+id/btn_rename"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/tv_button_bg"
+                android:text="Rename"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:textColor="@android:color/white"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp" />
+
+            <Button
+                android:id="@+id/btn_cancel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:background="@drawable/tv_button_bg"
+                android:text="Cancel"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:textColor="@android:color/white"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>

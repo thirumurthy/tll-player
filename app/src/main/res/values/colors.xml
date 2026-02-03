@@ -58,19 +58,19 @@
     <color name="overlay_background">#99000000</color>
 
     <!-- Glassmorphism Colors -->
-    <color name="glass_background">#33FFFFFF</color> <!-- 20% White -->
-    <color name="glass_background_focused">#40FFFFFF</color> <!-- 25% White -->
-    <color name="glass_border">#4DFFFFFF</color> <!-- 30% White -->
+    <color name="glass_background">#1AFFFFFF</color> <!-- 10% White for cleaner look -->
+    <color name="glass_background_focused">#33FFFFFF</color> <!-- 20% White -->
+    <color name="glass_border">#33FFFFFF</color> <!-- 20% White -->
     <color name="glass_border_focused">#66FFFFFF</color> <!-- 40% White -->
-    <color name="glass_highlight">#1AFFFFFF</color> <!-- 10% White -->
-    <color name="glass_highlight_focused">#33FFFFFF</color> <!-- 20% White -->
+    <color name="glass_highlight">#0DFFFFFF</color> <!-- 5% White -->
+    <color name="glass_highlight_focused">#26FFFFFF</color> <!-- 15% White -->
     
     <!-- Glass Card Colors -->
-    <color name="glass_card_background">#26FFFFFF</color> <!-- 15% White -->
-    <color name="glass_card_background_focused">#40FFFFFF</color> <!-- 25% White -->
-    <color name="glass_overlay_light">#1A1A1A1A</color> <!-- Very subtle overlay -->
-    <color name="glass_overlay_medium">#33000000</color> <!-- Medium overlay -->
-    <color name="glass_overlay_dark">#4D000000</color> <!-- Darker overlay -->
+    <color name="glass_card_background">#0DFFFFFF</color> <!-- 5% White for cards -->
+    <color name="glass_card_background_focused">#26FFFFFF</color> <!-- 15% White -->
+    <color name="glass_overlay_light">#0D000000</color> <!-- Very subtle overlay -->
+    <color name="glass_overlay_medium">#40000000</color> <!-- Medium overlay -->
+    <color name="glass_overlay_dark">#80000000</color> <!-- Darker overlay -->
     
     <!-- Additional UI Colors -->
     <color name="accent_blue">#00B0FF</color> <!-- Bright blue for section headers -->
