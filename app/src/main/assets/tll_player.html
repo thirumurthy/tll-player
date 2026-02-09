@@ -227,7 +227,7 @@
         const params = new URLSearchParams(window.location.search);
         const channel = params.get("channel");
         const streamUrl = decodeURIComponent(channel);
-        const response = await fetch(`https://besttllapp.online/api/get_graph.php?stream_url=${streamUrl}`);
+        const response = await fetch(`https://tllapp.dpdns.org/api/get_graph.php?stream_url=${streamUrl}`);
         const data = await response.json();
         if (data.success) {
           // ... simplified: not redrawing graph fully for brevity

@@ -99,7 +99,7 @@ class SettingFragment : Fragment() {
 
         updateManager = UpdateManager(requireContext(), requireContext().appVersionCode)
         (activity as MainActivity).ready(TAG)
-        // SP.config = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
+        // SP.config = "https://tllapp.dpdns.org/tvnexa/v1/admin/channel-pllayer"
         return binding.root
     }
 

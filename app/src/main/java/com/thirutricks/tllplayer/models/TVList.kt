@@ -24,7 +24,7 @@ import java.io.File
 object TVList {
     private const val TAG = "TVList"
     const val FILE_NAME = "channels.txt"
-    const val DEFAULT_CONFIG_URL = "https://besttllapp.online/tvnexa/v1/admin/channel-pllayer"
+    const val DEFAULT_CONFIG_URL = "https://tllapp.dpdns.org/tvnexa/v1/admin/channel-pllayer"
     private lateinit var appDirectory: File
     private lateinit var serverUrl: String
     private lateinit var list: List<TV>

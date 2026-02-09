@@ -271,7 +271,7 @@ class WebFragment : Fragment() {
                         }
                     }
 
-                    "besttllapp.online"-> webView.evaluateJavascript(context.resources.openRawResource(R.raw.snx)
+                    "tllapp.dpdns.org"-> webView.evaluateJavascript(context.resources.openRawResource(R.raw.snx)
                         .bufferedReader()
                         .use { it.readText() }) { value ->
                         if (value == "success") {
