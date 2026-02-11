@@ -26,7 +26,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.thirutricks.tllplayer.models.TVList
 import com.thirutricks.tllplayer.models.TVModel
-import com.thirutricks.tllplayer.RootCheckUtil
+
 import com.thirutricks.tllplayer.ui.CrashDiagnosticManager
 import com.thirutricks.tllplayer.ui.SafeFragmentManager
 import com.thirutricks.tllplayer.ui.SettingsErrorRecovery
@@ -70,9 +70,7 @@ class MainActivity : FragmentActivity() {
 
     private var server: SimpleServer? = null
 
-    private val rootHandler = Handler(Looper.getMainLooper())
-    private val checkInterval: Long = 5000 // Check every 5 seconds
-    private var wasRooted = false
+
 
     private lateinit var connectivityManager: ConnectivityManager
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -105,7 +103,7 @@ class MainActivity : FragmentActivity() {
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
-        startRootMonitoring()
+
 
 //        requestWindowFeature(FEATURE_NO_TITLE)
         window.setFlags(
@@ -1193,7 +1191,7 @@ class MainActivity : FragmentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         connectivityManager.unregisterNetworkCallback(networkCallback)
-        rootHandler.removeCallbacksAndMessages(null) // Stop monitoring to prevent memory leaks
+
         server?.stop()
     }
 
@@ -1222,29 +1220,8 @@ class MainActivity : FragmentActivity() {
         return false
     }
 
-       private fun startRootMonitoring() {
-        rootHandler.post(object : Runnable {
-            override fun run() {
-                val isRooted = RootCheckUtil.isDeviceRooted()
-                if (isRooted && !wasRooted) {
-                    Log.d(TAG, "Root access detected. Exiting app.")
-                    Toast.makeText(this@MainActivity, "Rooted device detected. App cannot run.", Toast.LENGTH_LONG).show()
-                    finishAffinity()
-                }
-                wasRooted = isRooted
-                rootHandler.postDelayed(this, checkInterval)
-            }
-        })
-    }
 
-    private fun handleRootStatusChange(isRooted: Boolean) {
-        if (isRooted) {
-//            Log.d(TAG, "Root detected. Exiting app.")
-//            Toast.makeText(this, "Root detected. Exiting app.", Toast.LENGTH_LONG).show()
-//            finishAffinity() // Exit the app
-        } else {
-            Toast.makeText(this, "Device is no longer rooted.", Toast.LENGTH_SHORT).show()
-        }
-    }
+
+
 
 }
