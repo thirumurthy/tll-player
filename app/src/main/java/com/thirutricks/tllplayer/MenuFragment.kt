@@ -282,7 +282,7 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
     }
 
     override fun onItemClicked(tvModel: TVModel) {
-        TVList.setPosition(tvModel.tv.id)
+        TVList.setPosition(tvModel.tv.id, updateGroup = false)
         (activity as MainActivity).hideMenuFragment()
     }
 
@@ -332,23 +332,16 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
             if (binding.list.isVisible) {
                 val currentTvModel = TVList.getTVModel()
                 if (currentTvModel != null) {
-                    val groupIndex = currentTvModel.groupIndex
-                    Log.i(
-                        TAG,
-                        "groupIndex $groupIndex ${TVList.groupModel.position.value!!}"
-                    )
-
-                    if (groupIndex == TVList.groupModel.position.value!!) {
-                        if (listAdapter.tvListModel.getIndex() != currentTvModel.groupIndex) {
-                            updateList(groupIndex)
-                        }
-
-                        Log.i(
-                            TAG,
-                            "list on show toPosition ${currentTvModel.tv.title} ${currentTvModel.listIndex}/${listAdapter.tvListModel.size()}"
-                        )
-                        listAdapter.toPosition(currentTvModel.listIndex)
+                    val channelId = currentTvModel.tv.id
+                    
+                    // Find the channel's index in the currently displayed list (works for Favorites/All too)
+                    val indexInCategory = listAdapter.tvListModel.tvListModel.value?.indexOfFirst { it.tv.id == channelId } ?: -1
+                    
+                    if (indexInCategory != -1) {
+                        Log.i(TAG, "Restoring focus in category to channel $channelId at index $indexInCategory")
+                        listAdapter.toPosition(indexInCategory)
                     } else {
+                        Log.i(TAG, "Channel $channelId not found in current category, focusing first item")
                         listAdapter.toPosition(0)
                     }
                 }

@@ -65,6 +65,7 @@ class MainActivity : FragmentActivity() {
     private val delayHideSetting = 3 * 60 * 1000L
 
     private var doubleBackToExitPressedOnce = false
+    private var pendingChannelUrl: String? = null
 
     lateinit var gestureDetector: GestureDetector
 
@@ -218,6 +219,48 @@ class MainActivity : FragmentActivity() {
 
         updateManager = UpdateManager(this, this.appVersionCode)
         updateManager.checkAndUpdate()
+        
+        handleIntent(intent)
+        com.thirutricks.tllplayer.infrastructure.LauncherChannelJobService.schedule(this)
+
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: android.content.Intent?) {
+        val uri = intent?.data ?: return
+        Log.i(TAG, "handleIntent: $uri")
+        if (uri.scheme == "tllplayer") {
+            val pathSegments = uri.pathSegments
+            if (uri.host == "play" && pathSegments.isNotEmpty()) {
+                val encodedUrl = pathSegments[0]
+                try {
+                    val decodedUrl = String(android.util.Base64.decode(encodedUrl, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP))
+                    Log.i(TAG, "Decoded URL: $decodedUrl")
+                    pendingChannelUrl = decodedUrl
+                    tryPlayPendingChannel()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error decoding URL", e)
+                }
+            }
+        }
+    }
+
+    private fun tryPlayPendingChannel() {
+        val url = pendingChannelUrl ?: return
+        if (TVList.size() > 0) {
+            for (i in 0 until TVList.size()) {
+                val model = TVList.getTVModel(i)
+                if (model != null && model.tv.uris.contains(url)) {
+                    TVList.setPosition(i)
+                    pendingChannelUrl = null
+                    break
+                }
+            }
+        }
     }
 
     /**
@@ -285,6 +328,10 @@ class MainActivity : FragmentActivity() {
                 }
                 Log.i(TAG, "menuFragment update")
                 menuFragment.update()
+                
+                if (pendingChannelUrl != null) {
+                    tryPlayPendingChannel()
+                }
             }
         }
 
@@ -1060,21 +1107,12 @@ class MainActivity : FragmentActivity() {
                 return true
             }
 
-            KeyEvent.KEYCODE_ENTER -> {
-                showFragment(menuFragment)
-                return true
-            }
-
              KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                 if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden) {
                     showFragment(menuFragment)
                     return true
                 }
                 return !trackSelectionFragment.isHidden || !menuFragment.isHidden || !settingFragment.isHidden
-
-
-
-
             }
 
             KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {

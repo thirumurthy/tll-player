@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.thirutricks.tllplayer.infrastructure.LauncherChannelHelper
 
 object TVList {
     private const val TAG = "TVList"
@@ -28,6 +29,7 @@ object TVList {
     private lateinit var appDirectory: File
     private lateinit var serverUrl: String
     private lateinit var list: List<TV>
+    private lateinit var appContext: Context
     var listModel: List<TVModel> = listOf()
     val groupModel = TVGroupModel()
 
@@ -40,6 +42,7 @@ object TVList {
         get() = _importProgress
 
     fun init(context: Context) {
+        appContext = context.applicationContext
         _position.value = 0
         _importProgress.value = 0
 
@@ -401,6 +404,8 @@ object TVList {
             Log.i(TAG, "groupModel ${groupModel.size()}")
             
             groupModel.setChange()
+            
+            LauncherChannelHelper.updateFavoritesChannel(appContext, this@TVList)
         }
     }
 
@@ -496,7 +501,7 @@ object TVList {
         return listModel[idx]
     }
 
-    fun setPosition(position: Int): Boolean {
+    fun setPosition(position: Int, updateGroup: Boolean = true): Boolean {
         Log.i(TAG, "setPosition $position/${size()}")
         if (position < 0 || position >= size()) {
             return false
@@ -508,9 +513,11 @@ object TVList {
 
         val tvModel = getTVModel(position) ?: return false
 
-        groupModel.setPosition(tvModel.groupIndex)
-
-        SP.positionGroup = tvModel.groupIndex
+        if (updateGroup) {
+            groupModel.setPosition(tvModel.groupIndex)
+            SP.positionGroup = tvModel.groupIndex
+        }
+        
         SP.position = position
         return true
     }
@@ -529,6 +536,8 @@ object TVList {
             }
             groupModel.getTVListModel(1)?.setTVListModel(favouriteChannels)
             groupModel.setChange()
+            
+            LauncherChannelHelper.updateFavoritesChannel(appContext, this@TVList)
         }
     }
     

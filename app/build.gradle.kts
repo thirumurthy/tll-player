@@ -137,6 +137,8 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("androidx.cardview:cardview:1.0.0")
 
+    implementation("androidx.tvprovider:tvprovider:1.1.0")
+
     // Test dependencies
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.10.3")
