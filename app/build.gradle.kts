@@ -105,7 +105,7 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
 
     // 21:2.11.0 17:2.6.4
-    val retrofit2Version = "2.6.4"
+    val retrofit2Version = "2.11.0"
     // Gson 2.10.1 and older: API level 19
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.squareup.retrofit2:converter-gson:$retrofit2Version") {

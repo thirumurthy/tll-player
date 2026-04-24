@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:layout_marginBottom="8dp">
+
+    <EditText
+        android:id="@+id/item_config_input"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/settings_button_height"
+        android:gravity="center_vertical"
+        android:hint="Enter M3U, Stalker, or Mac Portal config..."
+        android:textColorHint="@color/info_text_hint"
+        android:textColor="@color/info_text_primary"
+        android:background="@drawable/tv_input_glass"
+        android:paddingStart="@dimen/tv_item_spacing"
+        android:paddingEnd="@dimen/tv_item_spacing"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:fontFamily="sans-serif"
+        android:inputType="textMultiLine" />
+
+    <ImageButton
+        android:id="@+id/item_config_delete"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="8dp"
+        android:src="@android:drawable/ic_delete"
+        android:background="@android:color/transparent"
+        android:contentDescription="Delete configuration"
+        android:visibility="gone" />
+</LinearLayout>

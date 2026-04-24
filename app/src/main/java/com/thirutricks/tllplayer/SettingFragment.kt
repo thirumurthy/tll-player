@@ -633,7 +633,7 @@ class SettingFragment : Fragment() {
         binding.version.contentDescription = "Application version: ${binding.version.text}"
         
         // Enhance input field descriptions
-        binding.config.contentDescription = "Channel configuration URL input field"
+        // binding.config.contentDescription = "Channel configuration URL input field"
         binding.channel.contentDescription = "Default channel number input field"
         binding.server.contentDescription = "Server address display"
         
@@ -749,30 +749,35 @@ class SettingFragment : Fragment() {
             (activity as MainActivity).settingActive()
         }
 
-        val config = binding.config
-        config.text = SP.config?.let { Editable.Factory.getInstance().newEditable(it) }
-            ?: Editable.Factory.getInstance().newEditable("")
-
+        renderConfigs()
 
         binding.confirmConfig.setOnClickListener {
             tvUiUtils?.playClickSound()
 
-            val text = binding.config.text.toString().trim()
-            val url = Utils.formatUrl(text)
-            uri = Uri.parse(url)
-
-            if (uri.scheme.isNullOrEmpty()) {
-                uri = uri.buildUpon().scheme("http").build()
+            val configs = collectConfigs()
+            SP.networkConfigs = configs
+            
+            // Legacy setting update (mostly ignored by TVList.updateAll now but good for UI sync)
+            if (configs.isNotEmpty()) {
+                 SP.config = configs.first().rawString
             }
+            
+            TVList.updateAll()
+            Toast.makeText(requireContext(), "Configurations updated", Toast.LENGTH_SHORT).show()
 
-            if (uri.isAbsolute) {
-                if (uri.scheme == "file") requestReadPermissions()
-                else TVList.parseUri(uri)
-                Toast.makeText(requireContext(), "Config updated", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(requireContext(), "Invalid address", Toast.LENGTH_SHORT).show()
+            (activity as MainActivity).settingActive()
+        }
+
+        binding.root.findViewById<android.widget.Button>(R.id.test_connection)?.setOnClickListener {
+            tvUiUtils?.playClickSound()
+            val configs = collectConfigs()
+            if (configs.isEmpty()) {
+                Toast.makeText(requireContext(), "No configurations to test", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
-
+            Toast.makeText(requireContext(), "Testing ${configs.size} connections concurrenty in background...", Toast.LENGTH_LONG).show()
+            SP.networkConfigs = configs
+            TVList.updateAll()
             (activity as MainActivity).settingActive()
         }
 
@@ -795,12 +800,20 @@ class SettingFragment : Fragment() {
 
             SP.channel = 0
             SP.position = 0
+            
+            // Explicitly clear networking configs
+            SP.networkConfigs = emptyList()
+            SP.config = ""
 
-            binding.config.text = Editable.Factory.getInstance().newEditable("")
+            renderConfigs()
             binding.channel.text = Editable.Factory.getInstance().newEditable("")
 
             requireContext().deleteFile(TVList.FILE_NAME)
             SP.deleteLike()
+            
+            // Clear in-memory UI models natively
+            TVList.updateAll()
+            
             Toast.makeText(requireContext(), "Settings cleared", Toast.LENGTH_SHORT).show()
         }
 
@@ -877,9 +890,7 @@ class SettingFragment : Fragment() {
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
         if (!hidden) {
-            val config = binding.config
-            config.text = SP.config?.let { Editable.Factory.getInstance().newEditable(it) }
-                ?: Editable.Factory.getInstance().newEditable("")
+            renderConfigs()
             
             // Ensure proper focus when settings becomes visible
             binding.content.post {
@@ -945,6 +956,69 @@ class SettingFragment : Fragment() {
             // All permissions are granted; proceed with the update manager
             updateManager.checkAndUpdate()
         }
+    }
+
+    private fun renderConfigs() {
+        binding.configContainer.removeAllViews()
+        val configs = SP.networkConfigs
+        for (config in configs) {
+            addConfigRow(config.rawString)
+        }
+        // Always add an empty one at the end
+        addConfigRow("")
+    }
+
+    private fun addConfigRow(initialText: String) {
+        val row = layoutInflater.inflate(R.layout.item_network_config, binding.configContainer, false)
+        val input = row.findViewById<android.widget.EditText>(R.id.item_config_input)
+        val deleteBtn = row.findViewById<android.widget.ImageButton>(R.id.item_config_delete)
+
+        input.setText(initialText)
+
+        if (initialText.isNotEmpty()) {
+            deleteBtn.visibility = View.VISIBLE
+        } else {
+            deleteBtn.visibility = View.GONE
+        }
+
+        input.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) {
+                val isEmpty = s.isNullOrEmpty()
+                deleteBtn.visibility = if (isEmpty) View.GONE else View.VISIBLE
+                
+                // If we typed into the last empty box, spawn a new empty box
+                val isLastRow = binding.configContainer.indexOfChild(row) == binding.configContainer.childCount - 1
+                if (!isEmpty && isLastRow) {
+                    addConfigRow("")
+                }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        deleteBtn.setOnClickListener {
+            binding.configContainer.removeView(row)
+            // If the user deletes all rows, add at least one back
+            if (binding.configContainer.childCount == 0) {
+                addConfigRow("")
+            }
+        }
+
+        binding.configContainer.addView(row)
+    }
+
+    private fun collectConfigs(): List<com.thirutricks.tllplayer.models.NetworkConfig> {
+        val result = mutableListOf<com.thirutricks.tllplayer.models.NetworkConfig>()
+        for (i in 0 until binding.configContainer.childCount) {
+            val row = binding.configContainer.getChildAt(i)
+            val input = row.findViewById<android.widget.EditText>(R.id.item_config_input)
+            val text = input.text.toString().trim()
+            if (text.isNotEmpty()) {
+                val parsed = com.thirutricks.tllplayer.infrastructure.ConfigParser.identifyAndParse(text)
+                result.add(parsed)
+            }
+        }
+        return result
     }
 
 

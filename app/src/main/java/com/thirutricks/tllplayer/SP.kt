@@ -3,6 +3,9 @@ package com.thirutricks.tllplayer
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.thirutricks.tllplayer.models.NetworkConfig
+import com.thirutricks.tllplayer.models.ConfigType
+import com.thirutricks.tllplayer.models.TVList
 
 object SP {
     // If Change channel with up and down in reversed order or not
@@ -26,6 +29,7 @@ object SP {
     private const val KEY_REPEAT_INFO = "repeat_info"
 
     private const val KEY_CONFIG = "config"
+    private const val KEY_NETWORK_CONFIGS = "network_configs"
 
     private const val KEY_CONFIG_AUTO_LOAD = "config_auto_load"
 
@@ -99,6 +103,30 @@ object SP {
     var config: String?
         get() = sp.getString(KEY_CONFIG, "")
         set(value) = sp.edit().putString(KEY_CONFIG, value).apply()
+
+    var networkConfigs: List<NetworkConfig>
+        get() {
+            val json = sp.getString(KEY_NETWORK_CONFIGS, null) 
+            if (json == null) {
+                // Migration path from old single config
+                val oldConfig = config
+                if (!oldConfig.isNullOrEmpty()) {
+                    val fallbackType = if (oldConfig.contains("m3u", true)) ConfigType.M3U_PLAYLIST else ConfigType.DEFAULT_JSON
+                    return listOf(NetworkConfig(rawString = oldConfig, type = fallbackType, url = oldConfig))
+                }
+                return listOf(NetworkConfig(rawString = TVList.DEFAULT_CONFIG_URL, type = ConfigType.DEFAULT_JSON, url = TVList.DEFAULT_CONFIG_URL))
+            }
+            return try {
+                val type = object : com.google.gson.reflect.TypeToken<List<NetworkConfig>>() {}.type
+                com.google.gson.Gson().fromJson(json, type) ?: emptyList()
+            } catch (e: Exception) {
+                emptyList()
+            }
+        }
+        set(value) {
+            val json = com.google.gson.Gson().toJson(value)
+            sp.edit().putString(KEY_NETWORK_CONFIGS, json).apply()
+        }
 
     var configAutoLoad: Boolean
         get() = sp.getBoolean(KEY_CONFIG_AUTO_LOAD, true)

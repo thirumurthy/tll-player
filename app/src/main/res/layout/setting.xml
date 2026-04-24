@@ -83,14 +83,99 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="CONFIGURATION"
+                        android:text="Network Configuration"
+                        android:textSize="28sp"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="8dp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Manage your secure access portals, MAC filtering, and endpoint URLs for high-fidelity streaming synchronization."
+                        android:textColor="@color/info_text_secondary"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="24dp"
+                        android:lineSpacingExtra="4dp"
+                        android:fontFamily="sans-serif" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="ACTIVE ENDPOINTS &amp; MAC IDENTIFIERS"
+                        android:textSize="12sp"
+                        android:textColor="@color/accent_blue"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="16dp"
+                        android:letterSpacing="0.05"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <LinearLayout
+                        android:id="@+id/config_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="16dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp">
+
+                        <Button
+                            android:id="@+id/confirm_config"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="Save Configuration"
+                            android:background="@drawable/tv_button_glass"
+                            android:backgroundTint="#82b1ff"
+                            android:textColor="@android:color/black"
+                            android:paddingHorizontal="24dp"
+                            android:layout_marginEnd="16dp"
+                            android:textSize="14sp"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <!-- This could just be a transparent button visually -->
+                        <Button
+                            android:id="@+id/test_connection"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:text="Test Connection"
+                            android:background="@drawable/tv_button_glass"
+                            android:textColor="@android:color/white"
+                            android:paddingHorizontal="24dp"
+                            android:textSize="14sp"
+                            android:fontFamily="sans-serif-medium" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.thirutricks.tllplayer.ui.GlassCard>
+
+            <!-- Preferences Card -->
+            <com.thirutricks.tllplayer.ui.GlassCard
+                android:id="@+id/preferences_card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/glass_card_spacing">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PREFERENCES"
                         android:textSize="@dimen/settings_section_title_size"
                         android:textColor="@color/accent_blue"
                         android:textStyle="bold"
                         android:layout_marginBottom="@dimen/tv_item_spacing"
                         android:fontFamily="sans-serif-medium" />
 
-                    <!-- Server Configuration Row -->
+                    <!-- Server Configuration Row (Moved) -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -120,46 +205,13 @@
                             android:fontFamily="sans-serif" />
                     </LinearLayout>
 
-                    <!-- Channels Configuration Row -->
+                    <!-- Channel Configuration Row (Moved) -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center_vertical"
                         android:layout_marginBottom="@dimen/tv_item_spacing">
-
-                        <Button
-                            android:id="@+id/confirm_config"
-                            android:layout_width="140dp"
-                            android:layout_height="@dimen/settings_button_height"
-                            android:text="@string/channels"
-                            android:background="@drawable/tv_button_glass"
-                            android:textColor="@color/info_text_primary"
-                            android:textSize="@dimen/tv_text_size_small"
-                            android:fontFamily="sans-serif-medium" />
-
-                        <EditText
-                            android:id="@+id/config"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="@dimen/settings_button_height"
-                            android:layout_marginStart="@dimen/tv_item_spacing"
-                            android:gravity="center_vertical"
-                            android:hint="@string/channels"
-                            android:textColorHint="@color/info_text_hint"
-                            android:textColor="@color/info_text_primary"
-                            android:background="@drawable/tv_input_glass"
-                            android:paddingStart="@dimen/tv_item_spacing"
-                            android:paddingEnd="@dimen/tv_item_spacing"
-                            android:fontFamily="sans-serif" />
-                    </LinearLayout>
-
-                    <!-- Channel Configuration Row -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical">
 
                         <Button
                             android:id="@+id/confirm_channel"
@@ -186,32 +238,6 @@
                             android:paddingEnd="@dimen/tv_item_spacing"
                             android:fontFamily="sans-serif" />
                     </LinearLayout>
-
-                </LinearLayout>
-
-            </com.thirutricks.tllplayer.ui.GlassCard>
-
-            <!-- Preferences Card -->
-            <com.thirutricks.tllplayer.ui.GlassCard
-                android:id="@+id/preferences_card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/glass_card_spacing">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="PREFERENCES"
-                        android:textSize="@dimen/settings_section_title_size"
-                        android:textColor="@color/accent_blue"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="@dimen/tv_item_spacing"
-                        android:fontFamily="sans-serif-medium" />
 
                     <com.thirutricks.tllplayer.ui.ModernToggleSwitch
                         android:id="@+id/switch_channel_reversal"

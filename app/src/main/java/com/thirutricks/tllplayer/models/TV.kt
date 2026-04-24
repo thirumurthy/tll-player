@@ -22,6 +22,16 @@ data class TV(
     var headers: Map<String, String>? = null,
     @SerializedName("group")
     var group: String = "",
+    @SerializedName("tvgId")
+    var tvgId: String? = null,
+    @SerializedName("catchup")
+    var catchup: String? = null,
+    @SerializedName("catchupDays")
+    var catchupDays: String? = null,
+    @SerializedName("catchupSource")
+    var catchupSource: String? = null,
+    @SerializedName("attributes")
+    var attributes: Map<String, String>? = null,
     @SerializedName("type")
     var type: Type = Type.WEB,
     @SerializedName("child")

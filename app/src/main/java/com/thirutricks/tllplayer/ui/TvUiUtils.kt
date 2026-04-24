@@ -84,15 +84,6 @@ class TvUiUtils(private val context: Context) {
 
             if (hasFocus) playFocusSound()
         }
-
-        // Preserve user's original click listener
-        val originalClick = view.hasOnClickListeners()
-        view.setOnClickListener { v ->
-            playClickSound()
-            if (originalClick) {
-                v.callOnClick() // preserves existing listener
-            }
-        }
     }
 
     // ------------------------------------------------------------

@@ -18,8 +18,11 @@ import io.github.lizongying.Gua
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import java.io.File
+import com.thirutricks.tllplayer.infrastructure.PlaylistFetchers
 import com.thirutricks.tllplayer.infrastructure.LauncherChannelHelper
 
 object TVList {
@@ -71,49 +74,15 @@ object TVList {
                 }
             }
 
-            if (SP.config.isNullOrEmpty()) {
-                SP.config = DEFAULT_CONFIG_URL
-            }
-
-            if (SP.configAutoLoad && !SP.config.isNullOrEmpty()) {
-                SP.config?.let {
-                    update(it)
-                }
+            if (SP.configAutoLoad && SP.networkConfigs.isNotEmpty()) {
+                updateAll()
             }
         }
     }
 
-    private val unsafeClient: okhttp3.OkHttpClient by lazy {
-        try {
-            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(object : javax.net.ssl.X509TrustManager {
-                override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {}
-                override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>, authType: String) {}
-                override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
-            })
-
-            val sslContext = javax.net.ssl.SSLContext.getInstance("SSL")
-            sslContext.init(null, trustAllCerts, java.security.SecureRandom())
-
-            okhttp3.OkHttpClient.Builder()
-                .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0] as javax.net.ssl.X509TrustManager)
-                .hostnameVerifier { _, _ -> true }
-                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
-                .addInterceptor { chain ->
-                    val original = chain.request()
-                    val request = original.newBuilder()
-                        .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                        .method(original.method(), original.body())
-                        .build()
-                    chain.proceed(request)
-                }
-                .build()
-        } catch (e: Exception) {
-            throw RuntimeException(e)
-        }
-    }
-
-    private fun update() {
+    // Old unsafe client was moved to PlaylistFetchers
+    
+    fun updateAll() {
         CoroutineScope(Dispatchers.IO).launch {
             withContext(Dispatchers.Main) {
                 if (size() == 0) {
@@ -123,63 +92,63 @@ object TVList {
                 }
             }
             try {
-                Log.i(TAG, "request $serverUrl")
-                // Use the custom unsafe client
-                val client = unsafeClient
-                val request = okhttp3.Request.Builder().url(serverUrl).build()
-                val response = client.newCall(request).execute()
-
-                if (response.isSuccessful) {
-                    // Update progress to 60 (Server responded)
-                     withContext(Dispatchers.Main) {
-                        _importProgress.value = 60
+                Log.i(TAG, "Starting concurrent channel imports")
+                val configs = SP.networkConfigs
+                if (configs.isEmpty()) {
+                    withContext(Dispatchers.Main) { 
+                        list = emptyList()
+                        refreshModels()
+                        _importProgress.value = 0 
                     }
-
                     val file = File(appDirectory, FILE_NAME)
-                    if (!file.exists()) {
-                        file.createNewFile()
-                    }
-                    val str = response.body()!!.string()
-
-                    // Process JSON in background
-                    val success = str2List(str)
-
-                    withContext(Dispatchers.Main) {
-                        try {
-                             if (success) {
-                                file.writeText(str)
-                                SP.config = serverUrl
-                                "Channel imported successfully".showToast()
-                                checkChannelsInBackground()
-
-                                // Update progress to 100 (Done)
-                                _importProgress.value = 100
-                            } else {
-                                "Channel import error: Invalid content".showToast()
-                                _importProgress.value = 0 // Reset/Fail
-                            }
-                        } catch (e: Exception) {
-                             Log.e(TAG, "Parsing error", e)
-                             "Channel import error: ${e.message}".showToast()
-                             _importProgress.value = 0 // Reset/Fail
-                        }
-                    }
-                } else {
-                    Log.e("", "request status ${response.code()}")
-                    withContext(Dispatchers.Main) {
-                        "Channel status error: ${response.code()}".showToast()
-                    }
+                    if (file.exists()) file.delete()
+                    return@launch
                 }
-            } catch (e: JsonSyntaxException) {
-                Log.e("JSON Parse Error", e.toString())
+
+                val deferreds = configs.filter { it.isEnabled }.map { config ->
+                    async { PlaylistFetchers.fetch(config) }
+                }
+
+                val results = deferreds.awaitAll()
+                val allChannels = results.flatten()
+
                 withContext(Dispatchers.Main) {
-                    "Channel format error".showToast()
+                    _importProgress.value = 60
                 }
-            } catch (e: NullPointerException) {
-                Log.e("Null Pointer Error", e.toString())
-                 withContext(Dispatchers.Main) {
-                    "Unable to read channel".showToast()
-                 }
+
+                val file = File(appDirectory, FILE_NAME)
+                if (!file.exists()) {
+                    file.createNewFile()
+                }
+
+                withContext(Dispatchers.Main) {
+                    try {
+                         list = allChannels
+                         if (allChannels.isNotEmpty()) {
+                            val str = com.google.gson.Gson().toJson(list)
+                            withContext(Dispatchers.IO) {
+                                file.writeText(str)
+                            }
+                            refreshModels()
+                            
+                            "Channels imported successfully".showToast()
+                            checkChannelsInBackground()
+
+                            _importProgress.value = 100
+                        } else {
+                            refreshModels()
+                            withContext(Dispatchers.IO) {
+                                if (file.exists()) file.delete()
+                            }
+                            "Channel list cleared".showToast()
+                            _importProgress.value = 0
+                        }
+                    } catch (e: Exception) {
+                         Log.e(TAG, "Parsing error", e)
+                         "Channel import error: ${e.message}".showToast()
+                         _importProgress.value = 0
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("", "request error $e")
                  withContext(Dispatchers.Main) {
@@ -190,8 +159,9 @@ object TVList {
     }
 
     fun update(serverUrl: String) {
+        // Fallback for single updates if needed
         this.serverUrl = serverUrl
-        update()
+        updateAll()
     }
 
     fun parseUri(uri: Uri) {
@@ -211,7 +181,6 @@ object TVList {
                     val success = str2List(str)
                     withContext(Dispatchers.Main) {
                         if (success) {
-                            SP.config = uri.toString()
                             "Channel imported successfully".showToast(Toast.LENGTH_LONG)
                             checkChannelsInBackground()
                         } else {
@@ -272,7 +241,17 @@ object TVList {
 
     suspend fun refreshModels() = withContext(Dispatchers.Default) {
         if (!::list.isInitialized || list.isEmpty()) {
-            Log.w(TAG, "Cannot refresh models: list not initialized or empty")
+            Log.w(TAG, "Cannot refresh models: list empty, clearing UI models")
+            withContext(Dispatchers.Main) {
+                val newGroupModel = TVGroupModel()
+                newGroupModel.addTVListModel(TVListModel("My Collection", 0))
+                newGroupModel.addTVListModel(TVListModel("Favourites", 1))
+                newGroupModel.addTVListModel(TVListModel("All channels", 2))
+                groupModel.setTVListModelList(newGroupModel.tvGroupModel.value ?: emptyList())
+                listModel = emptyList()
+                groupModel.setChange()
+                LauncherChannelHelper.updateFavoritesChannel(appContext, this@TVList)
+            }
             return@withContext
         }
 

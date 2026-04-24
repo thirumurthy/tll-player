@@ -171,16 +171,6 @@ class FocusAnimationManager(private val context: Context) {
                 AnimationType.CARD -> applyCardFocusAnimation(v, hasFocus)
             }
         }
-        
-        // Setup click sound feedback
-        val originalClickListener = view.hasOnClickListeners()
-        view.setOnClickListener { v ->
-            tvUiUtils?.playClickSound()
-            // Preserve original click behavior
-            if (originalClickListener) {
-                v.callOnClick()
-            }
-        }
     }
 
     /**
