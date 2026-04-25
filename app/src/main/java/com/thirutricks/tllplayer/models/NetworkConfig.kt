@@ -5,6 +5,7 @@ enum class ConfigType {
     M3U_PLAYLIST,
     MAC_PORTAL,
     STALKER_PORTAL,
+    DIRECT_STREAM,
     UNKNOWN
 }
 

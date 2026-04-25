@@ -722,22 +722,23 @@ class WebFragment : Fragment() {
             return
         }
 
-        // Not ExoPlayer supported URL, use WebView
-        playerView.visibility = View.GONE
-        webView.visibility = View.VISIBLE
-        releasePlayer()
-
         if (url.contains("yupptv.com") || url.contains("athavantv.com") || url.contains("ttn.tv") || url.contains("youtube.com")) {
+            playerView.visibility = View.GONE
+            webView.visibility = View.VISIBLE
+            releasePlayer()
+
             CoroutineScope(Dispatchers.IO).launch {
                 val result = performNetworkRequest(url)
                 if(result != null){
                     withContext(Dispatchers.Main) {
+                        if (this@WebFragment.tvModel?.videoUrl?.value != url) return@withContext
                         val encodedUrl = java.net.URLEncoder.encode(result, "UTF-8")
                         webView.loadUrl("$ASSET_PLAYER_URL$encodedUrl")
                     }
                 } else {
                     withContext(Dispatchers.Main) {
-                        tvModel?.setErrInfo("Failed to load stream")
+                        if (this@WebFragment.tvModel?.videoUrl?.value != url) return@withContext
+                        this@WebFragment.tvModel?.setErrInfo("Failed to load stream")
                         Toast.makeText(context, "Stream not available", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -745,14 +746,91 @@ class WebFragment : Fragment() {
             return
         }
 
-        val uri = Uri.parse(url)
-        Log.e(TAG, "uri ${uri.host}")
-        when (uri.host) {
-            "tv.cctv.com" -> {
-                webView.evaluateJavascript(
-                    "localStorage.setItem('cctv_live_resolution', '720');",
-                    null
-                )
+        if (url.endsWith(".html", ignoreCase = true) || url.endsWith(".htm", ignoreCase = true) || url.endsWith(".php", ignoreCase = true)) {
+            playInWebView(url)
+            return
+        }
+
+        // Intelligently detect if the link is an HTML page or a stream
+        CoroutineScope(Dispatchers.IO).launch {
+            var isWebPage = false
+            try {
+                // Use OkHttpClient to do a HEAD request first
+                val request = Request.Builder()
+                    .url(url)
+                    .header("User-Agent", USER_AGENT)
+                    .head()
+                    .build()
+                val response = client.newCall(request).execute()
+                val contentType = response.header("Content-Type")?.lowercase()
+                
+                if (contentType != null) {
+                    if (contentType.contains("text/html")) {
+                        isWebPage = true
+                    }
+                } else {
+                    // Try GET request with a range to fetch just some bytes if HEAD is unsupported/returns no content-type
+                    val getRequest = Request.Builder()
+                        .url(url)
+                        .header("User-Agent", USER_AGENT)
+                        .header("Range", "bytes=0-500")
+                        .build()
+                    val getResponse = client.newCall(getRequest).execute()
+                    val getContentType = getResponse.header("Content-Type")?.lowercase()
+                    if (getContentType != null && getContentType.contains("text/html")) {
+                        isWebPage = true
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Header check failed", e)
+                try {
+                    val getRequest = Request.Builder()
+                        .url(url)
+                        .header("User-Agent", USER_AGENT)
+                        .header("Range", "bytes=0-500")
+                        .build()
+                    val getResponse = client.newCall(getRequest).execute()
+                    val getContentType = getResponse.header("Content-Type")?.lowercase()
+                    if (getContentType != null && getContentType.contains("text/html")) {
+                        isWebPage = true
+                    }
+                } catch (ex: Exception) {
+                    Log.e(TAG, "GET fallback check failed", ex)
+                    // If network fails completely, assume WebView as fallback where user might see error page
+                    isWebPage = true
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                if (this@WebFragment.tvModel?.videoUrl?.value != url) return@withContext
+                
+                if (isWebPage) {
+                    playInWebView(url)
+                } else {
+                    webView.visibility = View.GONE
+                    playerView.visibility = View.VISIBLE
+                    webView.loadUrl("about:blank") // Stop webview
+                    initializePlayer(url)
+                }
+            }
+        }
+    }
+
+    private fun playInWebView(url: String) {
+        playerView.visibility = View.GONE
+        webView.visibility = View.VISIBLE
+        releasePlayer()
+
+        val uri = try { Uri.parse(url) } catch (e: Exception) { null }
+        if (uri != null) {
+            Log.e(TAG, "uri ${uri.host}")
+            when (uri.host) {
+                "tv.cctv.com" -> {
+                    webView.evaluateJavascript(
+                        "localStorage.setItem('cctv_live_resolution', '720');",
+                        null
+                    )
+                }
             }
         }
 
@@ -939,7 +1017,13 @@ class WebFragment : Fragment() {
 
         playerView.player = exoPlayer
         
-        val mediaItem = MediaItem.fromUri(videoUrl)
+        val mediaItemBuilder = MediaItem.Builder().setUri(videoUrl)
+        if (drmConfig != null && drmConfig.scheme == "clearkey") {
+            mediaItemBuilder.setDrmConfiguration(
+                MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID).build()
+            )
+        }
+        val mediaItem = mediaItemBuilder.build()
         exoPlayer?.setMediaItem(mediaItem)
         exoPlayer?.prepare()
         exoPlayer?.play()
@@ -1077,7 +1161,7 @@ class WebFragment : Fragment() {
         private const val MAX_BUFFER_MS = 60000
         
         // File extensions
-        private val STREAMING_EXTENSIONS = listOf(".m3u8", ".ts", ".mpd")
+        private val STREAMING_EXTENSIONS = listOf(".m3u8", ".ts", ".mpd", ".mp4", ".mkv")
     }
 
     private fun performNetworkRequest(url: String): String? {

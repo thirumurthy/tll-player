@@ -6,7 +6,7 @@ import java.util.regex.Pattern
 
 object ConfigParser {
     
-    private val macPattern = Pattern.compile("mac=([0-9a-fA-F:-]+)", Pattern.CASE_INSENSITIVE)
+    private val macPattern = Pattern.compile("(?:^|[?&])mac=([0-9a-fA-F:-]+)", Pattern.CASE_INSENSITIVE)
     
     fun identifyAndParse(rawString: String): NetworkConfig {
         val lines = rawString.trim().lines().map { it.trim() }.filter { it.isNotEmpty() }
@@ -28,9 +28,13 @@ object ConfigParser {
         }
         
         // Determine config type
+        val urlLower = urlLine.lowercase()
         val type = when {
             macAddress != null -> ConfigType.MAC_PORTAL
-            urlLine.endsWith(".m3u", true) || urlLine.endsWith(".m3u8", true) || urlLine.contains("m3u", true) -> ConfigType.M3U_PLAYLIST
+            urlLower.substringBefore("?").endsWith(".mpd") || urlLower.substringBefore("?").endsWith(".ts") || 
+            urlLower.substringBefore("?").endsWith(".mkv") || urlLower.substringBefore("?").endsWith(".mp4") || 
+            urlLine.contains("|") -> ConfigType.DIRECT_STREAM
+            urlLower.substringBefore("?").endsWith(".m3u") || urlLower.substringBefore("?").endsWith(".m3u8") || urlLower.contains("m3u") -> ConfigType.M3U_PLAYLIST
             else -> ConfigType.DEFAULT_JSON // Fallback to your custom JSON endpoint schema
         }
         

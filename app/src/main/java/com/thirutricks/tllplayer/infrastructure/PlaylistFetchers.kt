@@ -57,12 +57,61 @@ object PlaylistFetchers {
                 ConfigType.DEFAULT_JSON -> fetchDefaultJson(config.url)
                 ConfigType.M3U_PLAYLIST -> fetchM3uPlaylist(config.url)
                 ConfigType.MAC_PORTAL -> fetchMacPortal(config.url, config.macAddress)
+                ConfigType.DIRECT_STREAM -> fetchDirectStream(config.url)
                 else -> emptyList()
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching playlist for url ${config.url}: ${e.message}")
             emptyList()
         }
+    }
+
+    private fun parseOttUrlAndHeaders(rawUrl: String): Pair<String, Map<String, String>> {
+        val splitIndex = rawUrl.indexOf('|')
+        if (splitIndex == -1) return Pair(rawUrl, emptyMap())
+        
+        val url = rawUrl.substring(0, splitIndex)
+        val paramsPart = rawUrl.substring(splitIndex + 1)
+        
+        val headers = mutableMapOf<String, String>()
+        val pairs = paramsPart.split("&")
+        for (pair in pairs) {
+            val kv = pair.split("=", limit = 2)
+            if (kv.size == 2) {
+                val key = kv[0].trim()
+                val value = kv[1].trim()
+                try {
+                    val decodedValue = java.net.URLDecoder.decode(value, "UTF-8")
+                    val lowerKey = key.lowercase()
+                    when (lowerKey) {
+                        "user-agent" -> headers["User-Agent"] = decodedValue
+                        "referer" -> headers["Referer"] = decodedValue
+                        "cookie" -> headers["Cookie"] = decodedValue
+                        "drmscheme" -> headers["drm-type"] = decodedValue
+                        "drmlicense" -> headers["drm-key"] = decodedValue
+                        else -> headers[key] = decodedValue
+                    }
+                } catch (e: Exception) {
+                    // Ignore decoding failures
+                }
+            }
+        }
+        return Pair(url, headers)
+    }
+
+    private suspend fun fetchDirectStream(rawUrl: String): List<TV> = withContext(Dispatchers.Default) {
+        val (url, headers) = parseOttUrlAndHeaders(rawUrl)
+        val tv = TV(
+            id = 0,
+            title = "Channel - ${(Math.random() * 10000).toInt()}",
+            name = "",
+            logo = "",
+            group = "No Name",
+            uris = listOf(rawUrl),
+            child = emptyList(),
+            headers = if (headers.isNotEmpty()) headers else null
+        )
+        listOf(tv)
     }
 
     suspend fun parseRawJson(str: String): List<TV> = withContext(Dispatchers.Default) {
@@ -105,12 +154,21 @@ object PlaylistFetchers {
         if (!response.isSuccessful) return emptyList()
 
         val body = response.body()?.string() ?: return emptyList()
+        
+        // HLS Direct Stream Detection
+        // If the downloaded body contains specific HLS playback tags, it is a single video stream, not an IPTV channel list.
+        if (body.contains("#EXT-X-TARGETDURATION") || 
+            body.contains("#EXT-X-STREAM-INF") || 
+            body.contains("#EXT-X-MEDIA-SEQUENCE")) {
+            return fetchDirectStream(url)
+        }
+        
         val lines = body.lines()
         val channels = mutableListOf<TV>()
 
         var pendingTitle = ""
         var pendingLogo = ""
-        var pendingGroup = "M3U Channels"
+        var pendingGroup = "No Name"
         var pendingTvgId: String? = null
         var pendingCatchup: String? = null
         var pendingCatchupDays: String? = null
@@ -129,7 +187,7 @@ object PlaylistFetchers {
                     // Reset properties as a new channel is starting
                     pendingTitle = ""
                     pendingLogo = ""
-                    pendingGroup = "M3U Channels"
+                    pendingGroup = "No Name"
                     pendingTvgId = null
                     pendingCatchup = null
                     pendingCatchupDays = null
@@ -227,7 +285,7 @@ object PlaylistFetchers {
                     // URL line
                     if (pendingTitle.isNotEmpty()) {
                         val parsedGroups = pendingGroup.split(";").map { it.trim() }.filter { it.isNotEmpty() }
-                        val activeGroups = if (parsedGroups.isEmpty()) listOf("M3U Channels") else parsedGroups
+                        val activeGroups = if (parsedGroups.isEmpty()) listOf("No Name") else parsedGroups
                         
                         for (grp in activeGroups) {
                             val tv = TV(
@@ -261,6 +319,12 @@ object PlaylistFetchers {
                 }
             }
         }
+        
+        // Fallback: If no channels were parsed (e.g. it was an M3U8 direct stream file with no EXTINF)
+        if (channels.isEmpty()) {
+            return fetchDirectStream(url)
+        }
+        
         return channels
     }
 
