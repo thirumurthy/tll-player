@@ -1226,6 +1226,26 @@ class MainActivity : FragmentActivity() {
         return super.onKeyUp(keyCode, event)
     }
 
+    fun showLoading() {
+        if (!isFinishing && !supportFragmentManager.isStateSaved) {
+            try {
+                showFragment(loadingFragment)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error showing loading fragment", e)
+            }
+        }
+    }
+
+    fun hideLoading() {
+        if (!isFinishing && !supportFragmentManager.isStateSaved) {
+            try {
+                hideFragment(loadingFragment)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error hiding loading fragment", e)
+            }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         connectivityManager.unregisterNetworkCallback(networkCallback)

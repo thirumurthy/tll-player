@@ -61,6 +61,53 @@ class WebFragment : Fragment() {
     private var tvModel: TVModel? = null
     private var savedAudioTrackToApply: Int = -1
 
+    // Retry and connection recovery properties
+    private val retryHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var retryCount = 0
+    private val maxRetries = 5
+    private var currentVideoUrl: String? = null
+
+    private val retryRunnable = Runnable {
+        val url = currentVideoUrl
+        if (url != null && isAdded) {
+            Log.i(TAG, "Retrying playback for $url (attempt $retryCount)")
+            mainActivity.runOnUiThread {
+                mainActivity.showLoading()
+            }
+            initializePlayer(url)
+        }
+    }
+
+    private val bufferingWatchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val watchdogRunnable = Runnable {
+        if (exoPlayer?.playbackState == Player.STATE_BUFFERING && exoPlayer?.playWhenReady == true) {
+            Log.w(TAG, "Player stuck in STATE_BUFFERING for 15 seconds. Triggering automatic retry.")
+            handlePlaybackError("Buffering timeout - stream went offline")
+        }
+    }
+
+    private fun handlePlaybackError(errorMsg: String) {
+        val url = currentVideoUrl ?: return
+        if (retryCount < maxRetries) {
+            retryCount++
+            val delayMs = 3000L * retryCount
+            Log.i(TAG, "Playback error encountered. Scheduling retry $retryCount/$maxRetries in ${delayMs}ms for $url. Error: $errorMsg")
+            
+            mainActivity.runOnUiThread {
+                mainActivity.showLoading()
+            }
+            
+            retryHandler.removeCallbacks(retryRunnable)
+            retryHandler.postDelayed(retryRunnable, delayMs)
+        } else {
+            Log.e(TAG, "Max retries ($maxRetries) reached for $url. Presenting error: $errorMsg")
+            tvModel?.setErrInfo(errorMsg)
+            mainActivity.runOnUiThread {
+                mainActivity.hideLoading()
+            }
+        }
+    }
+
     data class AudioTrack(val index: Int, val name: String, val isSelected: Boolean)
 
     private var _binding: PlayerBinding? = null
@@ -699,6 +746,11 @@ class WebFragment : Fragment() {
     }
 
     fun play(tvModel: TVModel) {
+        // Reset retry states and cancel pending runnables for the new channel
+        retryCount = 0
+        retryHandler.removeCallbacks(retryRunnable)
+        bufferingWatchdogHandler.removeCallbacks(watchdogRunnable)
+
         this.tvModel = tvModel
         val url = tvModel.videoUrl.value as? String
         if (url.isNullOrEmpty()) {
@@ -838,6 +890,7 @@ class WebFragment : Fragment() {
     }
 
     private fun initializePlayer(url: String) {
+        currentVideoUrl = url
         // Always release the previous player to ensure we can configure DRM correctly for the new content
         releasePlayer()
 
@@ -846,7 +899,11 @@ class WebFragment : Fragment() {
 
         var videoUrl = url
         var drmConfig: DrmConfig? = null
-        val requestHeaders = mutableMapOf<String, String>()
+        val requestHeaders = mutableMapOf<String, String>().apply {
+            put("Cache-Control", "no-cache, no-store, must-revalidate")
+            put("Pragma", "no-cache")
+            put("Expires", "0")
+        }
         var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
         val regex = "(?i)(\\?\\|)|(\\?%7C)".toRegex()
@@ -904,6 +961,17 @@ class WebFragment : Fragment() {
             }
         }
 
+        // Add a dynamic cache-busting timestamp parameter to the media URL to force CDN/proxy/server 
+        // to bypass any cached stream chunks and start fresh from the live edge on every reconnect.
+        if (videoUrl.startsWith("http://", ignoreCase = true) || videoUrl.startsWith("https://", ignoreCase = true)) {
+            val timestamp = System.currentTimeMillis()
+            videoUrl = if (videoUrl.contains("?")) {
+                "$videoUrl&_t=$timestamp"
+            } else {
+                "$videoUrl?_t=$timestamp"
+            }
+        }
+
          // Configure LoadControl for better buffering to prevent freezing
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(
@@ -941,15 +1009,15 @@ class WebFragment : Fragment() {
         
         exoPlayer = builder.build()
 
-        if (SP.forceHighQuality) {
-            val trackSelectionParameters = exoPlayer?.trackSelectionParameters
-                ?.buildUpon()
-                ?.setMaxVideoSizeSd() // Start with SD as baseline
-                ?.setForceHighestSupportedBitrate(true)
-                ?.build()
-            if (trackSelectionParameters != null) {
-                exoPlayer?.trackSelectionParameters = trackSelectionParameters
-            }
+        // Configure track selection: if forceHighQuality is false, clamp to SD to save data.
+        // Otherwise, allow full adaptive bitrate selection up to HD/4K (no clamp).
+        val trackSelectionBuilder = exoPlayer?.trackSelectionParameters?.buildUpon()
+        if (!SP.forceHighQuality) {
+            trackSelectionBuilder?.setMaxVideoSizeSd()
+        }
+        val trackSelectionParameters = trackSelectionBuilder?.build()
+        if (trackSelectionParameters != null) {
+            exoPlayer?.trackSelectionParameters = trackSelectionParameters
         }
 
         
@@ -957,14 +1025,29 @@ class WebFragment : Fragment() {
             override fun onPlayerError(error: PlaybackException) {
                 super.onPlayerError(error)
                 Log.e(TAG, "ExoPlayer Error: ${error.message}", error)
-                tvModel?.setErrInfo("Player Error: ${error.message}")
+                handlePlaybackError("Player Error: ${error.message}")
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 super.onPlaybackStateChanged(playbackState)
-                 if (playbackState == Player.STATE_READY) {
-                        tvModel?.setErrInfo("") // Clear error info on successful play
-                 }
+                if (playbackState == Player.STATE_READY) {
+                    tvModel?.setErrInfo("") // Clear error info on successful play
+                    retryCount = 0 // Reset retry count on successful playback
+                    retryHandler.removeCallbacks(retryRunnable) // Cancel any pending retries
+                    bufferingWatchdogHandler.removeCallbacks(watchdogRunnable) // Cancel watchdog
+                    mainActivity.runOnUiThread {
+                        mainActivity.hideLoading()
+                    }
+                } else if (playbackState == Player.STATE_BUFFERING) {
+                    // Start/Reset watchdog timer when player is buffering and should be playing
+                    bufferingWatchdogHandler.removeCallbacks(watchdogRunnable)
+                    if (exoPlayer?.playWhenReady == true) {
+                        bufferingWatchdogHandler.postDelayed(watchdogRunnable, 15000L) // 15 seconds watchdog
+                    }
+                } else {
+                    // In other states (IDLE, ENDED), cancel watchdog
+                    bufferingWatchdogHandler.removeCallbacks(watchdogRunnable)
+                }
             }
 
             override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
@@ -1018,6 +1101,14 @@ class WebFragment : Fragment() {
         playerView.player = exoPlayer
         
         val mediaItemBuilder = MediaItem.Builder().setUri(videoUrl)
+        
+        // Target the absolute live edge closest to the current live broadcast
+        mediaItemBuilder.setLiveConfiguration(
+            MediaItem.LiveConfiguration.Builder()
+                .setTargetOffsetMs(0)
+                .build()
+        )
+
         if (drmConfig != null && drmConfig.scheme == "clearkey") {
             mediaItemBuilder.setDrmConfiguration(
                 MediaItem.DrmConfiguration.Builder(C.CLEARKEY_UUID).build()
@@ -1123,6 +1214,8 @@ class WebFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
+        retryHandler.removeCallbacks(retryRunnable)
+        bufferingWatchdogHandler.removeCallbacks(watchdogRunnable)
         if (android.os.Build.VERSION.SDK_INT <= 23) {
             releasePlayer()
         } else {
@@ -1133,6 +1226,8 @@ class WebFragment : Fragment() {
 
     override fun onStop() {
         super.onStop()
+        retryHandler.removeCallbacks(retryRunnable)
+        bufferingWatchdogHandler.removeCallbacks(watchdogRunnable)
         if (android.os.Build.VERSION.SDK_INT > 23) {
             releasePlayer()
         }
@@ -1148,6 +1243,8 @@ class WebFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        retryHandler.removeCallbacks(retryRunnable)
+        bufferingWatchdogHandler.removeCallbacks(watchdogRunnable)
         releasePlayer()
         _binding = null
     }
