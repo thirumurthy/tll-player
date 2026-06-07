@@ -444,6 +444,16 @@ class WebFragment : Fragment() {
                         }
                     }
 
+                    "tamilseithigal.in" -> {
+                        webView.evaluateJavascript(context.resources.openRawResource(R.raw.iframe)
+                            .bufferedReader()
+                            .use { it.readText() }) { value ->
+                            if (value == "success") {
+                                Log.e(TAG, "success")
+                            }
+                        }
+                    }
+
                     "www.hnntv.cn" -> {
                         webView.evaluateJavascript(context.resources.openRawResource(R.raw.ahtv)
                             .bufferedReader()
