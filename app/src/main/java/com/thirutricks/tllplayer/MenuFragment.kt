@@ -31,8 +31,8 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
     private lateinit var glassMenuContainer: GlassMenuContainer
     private lateinit var glassAccessibilityManager: GlassAccessibilityManager
     private lateinit var glassResponsiveManager: GlassResponsiveManager
-    // private lateinit var glassScrollManager: GlassScrollManager
     private lateinit var glassPerformanceManager: GlassPerformanceManager
+    private var lastSearchQuery = ""
     
     companion object {
         private const val TAG = "MenuFragment"
@@ -230,9 +230,40 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
         }
     }
 
+    private fun showSearchDialog() {
+        val dialog = SearchDialogFragment.newInstance(lastSearchQuery)
+        dialog.setSearchListener(object : SearchDialogFragment.SearchListener {
+            override fun onSearchQueryChanged(query: String) {
+                lastSearchQuery = query
+                TVList.filterSearch(query)
+                val searchListModel = TVList.groupModel.getTVListModel(3)
+                if (searchListModel != null && ::listAdapter.isInitialized) {
+                    listAdapter.update(searchListModel)
+                }
+            }
+
+            override fun onSearchConfirmed(query: String) {
+                lastSearchQuery = query
+                TVList.filterSearch(query)
+                val searchListModel = TVList.groupModel.getTVListModel(3)
+                if (searchListModel != null && ::listAdapter.isInitialized) {
+                    listAdapter.update(searchListModel)
+                    if (searchListModel.size() > 0) {
+                        showChannelList()
+                    }
+                }
+            }
+        })
+        dialog.show(parentFragmentManager, "SearchDialog")
+    }
+
     override fun onItemClicked(position: Int) {
-        // Handle category item click - transition to channel list
-        showChannelList()
+        val tvListModel = TVList.groupModel.getTVListModel(position)
+        if (tvListModel != null && tvListModel.getName() == "Search") {
+            showSearchDialog()
+        } else {
+            showChannelList()
+        }
     }
 
     private fun showChannelList() {
@@ -289,6 +320,14 @@ class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemList
     override fun onKey(keyCode: Int): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                val currentCategoryPosition = TVList.groupModel.position.value ?: 0
+                val tvListModel = TVList.groupModel.getTVListModel(currentCategoryPosition)
+                if (tvListModel != null && tvListModel.getName() == "Search") {
+                    if (tvListModel.size() == 0) {
+                        showSearchDialog()
+                        return true
+                    }
+                }
                 showChannelList()
                 return true
             }

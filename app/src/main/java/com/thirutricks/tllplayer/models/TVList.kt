@@ -52,6 +52,7 @@ object TVList {
         groupModel.addTVListModel(TVListModel("My Collection", 0))
         groupModel.addTVListModel(TVListModel("Favourites", 1))
         groupModel.addTVListModel(TVListModel("All channels", 2))
+        groupModel.addTVListModel(TVListModel("Search", 3))
 
         appDirectory = context.filesDir
         CoroutineScope(Dispatchers.IO).launch {
@@ -247,6 +248,7 @@ object TVList {
                 newGroupModel.addTVListModel(TVListModel("My Collection", 0))
                 newGroupModel.addTVListModel(TVListModel("Favourites", 1))
                 newGroupModel.addTVListModel(TVListModel("All channels", 2))
+                newGroupModel.addTVListModel(TVListModel("Search", 3))
                 groupModel.setTVListModelList(newGroupModel.tvGroupModel.value ?: emptyList())
                 listModel = emptyList()
                 groupModel.setChange()
@@ -286,7 +288,7 @@ object TVList {
         // Triple<CategoryName, GroupIndex, List<TV>>
         val preparedGroups = mutableListOf<Triple<String, Int, List<TV>>>()
         
-        var groupIndex = 3
+        var groupIndex = 4
         // We will assign IDs and build TVModels in the main thread to be safe, 
         // OR we can assign IDs here if 'id' in TV is just an Int and not LiveData.
         // TV.id is Int. So checks are fine.
@@ -339,6 +341,7 @@ object TVList {
             newGroupModel.addTVListModel(TVListModel("My Collection", 0))
             newGroupModel.addTVListModel(TVListModel("Favourites", 1))
             newGroupModel.addTVListModel(TVListModel("All channels", 2))
+            newGroupModel.addTVListModel(TVListModel("Search", 3))
             
             val listModelNew: MutableList<TVModel> = mutableListOf()
             var id = 0
@@ -550,9 +553,9 @@ object TVList {
             val newListModel = mutableListOf<TVModel>()
             var id = 0
             
-            // Skip the first 3 categories (My Collection, Favourites, All channels)
+            // Skip the first 4 categories (My Collection, Favourites, All channels, Search)
             // and rebuild from the actual content categories
-            for (i in 3 until groupModel.size()) {
+            for (i in 4 until groupModel.size()) {
                 val tvListModel = groupModel.getTVListModel(i)
                 if (tvListModel != null) {
                     val channels = tvListModel.tvListModel.value ?: emptyList()
@@ -584,6 +587,18 @@ object TVList {
             }
             
             Log.i(TAG, "Channel list rebuilt from categories. Total channels: ${listModel.size}")
+        }
+    }
+
+    fun filterSearch(query: String) {
+        val searchListModel = groupModel.getTVListModel(3) ?: return
+        if (query.isBlank()) {
+            searchListModel.setTVListModel(emptyList())
+        } else {
+            val results = listModel.filter {
+                it.tv.title.contains(query, ignoreCase = true)
+            }
+            searchListModel.setTVListModel(results)
         }
     }
 

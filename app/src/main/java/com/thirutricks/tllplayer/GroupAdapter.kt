@@ -371,10 +371,10 @@ class GroupAdapter(
                 val from = viewHolder.adapterPosition
                 val to = target.adapterPosition
 
-                if (from <= 1 || to <= 1) return false // can't move first two
+                if (from <= 3 || to <= 3) return false // can't move first four
 
                 val currentOrder = getCurrentCategoryOrder()
-                Collections.swap(currentOrder, from - 2, to - 2)
+                Collections.swap(currentOrder, from - 4, to - 4)
                 OrderPreferenceManager.saveCategoryOrder(currentOrder)
                 tvGroupModel.swap(from, to)
                 notifyItemMoved(from, to)
@@ -390,6 +390,10 @@ class GroupAdapter(
     }
 
     private fun showCategoryOptions(position: Int, tvListModel: TVListModel) {
+        if (position <= 3) {
+            Toast.makeText(context, "System categories cannot be modified", Toast.LENGTH_SHORT).show()
+            return
+        }
         val displayName = tvListModel.getName()
         val renames = OrderPreferenceManager.getCategoryRenames()
         val originalName = renames.entries.find { it.value == displayName }?.key ?: displayName
@@ -416,7 +420,7 @@ class GroupAdapter(
     }
 
     private fun startMove(position: Int) {
-        if (position <= 1) {
+        if (position <= 3) {
             Toast.makeText(context, "Cannot move this category", Toast.LENGTH_SHORT).show()
             return
         }
@@ -449,7 +453,7 @@ class GroupAdapter(
 
     private fun getCurrentCategoryOrder(): MutableList<String> {
         val order = mutableListOf<String>()
-        for (i in 3 until tvGroupModel.size()) { // Start from index 3, skip first 3 categories
+        for (i in 4 until tvGroupModel.size()) { // Start from index 4, skip first 4 categories
             val model = tvGroupModel.getTVListModel(i)
             if (model != null) {
                 // Get original name (before rename)
@@ -495,13 +499,13 @@ class GroupAdapter(
     private fun moveGroupUp(position: Int) {
         Log.d(TAG, "moveGroupUp: position=$position, movingPosition=$movingPosition")
         
-        if (position <= 3) {
+        if (position <= 4) {
             Toast.makeText(context, "Cannot move this category up", Toast.LENGTH_SHORT).show()
             return
         }
 
         val currentOrder = getCurrentCategoryOrder()
-        val index = position - 3
+        val index = position - 4
         
         Log.d(TAG, "moveGroupUp: index=$index, currentOrder size=${currentOrder.size}")
 
@@ -536,7 +540,7 @@ class GroupAdapter(
     }
 
     private fun deleteCategory(position: Int) {
-        if (position <= 2) { // Cannot delete "My Collection", "Favourites", "All channels"
+        if (position <= 3) { // Cannot delete system categories
              Toast.makeText(context, "Cannot delete system category", Toast.LENGTH_SHORT).show()
              return
         }
@@ -579,7 +583,7 @@ class GroupAdapter(
         }
 
         val currentOrder = getCurrentCategoryOrder()
-        val index = position - 3
+        val index = position - 4
 
         if (index < currentOrder.size - 1) {
             Collections.swap(currentOrder, index, index + 1)
