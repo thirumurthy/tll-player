@@ -21,3 +21,15 @@ keystore.properties
 
 # Exclude testing folder
 testing/
+
+/.kiro
+
+# Build artifacts and logs (never commit binaries/logs)
+/app/release/
+*.apk
+build_log*.txt
+/build_log*.txt
+
+# Stray editor/scratch dirs
+/~/
+.replit

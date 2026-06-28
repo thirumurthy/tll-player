@@ -66,3 +66,35 @@ adb install tll-player.apk
 - Compatible with 4.0
 - Plugin Store
 - UI
+
+## 
+
+This PC\Mi 11X Pro\Internal shared storage\at
+
+F:\Thiru\TV\my-tv-1\app\build\outputs\apk\release
+
+
+adb logcat --pid=$(adb shell pidof com.thirutricks.tllplayer)
+
+# Direct install and run
+.\gradlew installDebug
+
+
+# Kill all java processes
+taskkill /F /IM java.exe /T
+
+# Remove build directory
+Remove-Item .\app\build -Recurse -Force
+
+# Kill all gradle processes
+taskkill /F /IM gradle.exe /T
+
+# Kill all adb processes
+taskkill /F /IM adb.exe /T
+
+
+# View logcat
+adb logcat --pid=$(adb shell pidof com.thirutricks.tllplayer)
+
+
+ to handle deep links (tllplayer://channel/{id}) so it can directly play channels launched from the home screen.

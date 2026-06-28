@@ -27,6 +27,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:theme="@style/Theme.OwnTV"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|layoutDirection|density"
             android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -41,8 +43,14 @@
                 <data android:scheme="tllplayer" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".legacy.LegacyMainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyTV1"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout|layoutDirection|density"
+            android:screenOrientation="landscape" />
         <receiver
-            android:name=".BootReceiver"
+            android:name=".legacy.BootReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -50,7 +58,7 @@
             </intent-filter>
         </receiver>
         <provider
-            android:name=".InitializerProvider"
+            android:name=".legacy.InitializerProvider"
             android:authorities="${applicationId}.InitializerProvider"
             android:exported="false"
             android:initOrder="900" />
@@ -65,7 +73,7 @@
         </provider>
 
         <service
-            android:name=".infrastructure.LauncherChannelJobService"
+            android:name=".legacy.infrastructure.LauncherChannelJobService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="true" />
     </application>
