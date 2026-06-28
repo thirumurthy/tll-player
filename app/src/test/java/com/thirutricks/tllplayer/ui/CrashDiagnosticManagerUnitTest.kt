@@ -10,6 +10,8 @@ import org.mockito.MockitoAnnotations
 import org.junit.Assert.*
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import com.thirutricks.tllplayer.legacy.ui.ResourceValidator
+import com.thirutricks.tllplayer.legacy.ui.CrashDiagnosticManager
 
 /**
  * Unit test for CrashDiagnosticManager using Robolectric to handle Android dependencies

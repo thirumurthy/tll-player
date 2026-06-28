@@ -2,6 +2,7 @@ package com.thirutricks.tllplayer.infrastructure
 
 import org.junit.Test
 import org.junit.Assert.*
+import com.thirutricks.tllplayer.legacy.infrastructure.*
 
 /**
  * Core infrastructure tests that don't depend on Android context or TVList initialization.

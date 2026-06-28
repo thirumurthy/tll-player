@@ -12,6 +12,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.junit.Assert.*
 import kotlin.random.Random
+import com.thirutricks.tllplayer.legacy.ui.ResourceValidator
+import com.thirutricks.tllplayer.legacy.ui.CrashDiagnosticManager
+import com.thirutricks.tllplayer.legacy.ui.SettingsErrorRecovery
 
 /**
  * Property-based tests for SettingsErrorRecovery using JUnit

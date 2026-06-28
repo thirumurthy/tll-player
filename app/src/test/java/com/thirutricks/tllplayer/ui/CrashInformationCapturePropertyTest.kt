@@ -14,6 +14,9 @@ import org.junit.Assert.*
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import kotlin.random.Random
+import com.thirutricks.tllplayer.legacy.ui.ResourceValidator
+import com.thirutricks.tllplayer.legacy.ui.CrashDiagnosticManager
+import com.thirutricks.tllplayer.legacy.ui.CrashType
 
 /**
  * Property-based test for crash information capture functionality

@@ -14,7 +14,7 @@
         android:layout_marginBottom="@dimen/tv_item_spacing"
         android:fontFamily="sans-serif-medium" />
 
-    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
         android:id="@+id/switch_channel_reversal"
         android:layout_width="match_parent"
         android:layout_height="@dimen/settings_item_height"
@@ -25,7 +25,7 @@
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif" />
 
-    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
         android:id="@+id/switch_channel_num"
         android:layout_width="match_parent"
         android:layout_height="@dimen/settings_item_height"
@@ -36,7 +36,7 @@
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif" />
 
-    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
         android:id="@+id/switch_time"
         android:layout_width="match_parent"
         android:layout_height="@dimen/settings_item_height"
@@ -47,7 +47,7 @@
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif" />
 
-    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
         android:id="@+id/switch_watch_last"
         android:layout_width="match_parent"
         android:layout_height="@dimen/settings_item_height"
@@ -58,7 +58,7 @@
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif" />
 
-    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
         android:id="@+id/switch_force_high_quality"
         android:layout_width="match_parent"
         android:layout_height="@dimen/settings_item_height"
@@ -69,7 +69,7 @@
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif" />
 
-    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
         android:id="@+id/switch_boot_startup"
         android:layout_width="match_parent"
         android:layout_height="@dimen/settings_item_height"
@@ -80,7 +80,7 @@
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif" />
 
-    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
         android:id="@+id/switch_config_auto_load"
         android:layout_width="match_parent"
         android:layout_height="@dimen/settings_item_height"
@@ -91,7 +91,7 @@
         android:layout_marginBottom="8dp"
         android:fontFamily="sans-serif" />
 
-    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
         android:id="@+id/switch_channel_check"
         android:layout_width="match_parent"
         android:layout_height="@dimen/settings_item_height"

@@ -1,1285 +1,175 @@
 package com.thirutricks.tllplayer
 
-import android.content.Context
-import android.graphics.Color
-import android.media.AudioManager
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.os.Build
+import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
 import android.util.Log
-import android.view.GestureDetector
-import android.view.KeyEvent
-import android.view.MotionEvent
-import android.view.View
 import android.view.WindowManager
-import android.widget.Toast
-import androidx.annotation.RequiresApi
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import com.thirutricks.tllplayer.models.TVList
-import com.thirutricks.tllplayer.models.TVModel
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.android.ext.android.inject
+import org.koin.androidx.compose.koinViewModel
+import com.thirutricks.tllplayer.core.launcher.LauncherDeepLink
+import com.thirutricks.tllplayer.features.profiles.ProfileGate
+import com.thirutricks.tllplayer.features.profiles.ProfilesViewModel
+import com.thirutricks.tllplayer.features.setup.Onboarding
+import com.thirutricks.tllplayer.features.shell.OwnTVShell
+import com.thirutricks.tllplayer.features.shell.ShellViewModel
+import com.thirutricks.tllplayer.ui.theme.OwnTVTheme
+import com.thirutricks.tllplayer.ui.theme.UiZoom
 
-import com.thirutricks.tllplayer.ui.CrashDiagnosticManager
-import com.thirutricks.tllplayer.ui.SafeFragmentManager
-import com.thirutricks.tllplayer.ui.SettingsErrorRecovery
-import com.thirutricks.tllplayer.ui.ResourceValidator
-
-
-class MainActivity : FragmentActivity() {
-
-    private var ok = 0
-    private var webFragment = WebFragment()
-   // private var webFragment = VLCFragment()
-    //private var webFragment = GSYVideoPlayerFragment()
-
-    //private var webFragment = WebFragment()
-    private var errorFragment = ErrorFragment()
-    private var loadingFragment = LoadingFragment()
-    private var infoFragment = InfoFragment()
-    private var channelFragment = ChannelFragment()
-    private var timeFragment = TimeFragment()
-    private var menuFragment = MenuFragment()
-    private var settingFragment = SettingFragment()
-    private var importProgressFragment = ImportProgressFragment()
-    private var trackSelectionFragment = TrackSelectionFragment()
-
-    private lateinit var updateManager: UpdateManager
-    
-    // Crash prevention systems for settings
-    private lateinit var crashDiagnosticManager: CrashDiagnosticManager
-    private lateinit var safeFragmentManager: SafeFragmentManager
-    private lateinit var settingsErrorRecovery: SettingsErrorRecovery
-
-
-
-    private val handler = Handler(Looper.myLooper()!!)
-    private val delayHideMenu = 10 * 1000L
-    private val delayHideSetting = 3 * 60 * 1000L
-
-    private var doubleBackToExitPressedOnce = false
-    private var pendingChannelUrl: String? = null
-
-    lateinit var gestureDetector: GestureDetector
-
-    private var server: SimpleServer? = null
-
-
-
-    private lateinit var connectivityManager: ConnectivityManager
-    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
-        override fun onAvailable(network: Network) {
-            super.onAvailable(network)
-            if (isVpnActive()) {
-                runOnUiThread {
-                    Log.d(TAG, "VPN detected via Callback. Exiting app.")
-                    Toast.makeText(this@MainActivity, "VPN detected. Exiting app.", Toast.LENGTH_LONG).show()
-                    finishAffinity() // Close all activities
-                }
-            }
-        }
-
-        override fun onLost(network: Network) {
-            super.onLost(network)
-            if (!isVpnActive()) {
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "VPN disconnected.", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
+class MainActivity : ComponentActivity() {
+    companion object {
+        private const val TAG = "OwnTVHome"
     }
 
+    private val player: com.thirutricks.tllplayer.player.OwnTVPlayer by inject()
+    private val previewEngine: com.thirutricks.tllplayer.player.LivePreviewEngine by inject()
+    private val heroPreviewEngine: com.thirutricks.tllplayer.player.HeroPreviewEngine by inject()
+    private var pendingDeepLink by mutableStateOf<LauncherDeepLink?>(null)
 
-    @RequiresApi(Build.VERSION_CODES.N)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingDeepLink = LauncherDeepLink.parse(intent.data)
+        Log.d(TAG, "onNewIntent deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Backgrounded (Home / another app), exited, or logged out: stop playback and free the demuxer
+        // cache + decoder buffers — holding them while invisible got the process LMK-killed on real TVs.
+        if (!isChangingConfigurations) {
+            player.onAppBackgrounded()
+            // Live runs on ExoPlayer — remember the channel and free the stream (its audio must stop too).
+            previewEngine.onAppBackgrounded()
+            heroPreviewEngine.stop()
+        }
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Paired with onStop: bring back what was freed while backgrounded (notably the TV screensaver, which
+        // kicks in during a long pause) — a VOD restored paused at its position, and a live channel re-tuned
+        // to the live edge — so Play resumes instead of sitting on a dead/empty stream. No-op on fresh launch.
+        player.onAppForegrounded()
+        previewEngine.onAppForegrounded()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "onCreate started")
-        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-        connectivityManager.registerDefaultNetworkCallback(networkCallback)
-
-
-//        requestWindowFeature(FEATURE_NO_TITLE)
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN
-        )
-
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            windowInsetsController.let { controller ->
-                controller.isAppearanceLightNavigationBars = true
-                controller.isAppearanceLightStatusBars = true
-                controller.hide(WindowInsetsCompat.Type.statusBars())
-                controller.hide(WindowInsetsCompat.Type.navigationBars())
-                controller.systemBarsBehavior =
-                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        }
-
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.navigationBarDividerColor = Color.TRANSPARENT
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val lp = window.attributes
-            lp.layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-            window.setAttributes(lp)
-        }
-
-        window.decorView.apply {
-            systemUiVisibility =
-                View.SYSTEM_UI_FLAG_FULLSCREEN or
-                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-                        View.SYSTEM_UI_FLAG_IMMERSIVE
-        }
-
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-        setContentView(R.layout.activity_main)
-
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .add(R.id.main_browse_fragment, webFragment)
-                .add(R.id.main_browse_fragment, errorFragment)
-                .add(R.id.main_browse_fragment, loadingFragment)
-                .add(R.id.main_browse_fragment, timeFragment)
-                .add(R.id.main_browse_fragment, infoFragment)
-                .add(R.id.main_browse_fragment, channelFragment)
-                .add(R.id.main_browse_fragment, menuFragment)
-                .add(R.id.main_browse_fragment, settingFragment)
-                .add(R.id.main_browse_fragment, importProgressFragment)
-                .add(R.id.main_browse_fragment, trackSelectionFragment)
-                .hide(menuFragment)
-                .hide(settingFragment)
-                .hide(importProgressFragment)
-                .hide(trackSelectionFragment)
-                .hide(errorFragment)
-                .show(loadingFragment)
-                .hide(timeFragment)
-                .hide(webFragment)
-                .commitNow()
-                
-            // Initialize crash prevention systems for settings
-            initializeCrashPreventionSystems()
-        } else {
-             // restore fragments
-             val fragments = supportFragmentManager.fragments
-             for (fragment in fragments) {
-                 if (fragment is WebFragment) {
-                     webFragment = fragment
-                 }
-                 if (fragment is ErrorFragment) {
-                     errorFragment = fragment
-                 }
-                 if (fragment is LoadingFragment) {
-                     loadingFragment = fragment
-                 }
-                 if (fragment is InfoFragment) {
-                     infoFragment = fragment
-                 }
-                 if (fragment is ChannelFragment) {
-                     channelFragment = fragment
-                 }
-                 if (fragment is TimeFragment) {
-                     timeFragment = fragment
-                 }
-                 if (fragment is MenuFragment) {
-                     menuFragment = fragment
-                 }
-                 if (fragment is SettingFragment) {
-                     settingFragment = fragment
-                 }
-                 if (fragment is ImportProgressFragment) {
-                     importProgressFragment = fragment
-                 }
-
-                  if (fragment is TrackSelectionFragment) {
-                     trackSelectionFragment = fragment
-                 }
-             }
-        }
-
-        gestureDetector = GestureDetector(this, GestureListener(this))
-
-        showTime()
-
-        updateManager = UpdateManager(this, this.appVersionCode)
-        updateManager.checkAndUpdate()
-        
-        handleIntent(intent)
-        com.thirutricks.tllplayer.infrastructure.LauncherChannelJobService.schedule(this)
-
-    }
-
-    override fun onNewIntent(intent: android.content.Intent) {
-        super.onNewIntent(intent)
-        handleIntent(intent)
-    }
-
-    private fun handleIntent(intent: android.content.Intent?) {
-        val uri = intent?.data ?: return
-        Log.i(TAG, "handleIntent: $uri")
-        if (uri.scheme == "tllplayer") {
-            val pathSegments = uri.pathSegments
-            if (uri.host == "play" && pathSegments.isNotEmpty()) {
-                val encodedUrl = pathSegments[0]
-                try {
-                    val decodedUrl = String(android.util.Base64.decode(encodedUrl, android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP))
-                    Log.i(TAG, "Decoded URL: $decodedUrl")
-                    pendingChannelUrl = decodedUrl
-                    tryPlayPendingChannel()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error decoding URL", e)
-                }
-            }
-        }
-    }
-
-    private fun tryPlayPendingChannel() {
-        val url = pendingChannelUrl ?: return
-        if (TVList.size() > 0) {
-            for (i in 0 until TVList.size()) {
-                val model = TVList.getTVModel(i)
-                if (model != null && model.tv.uris.contains(url)) {
-                    TVList.setPosition(i)
-                    pendingChannelUrl = null
-                    break
-                }
-            }
-        }
-    }
-
-    /**
-     * Initialize crash prevention systems for safe settings operations
-     */
-    private fun initializeCrashPreventionSystems() {
-        try {
-            Log.i(TAG, "Initializing MainActivity crash prevention systems")
-            
-            // Initialize ResourceValidator first
-            val resourceValidator = ResourceValidator(this)
-            
-            // Initialize CrashDiagnosticManager
-            crashDiagnosticManager = CrashDiagnosticManager(this, resourceValidator)
-            
-            // Initialize SafeFragmentManager with diagnostic support
-            safeFragmentManager = SafeFragmentManager(this, crashDiagnosticManager)
-            
-            // Initialize SettingsErrorRecovery
-            settingsErrorRecovery = SettingsErrorRecovery(this, resourceValidator, crashDiagnosticManager)
-            
-            // Log initial state
-            val fragmentState = crashDiagnosticManager.captureFragmentState(
-                fragmentManager = supportFragmentManager,
-                fragment = settingFragment
-            )
-            Log.d(TAG, "Settings fragment initial state: isAttached=${fragmentState.isFragmentAttached}")
-            
-            Log.i(TAG, "MainActivity crash prevention systems initialized successfully")
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Error initializing crash prevention systems", e)
-            
-            // Try to initialize minimal diagnostic system
-            try {
-                val resourceValidator = ResourceValidator(this)
-                crashDiagnosticManager = CrashDiagnosticManager(this, resourceValidator)
-                crashDiagnosticManager.logCrashDetails(e, "initializeCrashPreventionSystems")
-            } catch (e2: Exception) {
-                Log.e(TAG, "Cannot initialize even basic crash prevention", e2)
-            }
-        }
-    }
-
-    override fun onResumeFragments() {
-        super.onResumeFragments()
-
-         Log.i(TAG, "Setting up observers")
-        
-        // 1. Observe Group Changes (Initial Load or Update)
-        TVList.groupModel.change.observe(this) { _ ->
-            Log.i(TAG, "groupModel changed")
-            if (TVList.groupModel.tvGroupModel.value != null) {
-                // Initial playback on load
-                val pos = TVList.position.value ?: -1
-                if (pos == -1) {
-                    // Decide what to play if not yet set
-                    val targetPos = if (SP.watchLast) SP.position else if (SP.channel > 0) SP.channel - 1 else 0
-                    if (TVList.setPosition(targetPos)) {
-                        "Playing channel".showToast()
-                    }
-                } else {
-                    // Already set, just play
-                    TVList.getTVModel(pos)?.let { playChannel(it) }
-                }
-                Log.i(TAG, "menuFragment update")
-                menuFragment.update()
-                
-                if (pendingChannelUrl != null) {
-                    tryPlayPendingChannel()
-                }
-            }
-        }
-
-         // 2. Observe Position Changes (Navigation)
-        TVList.position.observe(this) { pos ->
-            Log.i(TAG, "Position changed to $pos")
-            TVList.getTVModel(pos)?.let { playChannel(it) }
-        }
-
-        setupCollectionObservers()
-
-        // TODO group position
-
-        TVList.importProgress.observe(this) { progress ->
-            if (progress > 0) {
-                 if (importProgressFragment.isHidden) {
-                     supportFragmentManager.beginTransaction()
-                         .show(importProgressFragment)
-                         .commitNowAllowingStateLoss()
-                 }
-                
-                 val current = if (progress == 60) 0 else 60
-                 if(progress == 60) {
-                      importProgressFragment.animateProgress(0, 60)
-                 } else if (progress == 100) {
-                      importProgressFragment.animateProgress(60, 100)
-                      // Hide after delay or let user dismiss? 
-                      // User said "move to 100% and close".
-                      handler.postDelayed({ 
-                          if (!importProgressFragment.isHidden) {
-                              supportFragmentManager.beginTransaction()
-                                  .hide(importProgressFragment)
-                                  .commitNowAllowingStateLoss()
-                              importProgressFragment.setProgress(0) // Reset
-                          }
-                      }, 1000)
-                 }
-            } else {
-                 // Reset or hide
-                 if (!importProgressFragment.isHidden) {
-                     supportFragmentManager.beginTransaction()
-                         .hide(importProgressFragment)
-                         .commitNowAllowingStateLoss()
-                 }
-                 importProgressFragment.setProgress(0)
-            }
-        }
-
-        val port = PortUtil.findFreePort()
-        if (port != -1) {
-            server = SimpleServer(this, port)
-        }
-    }
-
-    fun ready(tag: String) {
-        Log.i(TAG, "ready $tag")
-    }
-
-    fun setServer(server: String) {
-       // settingFragment.setServer(server)
-    }
-
-    // private fun watch() {
-    //     TVList.listModel.forEach { tvModel ->
-    //         tvModel.errInfo.observe(this) { _ ->
-    //             if (tvModel.errInfo.value != null
-    //                 && tvModel.tv.id == TVList.position.value
-    //             ) {
-    //                 hideFragment(loadingFragment)
-    //                 if (tvModel.errInfo.value == "") {
-    //                     Log.i(TAG, "${tvModel.tv.title} Playing")
-    //                     hideErrorFragment()
-    //                     showFragment(webFragment)
-    //                 } else if (tvModel.errInfo.value == "web ok") {
-    //                     Log.i(TAG, "${tvModel.tv.title} Playing")
-    //                     hideErrorFragment()
-    //                     showFragment(webFragment)
-    //                 } else {
-    //                     Log.i(TAG, "${tvModel.tv.title} ${tvModel.errInfo.value.toString()}")
-    //                     hideFragment(webFragment)
-    //                     hideFragment(webFragment)
-    //                     showErrorFragment(tvModel.errInfo.value.toString())
-    //                 }
-    //             }
-    //         }
-
-    //         tvModel.ready.observe(this) { _ ->
-
-    //             // not first time && channel is not changed
-    //             if (tvModel.ready.value != null
-    //                 && tvModel.tv.id == TVList.position.value
-    //             ) {
-    //                 Log.i(TAG, "loading ${tvModel.tv.title}")
-    //                 hideErrorFragment()
-    //                 showFragment(loadingFragment)
-    //                 webFragment.play(tvModel)
-    //                 infoFragment.show(tvModel)
-    //                 if (SP.channelNum) {
-    //                     channelFragment.show(tvModel)
-    //                 }
-    //                 Handler(Looper.getMainLooper()).postDelayed({
-    //                     hideFragment(loadingFragment)
-    //                 }, 4000)
-
-
-    //             }
-    //         }
-
-    //         tvModel.like.observe(this) { _ ->
-    //             if (tvModel.like.value != null) {
-    //                 val liked = tvModel.like.value as Boolean
-    //                 if (liked) {
-    //                     TVList.groupModel.getTVListModel(0)?.replaceTVModel(tvModel)
-    //                 } else {
-    //                     TVList.groupModel.getTVListModel(0)?.removeTVModel(tvModel.tv.id)
-    //                 }
-    //                 SP.setLike(tvModel.tv.id, liked)
-    //             }
-    //         }
-    //     }
-    // }
-
-    private fun playChannel(tvModel: TVModel) {
-        Log.i(TAG, "playChannel ${tvModel.tv.title}")
-        
-        // Hide error and show loader
-        hideErrorFragment()
-        showFragment(loadingFragment)
-        
-        // Remove previous observers to avoid leaks/multi-triggers
-        tvModel.errInfo.removeObservers(this)
-        tvModel.ready.removeObservers(this)
-        
-        // Observe Error Info
-        tvModel.errInfo.observe(this) { info: String? ->
-            if (info != null && tvModel.tv.id == TVList.position.value) {
-                if (info == "" || info == "web ok") {
-                    Log.i(TAG, "${tvModel.tv.title} Playing")
-                    hideFragment(loadingFragment)
-                    showFragment(webFragment)
-                } else {
-                    Log.i(TAG, "${tvModel.tv.title} Error: $info")
-                    hideFragment(loadingFragment)
-                    hideFragment(webFragment)
-                    showErrorFragment(info)
-                }
-            }
-        }
-
-        // Play in WebFragment
-        webFragment.play(tvModel)
-        
-        // Show info overlay
-        infoFragment.show(tvModel)
-        if (SP.channelNum) {
-            channelFragment.show(tvModel  as TVModel)
-        }
-
-        // Auto-hide loader after timeout backup (reduced from 6000ms to 1500ms for faster channel switching)
-        handler.removeCallbacksAndMessages("loader_timeout")
-        handler.postAtTime({
-            if (tvModel.tv.id == TVList.position.value) {
-                hideFragment(loadingFragment)
-            }
-        }, "loader_timeout", SystemClock.uptimeMillis() + 1500)
-    }
-
-    private fun setupCollectionObservers() {
-        TVList.listModel.forEach { tvModel ->
-            tvModel.like.observe(this) { liked ->
-                if (liked != null) {
-                    if (liked) {
-                        TVList.groupModel.getTVListModel(0)?.replaceTVModel(tvModel)
-                    } else {
-                        TVList.groupModel.getTVListModel(0)?.removeTVModel(tvModel.tv.id)
-                    }
-                    SP.setLike(tvModel.tv.id, liked)
-                }
-            }
-        }
-    }
-
-
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (event != null) {
-            gestureDetector.onTouchEvent(event)
-        }
-        return super.onTouchEvent(event)
-    }
-
-    private inner class GestureListener(private val context: Context) :
-        GestureDetector.SimpleOnGestureListener() {
-
-        private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
-        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-            showFragment(menuFragment)
-            return true
-        }
-
-        override fun onDoubleTap(e: MotionEvent): Boolean {
-            showSetting()
-            return true
-        }
-
-        override fun onFling(
-            e1: MotionEvent?,
-            e2: MotionEvent,
-            velocityX: Float,
-            velocityY: Float
-        ): Boolean {
-            if ((e1?.x ?: 0f) > windowManager.defaultDisplay.width / 3
-                && (e1?.x ?: 0f) < windowManager.defaultDisplay.width * 2 / 3
-            ) {
-                if (velocityY > 0) {
-                    if (menuFragment.isHidden && settingFragment.isHidden) {
-                        prev()
-                    }
-                }
-                if (velocityY < 0) {
-                    if (menuFragment.isHidden && settingFragment.isHidden) {
-                        next()
-                    }
-                }
+        pendingDeepLink = LauncherDeepLink.parse(intent.data)
+        Log.d(TAG, "onCreate deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}")
+        setContent {
+            // Hold the screen on while video is actually playing, so the TV screensaver doesn't
+            // start mid-channel/episode; released when paused/stopped (then the screensaver is fine).
+            val playing by player.isPlaying.collectAsStateWithLifecycle()
+            LaunchedEffect(playing) {
+                if (playing) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
 
-            return super.onFling(e1, e2, velocityX, velocityY)
-        }
+            val viewModel: ShellViewModel = koinViewModel()
+            val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
+            val accent by viewModel.accent.collectAsStateWithLifecycle()
+            val customAccent by viewModel.customAccent.collectAsStateWithLifecycle()
+            val uiZoomPercent by viewModel.uiZoomPercent.collectAsStateWithLifecycle()
+            val animationLevel by viewModel.animationLevel.collectAsStateWithLifecycle()
+            val avatarId by viewModel.avatarId.collectAsStateWithLifecycle()
+            val profileName by viewModel.profileName.collectAsStateWithLifecycle()
+            val sourceSummary by viewModel.sourceSummary.collectAsStateWithLifecycle()
+            val selectedSection by viewModel.selectedSection.collectAsStateWithLifecycle()
+            val activeProfileId by viewModel.activeProfileId.collectAsStateWithLifecycle()
+            val isOnline by viewModel.isOnline.collectAsStateWithLifecycle()
 
+            val profilesVm: ProfilesViewModel = koinViewModel()
+            val profiles by profilesVm.profiles.collectAsStateWithLifecycle()
+            var gatePassed by remember { mutableStateOf(false) }
+            var addingProfile by remember { mutableStateOf(false) }
+            // A backup restore deletes-then-reinserts profiles, so the list is briefly EMPTY while
+            // the shell is showing — without this, the shell unmounts and remounts, dumping the user
+            // out of Settings → Backup & Restore mid-restore. Only the cold start waits for the load.
+            var everHadProfiles by remember { mutableStateOf(false) }
+            LaunchedEffect(profiles) { if (profiles.isNotEmpty()) everHadProfiles = true }
+            val shouldShowProfileGate = profiles.size > 1 || profiles.singleOrNull()?.pinHash != null
 
-        private fun adjustVolume(deltaY: Float) {
-            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-            val deltaVolume = deltaY / 1000 * maxVolume / windowManager.defaultDisplay.height
-
-            var newVolume = currentVolume + deltaVolume
-            if (newVolume < 0) {
-                newVolume = 0F
-            } else if (newVolume > maxVolume) {
-                newVolume = maxVolume.toFloat()
+            // "Refresh on startup" — re-sync sources once the active profile is known.
+            LaunchedEffect(activeProfileId) {
+                if ((activeProfileId ?: -1L) >= 0L) viewModel.refreshOnStartIfEnabled()
             }
 
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume.toInt(), 0)
 
-            // You can add a toast to display the current volume
-            Toast.makeText(context, "Volume: $newVolume / $maxVolume", Toast.LENGTH_SHORT).show()
-        }
 
-    }
-
-    fun onPlayEnd() {
-        val tvModel = TVList.getTVModel()
-        if (tvModel != null && SP.repeatInfo) {
-            infoFragment.show(tvModel)
-            if (SP.channelNum) {
-                channelFragment.show(tvModel)
-            }
-        }
-    }
-
-    fun play(position: Int) {
-        val currentTvModel = TVList.getTVModel() ?: return
-        val prevGroup = currentTvModel.groupIndex
-        if (position > -1 && position < TVList.size()) {
-            TVList.setPosition(position)
-            val newTvModel = TVList.getTVModel() ?: return
-            val currentGroup = newTvModel.groupIndex
-            if (currentGroup != prevGroup) {
-                Log.i(TAG, "group change")
-                menuFragment.updateList(currentGroup)
-            }
-        } else {
-            Toast.makeText(this, "Channel does not exist", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    fun prev() {
-        val currentTvModel = TVList.getTVModel() ?: return
-        val prevGroup = currentTvModel.groupIndex
-        var position = TVList.position.value?.dec() ?: 0
-        if (position == -1) {
-            position = TVList.size() - 1
-        }
-        TVList.setPosition(position)
-        val newTvModel = TVList.getTVModel() ?: return
-        val currentGroup = newTvModel.groupIndex
-        if (currentGroup != prevGroup) {
-            Log.i(TAG, "group change")
-            menuFragment.updateList(currentGroup)
-        }
-    }
-
-    fun next() {
-        val currentTvModel = TVList.getTVModel() ?: return
-        val prevGroup = currentTvModel.groupIndex
-        var position = TVList.position.value?.inc() ?: 0
-        if (position == TVList.size()) {
-            position = 0
-        }
-        TVList.setPosition(position)
-        val newTvModel = TVList.getTVModel() ?: return
-        val currentGroup = newTvModel.groupIndex
-        if (currentGroup != prevGroup) {
-            Log.i(TAG, "group change")
-            menuFragment.updateList(currentGroup)
-        }
-    }
-
-    private fun showFragment(fragment: Fragment) {
-        if (!fragment.isHidden) {
-            return
-        }
-
-        supportFragmentManager.beginTransaction()
-            .show(fragment)
-            .commitNow()
-    }
-
-    private fun hideFragment(fragment: Fragment) {
-        if (fragment.isHidden) {
-            return
-        }
-
-        supportFragmentManager.beginTransaction()
-            .hide(fragment)
-            .commitNowAllowingStateLoss()
-    }
-
-    fun menuActive() {
-        handler.removeCallbacks(hideMenu)
-        handler.postDelayed(hideMenu, delayHideMenu)
-    }
-
-    private val hideMenu = Runnable {
-        if (!isFinishing && !supportFragmentManager.isStateSaved) {
-            if (!menuFragment.isHidden) {
-                supportFragmentManager.beginTransaction().hide(menuFragment).commit()
-            }
-        }
-    }
-
-    fun settingActive() {
-        handler.removeCallbacks(hideSetting)
-        handler.postDelayed(hideSetting, delayHideSetting)
-    }
-
-    private val hideSetting = Runnable {
-        try {
-            Log.d(TAG, "Auto-hiding settings fragment")
-            
-            if (!isFinishing && !supportFragmentManager.isStateSaved) {
-                if (!settingFragment.isHidden) {
-                    // Use safe fragment operations
-                    val success = if (::safeFragmentManager.isInitialized) {
-                        safeFragmentManager.safeHideFragment(settingFragment)
-                    } else {
-                        // Fallback to commitAllowingStateLoss
-                        try {
-                            supportFragmentManager.beginTransaction()
-                                .hide(settingFragment)
-                                .commitAllowingStateLoss()
-                            true
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error in fallback hide settings", e)
-                            false
+            OwnTVTheme(themeMode = themeMode, accent = accent, systemInDarkTheme = isSystemInDarkTheme(), customAccent = customAccent, animationLevel = animationLevel) {
+                val base = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides Density(base.density * UiZoom.factor(uiZoomPercent), base.fontScale),
+                ) {
+                    Box(modifier = Modifier.fillMaxSize().background(OwnTVTheme.colors.background)) {
+                        val profile = activeProfileId
+                        when {
+                            profile == null -> Unit // loading
+                            // Adding a profile from the gate → onboard the new profile.
+                            addingProfile -> Onboarding(
+                                firstRun = false,
+                                onDone = { addingProfile = false; gatePassed = true },
+                                onCancel = { addingProfile = false },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            // First run (no profile yet) → full onboarding.
+                            profile < 0L -> Onboarding(
+                                firstRun = true,
+                                onDone = { gatePassed = true },
+                                onCancel = {},
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            // Profiles still loading (≥0 means at least one exists) — avoid a gate/shell flicker.
+                            profiles.isEmpty() && !everHadProfiles -> Unit
+                            // Run 2+ (or a single locked profile): "Who's watching?" — choose a profile or add one.
+                            shouldShowProfileGate && !gatePassed -> ProfileGate(
+                                onEnter = { gatePassed = true },
+                                onAddProfile = { addingProfile = true },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            else -> OwnTVShell(
+                                selectedSection = selectedSection,
+                                onSelectSection = viewModel::selectSection,
+                                themeMode = themeMode,
+                                uiZoomPercent = uiZoomPercent,
+                                onSetZoom = viewModel::setUiZoom,
+                                avatarId = avatarId,
+                                onSetAvatar = viewModel::setAvatar,
+                                profileName = profileName,
+                                sourceSummary = sourceSummary,
+                                activeProfileId = activeProfileId,
+                                pendingDeepLink = pendingDeepLink,
+                                onDeepLinkConsumed = { pendingDeepLink = null },
+                                isOffline = !isOnline,
+                                onExitApp = { finish() },
+                                onSwitchProfile = {
+                                    // Stop playback and return to the "Who's watching?" gate — no app restart.
+                                    player.onAppBackgrounded(); player.discardBackgroundRestore(); previewEngine.stop(); previewEngine.discardBackgroundRestore(); heroPreviewEngine.stop(); gatePassed = false
+                                },
+                                modifier = Modifier.fillMaxSize(),
+                            )
                         }
                     }
-                    
-                    if (success) {
-                        showTime()
-                        Log.d(TAG, "Settings auto-hidden successfully")
-                    } else {
-                        Log.w(TAG, "Failed to auto-hide settings")
-                    }
-                }
-            } else {
-                Log.w(TAG, "Cannot auto-hide settings: activity finishing or state saved")
-            }
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in auto-hide settings", e)
-            
-            // Log error
-            if (::crashDiagnosticManager.isInitialized) {
-                crashDiagnosticManager.logCrashDetails(e, "hideSetting")
-            }
-        }
-    }
-
-    fun showTime() {
-        if (SP.time) {
-            showFragment(timeFragment)
-        } else {
-            hideFragment(timeFragment)
-        }
-    }
-
-    private fun showChannel(channel: String) {
-        if (!menuFragment.isHidden) {
-            return
-        }
-
-        if (settingFragment.isVisible) {
-            return
-        }
-
-
-        channelFragment.show(channel)
-    }
-
-
-    private fun channelUp() {
-        if (menuFragment.isHidden && settingFragment.isHidden) {
-            if (SP.channelReversal) {
-                next()
-                return
-            }
-            prev()
-        }
-    }
-
-    private fun channelDown() {
-        if (menuFragment.isHidden && settingFragment.isHidden) {
-            if (SP.channelReversal) {
-                prev()
-                return
-            }
-            next()
-        }
-    }
-
-    private fun back() {
-        if (!menuFragment.isHidden) {
-            hideMenuFragment()
-            return
-        }
-
-        if (!settingFragment.isHidden) {
-            hideSettingFragment()
-            return
-        }
-
-         if (!trackSelectionFragment.isHidden) {
-            hideTrackSelectionFragment()
-            return
-        }
-
-        if (doubleBackToExitPressedOnce) {
-            super.onBackPressed()
-            return
-        }
-
-        doubleBackToExitPressedOnce = true
-        Toast.makeText(this, "Press again to exit", Toast.LENGTH_SHORT).show()
-
-        Handler(Looper.getMainLooper()).postDelayed({
-            doubleBackToExitPressedOnce = false
-        }, 2000)
-    }
-
-    private fun showSetting() {
-        try {
-            Log.d(TAG, "Attempting to show settings fragment")
-            
-            if (!menuFragment.isHidden) {
-                Log.d(TAG, "Menu fragment is visible, cannot show settings")
-                return
-            }
-
-            // Use SafeFragmentManager if available
-            val success = if (::safeFragmentManager.isInitialized) {
-                Log.d(TAG, "Using SafeFragmentManager to show settings")
-                safeFragmentManager.safeShowFragment(settingFragment, R.id.main_browse_fragment, "settings")
-            } else {
-                Log.w(TAG, "SafeFragmentManager not available, using fallback")
-                showSettingFallback()
-            }
-            
-            if (success) {
-                settingActive()
-                Log.i(TAG, "Settings fragment shown successfully")
-                
-                // Log diagnostic information
-                if (::crashDiagnosticManager.isInitialized) {
-                    val fragmentState = crashDiagnosticManager.captureFragmentState(
-                        fragmentManager = supportFragmentManager,
-                        fragment = settingFragment
-                    )
-                    Log.d(TAG, "Settings shown - Fragment state: isAttached=${fragmentState.isFragmentAttached}")
-                }
-            } else {
-                Log.e(TAG, "Failed to show settings fragment")
-                
-                // Try error recovery
-                if (::settingsErrorRecovery.isInitialized) {
-                    Log.d(TAG, "Attempting settings error recovery")
-                    settingsErrorRecovery.handleComponentInitializationError("SettingsFragment", 
-                        RuntimeException("Failed to show settings fragment"))
-                }
-            }
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Error showing settings fragment", e)
-            
-            // Log error and attempt recovery
-            if (::crashDiagnosticManager.isInitialized) {
-                crashDiagnosticManager.logCrashDetails(e, "showSetting")
-            }
-            
-            // Try fallback method
-            showSettingFallback()
-        }
-    }
-
-    /**
-     * Fallback method to show settings when safe operations fail
-     */
-    private fun showSettingFallback(): Boolean {
-        return try {
-            Log.w(TAG, "Using fallback method to show settings")
-            
-            if (isFinishing || supportFragmentManager.isStateSaved) {
-                Log.w(TAG, "Activity finishing or state saved, cannot show settings")
-                return false
-            }
-            
-            supportFragmentManager.beginTransaction()
-                .show(settingFragment)
-                .commitAllowingStateLoss()
-            
-            true
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Fallback settings show failed", e)
-            false
-        }
-    }
-
-    fun hideMenuFragment() {
-        supportFragmentManager.beginTransaction()
-            .hide(menuFragment)
-            .commit()
-        Log.i(TAG, "SP.time ${SP.time}")
-        
-        // Show info card after exiting menu
-        TVList.getTVModel()?.let {
-            infoFragment.show(it)
-        }
-    }
-
-    private fun hideSettingFragment() {
-        try {
-            Log.d(TAG, "Attempting to hide settings fragment")
-            
-            // Use SafeFragmentManager if available
-            val success = if (::safeFragmentManager.isInitialized) {
-                Log.d(TAG, "Using SafeFragmentManager to hide settings")
-                safeFragmentManager.safeHideFragment(settingFragment)
-            } else {
-                Log.w(TAG, "SafeFragmentManager not available, using fallback")
-                hideSettingFallback()
-            }
-            
-            if (success) {
-                showTime()
-                Log.i(TAG, "Settings fragment hidden successfully")
-                
-                // Log diagnostic information
-                if (::crashDiagnosticManager.isInitialized) {
-                    val fragmentState = crashDiagnosticManager.captureFragmentState(
-                        fragmentManager = supportFragmentManager,
-                        fragment = settingFragment
-                    )
-                    Log.d(TAG, "Settings hidden - Fragment state: isAttached=${fragmentState.isFragmentAttached}")
-                }
-            } else {
-                Log.e(TAG, "Failed to hide settings fragment")
-                
-                // Still try to show time even if hide failed
-                showTime()
-            }
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Error hiding settings fragment", e)
-            
-            // Log error
-            if (::crashDiagnosticManager.isInitialized) {
-                crashDiagnosticManager.logCrashDetails(e, "hideSettingFragment")
-            }
-            
-            // Try fallback method
-            hideSettingFallback()
-            showTime()
-        }
-    }
-
-    /**
-     * Fallback method to hide settings when safe operations fail
-     */
-    private fun hideSettingFallback(): Boolean {
-        return try {
-            Log.w(TAG, "Using fallback method to hide settings")
-            
-            if (isFinishing || supportFragmentManager.isStateSaved) {
-                Log.w(TAG, "Activity finishing or state saved, using commitAllowingStateLoss")
-                supportFragmentManager.beginTransaction()
-                    .hide(settingFragment)
-                    .commitAllowingStateLoss()
-            } else {
-                supportFragmentManager.beginTransaction()
-                    .hide(settingFragment)
-                    .commit()
-            }
-            
-            true
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Fallback settings hide failed", e)
-            false
-        }
-    }
-
-     private fun showAudioSelector() {
-        if (!menuFragment.isHidden || !settingFragment.isHidden) return
-        
-        val tracks = webFragment.getAudioTracks()
-        if (tracks.isEmpty()) {
-            Toast.makeText(this, "No audio tracks available", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        trackSelectionFragment.setTracks(tracks, object : TrackSelectionFragment.TrackSelectionListener {
-            override fun onTrackSelected(index: Int) {
-                val currentTv = TVList.getTVModel()
-                if (currentTv != null && currentTv.tv.uris.isNotEmpty()) {
-                    SP.setAudioTrack(currentTv.tv.uris[0], index)
-                }
-                webFragment.setAudioTrack(index)
-                hideTrackSelectionFragment()
-            }
-
-            override fun onDismiss() {
-                hideTrackSelectionFragment()
-            }
-        })
-        
-        supportFragmentManager.beginTransaction()
-            .show(trackSelectionFragment)
-            .commitNow()
-    }
-
-    private fun hideTrackSelectionFragment() {
-        if (trackSelectionFragment.isHidden) return
-        supportFragmentManager.beginTransaction()
-            .hide(trackSelectionFragment)
-            .commitNow()
-    }
-
-
-    private fun showErrorFragment(msg: String) {
-        errorFragment.show(msg)
-        if (!errorFragment.isHidden) {
-            return
-        }
-
-        supportFragmentManager.beginTransaction()
-            .show(errorFragment)
-            .commitNow()
-    }
-
-    private fun hideErrorFragment() {
-        errorFragment.show("hide")
-        if (errorFragment.isHidden) {
-            return
-        }
-
-        supportFragmentManager.beginTransaction()
-            .hide(errorFragment)
-            .commitNow()
-    }
-
-    fun onKey(keyCode: Int, event: KeyEvent?): Boolean {
-        Log.d(TAG, "onKey keyCode $keyCode, repeat ${event?.repeatCount}")
-        when (keyCode) {
-            KeyEvent.KEYCODE_0 -> {
-                showChannel("0")
-                return true
-            }
-
-            KeyEvent.KEYCODE_1 -> {
-                showChannel("1")
-                return true
-            }
-
-            KeyEvent.KEYCODE_2 -> {
-                showChannel("2")
-                return true
-            }
-
-            KeyEvent.KEYCODE_3 -> {
-                showChannel("3")
-                return true
-            }
-
-            KeyEvent.KEYCODE_4 -> {
-                showChannel("4")
-                return true
-            }
-
-            KeyEvent.KEYCODE_5 -> {
-                showChannel("5")
-                return true
-            }
-
-            KeyEvent.KEYCODE_6 -> {
-                showChannel("6")
-                return true
-            }
-
-            KeyEvent.KEYCODE_7 -> {
-                showChannel("7")
-                return true
-            }
-
-            KeyEvent.KEYCODE_8 -> {
-                showChannel("8")
-                return true
-            }
-
-            KeyEvent.KEYCODE_9 -> {
-                showChannel("9")
-                return true
-            }
-
-            KeyEvent.KEYCODE_ESCAPE -> {
-                back()
-                return true
-            }
-
-            KeyEvent.KEYCODE_BACK -> {
-                back()
-                return true
-            }
-
-             KeyEvent.KEYCODE_BOOKMARK -> {
-                 showSetting()
-                 return true
-             }
-
-             KeyEvent.KEYCODE_M -> {
-                 SP.moveMode = !SP.moveMode
-                 Toast.makeText(this, "Move mode: ${if(SP.moveMode) "on" else "off"}", Toast.LENGTH_SHORT).show()
-                 return true
-             }
-
-             KeyEvent.KEYCODE_UNKNOWN -> {
-//                showSetting()
-                return true
-            }
-
-            KeyEvent.KEYCODE_HELP -> {
-                showSetting()
-                return true
-            }
-
-            KeyEvent.KEYCODE_SETTINGS -> {
-                showSetting()
-                return true
-            }
-
-            KeyEvent.KEYCODE_MENU -> {
-                showSetting()
-                return true
-            }
-
-             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden) {
-                    showFragment(menuFragment)
-                    return true
-                }
-                return !trackSelectionFragment.isHidden || !menuFragment.isHidden || !settingFragment.isHidden
-            }
-
-            KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_CHANNEL_UP -> {
-                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden) {
-                    channelUp()
-                    return true
-                }
-                 // If menu is open, let the RecyclerView handle it naturally - return false
-                if (!menuFragment.isHidden) {
-                    return false
-                }
-                // If settings is open, let it handle navigation - return false
-                if (!settingFragment.isHidden) {
-                    return false
-                }
-                // For track selection, let it handle navigation - return false
-                if (!trackSelectionFragment.isHidden) {
-                    return false
-                }
-                return false
-            }
-
-            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_CHANNEL_DOWN -> {
-                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden) {
-                    channelDown()
-                    return true
-                }
-                // If menu is open, let the RecyclerView handle it naturally - return false
-                if (!menuFragment.isHidden) {
-                    return false
-                }
-                // If settings is open, let it handle navigation - return false
-                if (!settingFragment.isHidden) {
-                    return false
-                }
-                // For track selection, let it handle navigation - return false
-                if (!trackSelectionFragment.isHidden) {
-                    return false
-                }
-                return false
-            }
-
-            KeyEvent.KEYCODE_DPAD_LEFT -> {
-                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden) {
-                    showFragment(menuFragment)
-                    return true
-                }
-                // If settings is open, let it handle navigation - return false
-                if (!settingFragment.isHidden) {
-                    return false
-                }
-                if (!trackSelectionFragment.isHidden) {
-                    return false
-                }
-                return !menuFragment.isHidden
-            }
-
-            KeyEvent.KEYCODE_DPAD_RIGHT -> {
-                 
-                 // 1. If menu is open, let menu handle it for navigation (e.g. Categories -> Channel List)
-                if (!menuFragment.isHidden) {
-                    if (menuFragment.onKey(keyCode)) return true
-                }
-                
-                // 2. If settings is open, let it handle navigation - return false
-                if (!settingFragment.isHidden) {
-                    return false
-                }
-                
-                // 3. Short press handling moved to onKeyUp to avoid conflict with long press
-                
-                return !trackSelectionFragment.isHidden || !menuFragment.isHidden
-
-//                return true
-            }
-        }
-        return false
-    }
-
-    override fun onKeyLongPress(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            showSetting()
-            return true
-        }
-        return super.onKeyLongPress(keyCode, event)
-    }
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-       if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden && !loadingFragment.isVisible) {
-                event?.startTracking()
-                return true
-            }
-        }
-        if (onKey(keyCode, event)) {
-            return true
-        }
-
-        return super.onKeyDown(keyCode, event)
-    }
-
-    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-            if (event?.isTracking == true && !event.isCanceled) {
-                if (menuFragment.isHidden && settingFragment.isHidden && trackSelectionFragment.isHidden && !loadingFragment.isVisible) {
-                    showAudioSelector()
-                    return true
                 }
             }
         }
-        return super.onKeyUp(keyCode, event)
     }
-
-    fun showLoading() {
-        if (!isFinishing && !supportFragmentManager.isStateSaved) {
-            try {
-                showFragment(loadingFragment)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error showing loading fragment", e)
-            }
-        }
-    }
-
-    fun hideLoading() {
-        if (!isFinishing && !supportFragmentManager.isStateSaved) {
-            try {
-                hideFragment(loadingFragment)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error hiding loading fragment", e)
-            }
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        connectivityManager.unregisterNetworkCallback(networkCallback)
-
-        server?.stop()
-    }
-
-    companion object {
-        private const val TAG = "MainActivity"
-    }
-
-    private fun isVpnActive(): Boolean {
-        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val activeNetwork = connectivityManager.activeNetwork ?: return false
-            val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
-            return networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-        } else {
-            @Suppress("DEPRECATION")
-            val networks = connectivityManager.allNetworks
-            for (network in networks) {
-                @Suppress("DEPRECATION")
-                val networkInfo = connectivityManager.getNetworkInfo(network)
-                if (networkInfo != null && networkInfo.type == ConnectivityManager.TYPE_VPN) {
-                    Log.d(TAG, "VPN detected via legacy check.")
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
-
-
-
-
 }

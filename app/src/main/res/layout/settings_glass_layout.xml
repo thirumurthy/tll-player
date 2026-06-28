@@ -5,7 +5,7 @@
     android:layout_height="match_parent">
 
     <!-- Glassmorphism Background -->
-    <com.thirutricks.tllplayer.ui.GlassyBackgroundView
+    <com.thirutricks.tllplayer.legacy.ui.GlassyBackgroundView
         android:id="@+id/glassy_background"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

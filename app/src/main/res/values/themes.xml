@@ -2,4 +2,11 @@
 
     <style name="Theme.MyTV1" parent="@style/Theme.Leanback">
     </style>
+
+    <style name="Theme.OwnTV" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/owntv_window_bg</item>
+        <item name="android:statusBarColor">@color/owntv_window_bg</item>
+        <item name="android:navigationBarColor">@color/owntv_window_bg</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
 </resources>

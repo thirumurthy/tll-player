@@ -10,7 +10,27 @@ import android.widget.Toast
 import androidx.multidex.MultiDex
 import androidx.multidex.MultiDexApplication
 
-class MyTVApplication : MultiDexApplication() {
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.memory.MemoryCache
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.crossfade
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.GlobalContext
+import org.koin.core.context.startKoin
+import org.koin.core.logger.Level
+import com.thirutricks.tllplayer.di.appModule
+import com.thirutricks.tllplayer.di.databaseModule
+import com.thirutricks.tllplayer.di.dataModule
+import com.thirutricks.tllplayer.di.playerModule
+
+import com.thirutricks.tllplayer.legacy.OrderPreferenceManager
+
+class MyTVApplication : MultiDexApplication(), SingletonImageLoader.Factory {
 
     companion object {
         private const val TAG = "MyTVApplication"
@@ -35,6 +55,18 @@ class MyTVApplication : MultiDexApplication() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+
+        // Start Koin dependency injection
+        startKoin {
+            androidLogger(if (BuildConfig.DEBUG) Level.ERROR else Level.NONE)
+            androidContext(this@MyTVApplication)
+            modules(appModule, databaseModule, dataModule, playerModule)
+        }
+
+        // Build the EPG Guide read-index once in the background
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            runCatching { GlobalContext.get().get<com.thirutricks.tllplayer.core.repository.EpgRepository>().ensureEpgIndexes() }
+        }
 
         displayMetrics = DisplayMetrics()
         realDisplayMetrics = DisplayMetrics()
@@ -74,6 +106,21 @@ class MyTVApplication : MultiDexApplication() {
 
         // Initialize OrderPreferenceManager
         OrderPreferenceManager.init(this)
+    }
+
+    override fun newImageLoader(context: PlatformContext): ImageLoader =
+        ImageLoader.Builder(context)
+            .components { add(OkHttpNetworkFetcherFactory(callFactory = { GlobalContext.get().get<OkHttpClient>() })) }
+            .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.10).build() }
+            .crossfade(true)
+            .build()
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_RUNNING_LOW) {
+            runCatching { SingletonImageLoader.get(this).memoryCache?.clear() }
+            runCatching { GlobalContext.getOrNull()?.getOrNull<com.thirutricks.tllplayer.player.OwnTVPlayer>()?.onTrimMemory() }
+        }
     }
 
     fun getDisplayMetrics(): DisplayMetrics {

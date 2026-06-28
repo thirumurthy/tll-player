@@ -10,6 +10,9 @@ import org.mockito.MockitoAnnotations
 import org.junit.Assert.*
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import com.thirutricks.tllplayer.legacy.ui.ResourceValidator
+import com.thirutricks.tllplayer.legacy.ui.CrashDiagnosticManager
+import com.thirutricks.tllplayer.legacy.ui.CrashType
 
 /**
  * Simplified property-based test for crash information capture functionality

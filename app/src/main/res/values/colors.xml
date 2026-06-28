@@ -80,4 +80,8 @@
     <color name="glass_card_background_fallback">#E6263238</color> <!-- 90% dark blue-gray -->
     <color name="glass_border_fallback">#4DFFFFFF</color> <!-- 30% white border -->
 
+    <!-- OwnTV specific colors -->
+    <color name="owntv_window_bg">#000000</color>
+    <color name="owntv_icon_bg">#050914</color>
+
 </resources>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.thirutricks.tllplayer.ui.glass.GlassMenuContainer 
+<com.thirutricks.tllplayer.legacy.ui.glass.GlassMenuContainer 
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/menu"
@@ -137,4 +137,4 @@
         app:layout_constraintStart_toStartOf="@id/channel_panel_container"
         app:layout_constraintEnd_toEndOf="@id/channel_panel_container" />
 
-</com.thirutricks.tllplayer.ui.glass.GlassMenuContainer>
+</com.thirutricks.tllplayer.legacy.ui.glass.GlassMenuContainer>

@@ -8,6 +8,9 @@ import org.junit.Assert.*
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import kotlin.random.Random
+import com.thirutricks.tllplayer.legacy.ui.ResourceValidator
+import com.thirutricks.tllplayer.legacy.ui.RecoveryAction
+import com.thirutricks.tllplayer.legacy.ui.ValidationReport
 
 /**
  * Property-based test for resource validation functionality

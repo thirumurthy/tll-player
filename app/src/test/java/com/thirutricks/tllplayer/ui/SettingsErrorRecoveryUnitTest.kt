@@ -12,6 +12,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.junit.Assert.*
+import com.thirutricks.tllplayer.legacy.ui.ResourceValidator
+import com.thirutricks.tllplayer.legacy.ui.CrashDiagnosticManager
+import com.thirutricks.tllplayer.legacy.ui.SettingsErrorRecovery
 
 /**
  * Unit tests for SettingsErrorRecovery

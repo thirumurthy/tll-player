@@ -33,7 +33,7 @@
             android:focusableInTouchMode="true">
 
             <!-- Header Card -->
-            <com.thirutricks.tllplayer.ui.GlassCard
+            <com.thirutricks.tllplayer.legacy.ui.GlassCard
                 android:id="@+id/header_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -66,10 +66,10 @@
 
                 </LinearLayout>
 
-            </com.thirutricks.tllplayer.ui.GlassCard>
+            </com.thirutricks.tllplayer.legacy.ui.GlassCard>
 
             <!-- Configuration Card -->
-            <com.thirutricks.tllplayer.ui.GlassCard
+            <com.thirutricks.tllplayer.legacy.ui.GlassCard
                 android:id="@+id/configuration_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -151,10 +151,10 @@
                     </LinearLayout>
 
                 </LinearLayout>
-            </com.thirutricks.tllplayer.ui.GlassCard>
+            </com.thirutricks.tllplayer.legacy.ui.GlassCard>
 
             <!-- Preferences Card -->
-            <com.thirutricks.tllplayer.ui.GlassCard
+            <com.thirutricks.tllplayer.legacy.ui.GlassCard
                 android:id="@+id/preferences_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -239,7 +239,7 @@
                             android:fontFamily="sans-serif" />
                     </LinearLayout>
 
-                    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+                    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
                         android:id="@+id/switch_channel_reversal"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/settings_item_height"
@@ -250,7 +250,7 @@
                         android:layout_marginBottom="8dp"
                         android:fontFamily="sans-serif" />
 
-                    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+                    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
                         android:id="@+id/switch_channel_num"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/settings_item_height"
@@ -261,7 +261,7 @@
                         android:layout_marginBottom="8dp"
                         android:fontFamily="sans-serif" />
 
-                    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+                    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
                         android:id="@+id/switch_time"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/settings_item_height"
@@ -272,7 +272,7 @@
                         android:layout_marginBottom="8dp"
                         android:fontFamily="sans-serif" />
 
-                    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+                    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
                         android:id="@+id/switch_watch_last"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/settings_item_height"
@@ -283,7 +283,7 @@
                         android:layout_marginBottom="8dp"
                         android:fontFamily="sans-serif" />
 
-                    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+                    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
                         android:id="@+id/switch_force_high_quality"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/settings_item_height"
@@ -294,7 +294,7 @@
                         android:layout_marginBottom="8dp"
                         android:fontFamily="sans-serif" />
 
-                    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+                    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
                         android:id="@+id/switch_boot_startup"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/settings_item_height"
@@ -305,7 +305,7 @@
                         android:layout_marginBottom="8dp"
                         android:fontFamily="sans-serif" />
 
-                    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+                    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
                         android:id="@+id/switch_config_auto_load"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/settings_item_height"
@@ -316,7 +316,7 @@
                         android:layout_marginBottom="8dp"
                         android:fontFamily="sans-serif" />
 
-                    <com.thirutricks.tllplayer.ui.ModernToggleSwitch
+                    <com.thirutricks.tllplayer.legacy.ui.ModernToggleSwitch
                         android:id="@+id/switch_channel_check"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/settings_item_height"
@@ -328,10 +328,10 @@
 
                 </LinearLayout>
 
-            </com.thirutricks.tllplayer.ui.GlassCard>
+            </com.thirutricks.tllplayer.legacy.ui.GlassCard>
 
             <!-- Actions Card -->
-            <com.thirutricks.tllplayer.ui.GlassCard
+            <com.thirutricks.tllplayer.legacy.ui.GlassCard
                 android:id="@+id/actions_card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -355,7 +355,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:weightSum="4">
+                        android:weightSum="5">
 
                         <Button
                             android:id="@+id/clear"
@@ -387,6 +387,18 @@
                             android:layout_height="@dimen/settings_item_height"
                             android:layout_weight="1"
                             android:text="@string/appreciate"
+                            android:background="@drawable/tv_button_glass"
+                            android:textColor="@color/info_text_primary"
+                            android:textSize="@dimen/tv_text_size_small"
+                            android:layout_marginEnd="8dp"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <Button
+                            android:id="@+id/switch_profile"
+                            android:layout_width="0dp"
+                            android:layout_height="@dimen/settings_item_height"
+                            android:layout_weight="1"
+                            android:text="Profile"
                             android:background="@drawable/tv_button_glass"
                             android:textColor="@color/info_text_primary"
                             android:textSize="@dimen/tv_text_size_small"
@@ -426,7 +438,7 @@
 
                 </LinearLayout>
 
-            </com.thirutricks.tllplayer.ui.GlassCard>
+            </com.thirutricks.tllplayer.legacy.ui.GlassCard>
 
         </LinearLayout>
     </ScrollView>
