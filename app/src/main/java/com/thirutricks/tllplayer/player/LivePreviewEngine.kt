@@ -305,11 +305,12 @@ class LivePreviewEngine(
         _volume.value = if (muted) 0 else 100
         _state.value = State.LOADING
         _buffering.value = true
+        val playUrl = url.split("|||").firstOrNull() ?: url
         runCatching {
             val p = player ?: build().also { player = it }
             surface?.let { p.setVideoSurface(it) }
             p.volume = if (muted) 0f else 1f
-            p.setMediaSource(mediaSourceFor(url))
+            p.setMediaSource(mediaSourceFor(playUrl))
             p.prepare()
             p.playWhenReady = true
         }.onFailure {
@@ -390,10 +391,11 @@ class LivePreviewEngine(
         retryCount++
         _error.value = null; _errorInfo.value = null; _state.value = State.LOADING; _buffering.value = true
         android.util.Log.w(TAG, "live reconnect ($reason) — attempt $retryCount/$MAX_RECONNECTS")
+        val playUrl = url.split("|||").firstOrNull() ?: url
         mainHandler.postDelayed({
             if (currentUrl != url) return@postDelayed // superseded (zapped / stopped)
             runCatching {
-                p.setMediaItem(MediaItem.fromUri(url)) // fresh fetch (live edge)
+                p.setMediaItem(MediaItem.fromUri(playUrl)) // fresh fetch (live edge)
                 p.prepare()
                 p.playWhenReady = true
             }.onFailure { _state.value = State.ERROR; _error.value = "Lost connection to this channel." }

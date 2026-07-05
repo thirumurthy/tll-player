@@ -219,8 +219,6 @@ fun ExoPreviewSurface(engine: LivePreviewEngine, modifier: Modifier = Modifier, 
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 SurfaceView(ctx).apply {
-                    isFocusable = false
-                    isFocusableInTouchMode = false
                     holder.addCallback(object : SurfaceHolder.Callback {
                         override fun surfaceCreated(holder: SurfaceHolder) = engine.setSurface(holder.surface)
                         override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}

@@ -758,8 +758,6 @@ private fun HeroPreviewSurface(
         modifier = modifier,
         factory = { ctx ->
             android.view.SurfaceView(ctx).apply {
-                isFocusable = false
-                isFocusableInTouchMode = false
                 holder.addCallback(object : android.view.SurfaceHolder.Callback {
                     override fun surfaceCreated(holder: android.view.SurfaceHolder) = engine.setSurface(holder.surface)
                     override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) {}

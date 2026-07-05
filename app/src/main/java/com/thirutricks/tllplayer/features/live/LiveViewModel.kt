@@ -365,10 +365,6 @@ class LiveViewModel(
             previewEngine.setMuted(!livePreviewAudio.value)
             return
         }
-        // TLL channels never preview on the ExoPlayer engine — they route through the full mpv player
-        // (WebView/Exo legacy engine). Skipping the preview here also keeps the protected TLL endpoint
-        // URL out of the preview's stream-info/mini chips.
-        if (sourceTypeOf(channel) == SourceType.TLL) return
         previewEngine.play(
             channel.streamUrl, muted = !livePreviewAudio.value,
             meta = com.thirutricks.tllplayer.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),

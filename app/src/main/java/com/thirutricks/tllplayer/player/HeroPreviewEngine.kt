@@ -81,6 +81,7 @@ class HeroPreviewEngine(
 
     fun play(url: String, seekToMs: Long = 0L) {
         currentUrl = url
+        val playUrl = url.split("|||").firstOrNull() ?: url
         val startPositionMs = seekToMs.coerceAtLeast(0L)
         hasStarted = false
         _state.value = State.LOADING
@@ -89,7 +90,7 @@ class HeroPreviewEngine(
             surface?.let { p.setVideoSurface(it) }
             p.volume = 0f
             p.repeatMode = Player.REPEAT_MODE_ONE
-            p.setMediaItem(MediaItem.fromUri(url), startPositionMs)
+            p.setMediaItem(MediaItem.fromUri(playUrl), startPositionMs)
             p.prepare()
             p.playWhenReady = true
         }.onFailure {
