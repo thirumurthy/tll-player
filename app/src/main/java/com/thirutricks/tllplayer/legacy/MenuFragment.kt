@@ -1,0 +1,386 @@
+package com.thirutricks.tllplayer.legacy
+
+import android.os.Bundle
+import android.util.Log
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Toast
+import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.thirutricks.tllplayer.databinding.MenuBinding
+import com.thirutricks.tllplayer.legacy.models.TVList
+import com.thirutricks.tllplayer.legacy.models.TVListModel
+import com.thirutricks.tllplayer.legacy.models.TVModel
+import com.thirutricks.tllplayer.legacy.ui.glass.GlassMenuContainer
+import com.thirutricks.tllplayer.legacy.ui.glass.PanelType
+import com.thirutricks.tllplayer.legacy.ui.glass.GlassEffectUtils
+import com.thirutricks.tllplayer.legacy.ui.glass.GlassAccessibilityManager
+import com.thirutricks.tllplayer.legacy.ui.glass.GlassResponsiveManager
+// import com.thirutricks.tllplayer.legacy.ui.glass.GlassScrollManager
+import com.thirutricks.tllplayer.legacy.ui.glass.GlassPerformanceManager
+
+class MenuFragment : Fragment(), GroupAdapter.ItemListener, ListAdapter.ItemListener {
+    private var _binding: MenuBinding? = null
+    private val binding get() = _binding!!
+
+    private lateinit var groupAdapter: GroupAdapter
+    private lateinit var listAdapter: ListAdapter
+    private lateinit var glassMenuContainer: GlassMenuContainer
+    private lateinit var glassAccessibilityManager: GlassAccessibilityManager
+    private lateinit var glassResponsiveManager: GlassResponsiveManager
+    // private lateinit var glassScrollManager: GlassScrollManager
+    private lateinit var glassPerformanceManager: GlassPerformanceManager
+    
+    companion object {
+        private const val TAG = "MenuFragment"
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        val context = requireContext()
+        _binding = MenuBinding.inflate(inflater, container, false)
+
+        // Initialize glass managers
+        glassAccessibilityManager = GlassAccessibilityManager(context)
+        glassResponsiveManager = GlassResponsiveManager(context)
+        glassPerformanceManager = GlassPerformanceManager(context)
+        // glassScrollManager = GlassScrollManager(context)
+        
+        // Initialize performance monitoring
+        glassPerformanceManager.initialize(binding.root as ViewGroup)
+
+        // Get reference to the glass menu container
+        glassMenuContainer = binding.menu as GlassMenuContainer
+        
+        // Apply performance, accessibility, and responsive adjustments
+        setupGlassMenuContainer()
+
+        // Set up adapters with enhanced glass styling
+        setupAdapters()
+
+        // Set up click listener for hiding menu
+        binding.menu.setOnClickListener {
+            hideSelf()
+        }
+
+        return binding.root
+    }
+    
+    private fun setupGlassMenuContainer() {
+        val context = requireContext()
+        
+        // Check device capabilities
+        val supportsAdvancedEffects = GlassEffectUtils.supportsAdvancedEffects(context)
+        val activityManager = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+        val isLowEndDevice = activityManager.isLowRamDevice
+        
+        // Apply responsive scaling first
+        glassResponsiveManager.applyAdaptiveGlassLayout(binding.menu as ViewGroup)
+        
+        // Apply accessibility enhancements
+        glassAccessibilityManager.applyGlassAccessibilityEnhancements(binding.menu as ViewGroup)
+        
+        // Apply fallback styling for limited graphics devices if needed
+        if (glassAccessibilityManager.hasLimitedGraphicsCapabilities()) {
+            glassAccessibilityManager.applyFallbackStyling(binding.menu as ViewGroup)
+        }
+        
+        // Apply performance adjustments to glass container
+        glassMenuContainer.applyPerformanceAdjustments(
+            hasHardwareAcceleration = supportsAdvancedEffects,
+            isLowEndDevice = isLowEndDevice
+        )
+        
+        // Apply accessibility adjustments to glass container
+        val isHighContrastEnabled = glassAccessibilityManager.isHighContrastMode()
+        val reduceMotionEnabled = false // This would need to be checked from system settings
+        
+        glassMenuContainer.applyAccessibilityAdjustments(
+            isHighContrastEnabled = isHighContrastEnabled,
+            reduceMotionEnabled = reduceMotionEnabled
+        )
+        
+        // Log device characteristics for debugging
+        Log.d(TAG, "Glass Menu Setup - TV Device: ${glassResponsiveManager.isTVDevice()}, " +
+                "Resolution: ${glassResponsiveManager.getTVResolution()}, " +
+                "High Contrast: $isHighContrastEnabled, " +
+                "Advanced Effects: $supportsAdvancedEffects")
+    }
+    
+    private fun setupAdapters() {
+        val context = requireContext()
+        
+        // Ensure we have valid data before setting up adapters
+        if (TVList.groupModel.size() == 0) {
+            Log.w(TAG, "Cannot setup adapters: groupModel is empty")
+            return
+        }
+        
+        // Set up group adapter
+        groupAdapter = GroupAdapter(
+            context,
+            binding.group,
+            TVList.groupModel,
+        )
+        binding.group.adapter = groupAdapter
+        binding.group.layoutManager = LinearLayoutManager(context)
+        groupAdapter.setItemListener(this)
+        groupAdapter.attachItemTouchHelper()
+        
+        // Set up glass scrolling for categories
+        // glassScrollManager.setupGlassScrolling(binding.group, "categories")
+
+        // Set up list adapter
+        var tvListModel = TVList.groupModel.getTVListModel(TVList.groupModel.position.value!!)
+        if (tvListModel == null) {
+            TVList.groupModel.setPosition(0)
+            tvListModel = TVList.groupModel.getTVListModel(0)
+        }
+
+        if (tvListModel != null) {
+            listAdapter = ListAdapter(
+                requireContext(),
+                binding.list,
+                tvListModel,
+            )
+            binding.list.adapter = listAdapter
+            binding.list.layoutManager = LinearLayoutManager(context)
+            listAdapter.focusable(false)
+            listAdapter.setItemListener(this)
+            listAdapter.attachItemTouchHelper()
+            
+            // Set up glass scrolling for channels with category-specific memory
+            val categoryId = tvListModel.getName()
+            // glassScrollManager.setupGlassScrolling(binding.list, categoryId)
+        }
+        
+        // Glass effects are handled automatically by the container
+    }
+
+    fun update() {
+        if (!::groupAdapter.isInitialized) return
+        
+        // Ensure we have valid data before updating
+        if (TVList.groupModel.size() == 0) {
+            Log.w(TAG, "Cannot update menu: groupModel is empty")
+            return
+        }
+        
+        // Use glass container's smooth content update
+        glassMenuContainer.updatePanelContent(binding.group) {
+            groupAdapter.update(TVList.groupModel)
+        }
+
+        var tvListModel = TVList.groupModel.getTVListModel(TVList.groupModel.position.value!!)
+        if (tvListModel == null) {
+            TVList.groupModel.setPosition(0)
+            tvListModel = TVList.groupModel.getTVListModel(0)
+        }
+
+        if (tvListModel != null) {
+            glassMenuContainer.updatePanelContent(binding.list) {
+                (binding.list.adapter as ListAdapter).update(tvListModel)
+            }
+        }
+    }
+
+    fun updateList(position: Int) {
+        TVList.groupModel.setPosition(position)
+        SP.positionGroup = position
+        val tvListModel = TVList.groupModel.getTVListModel()
+        Log.i(TAG, "updateList tvListModel $position ${tvListModel?.size()}")
+        
+        if (tvListModel != null && ::listAdapter.isInitialized) {
+            glassMenuContainer.updatePanelContent(binding.list) {
+                (binding.list.adapter as ListAdapter).update(tvListModel)
+            }
+            
+            // Glass effects update automatically on category change
+            
+            // Update scroll manager with new category
+            val categoryId = tvListModel.getName()
+            // glassScrollManager.setupGlassScrolling(binding.list, categoryId)
+        }
+    }
+
+
+    private fun hideSelf() {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .hide(this)
+            .commit()
+    }
+
+    override fun onItemFocusChange(tvListModel: TVListModel, hasFocus: Boolean) {
+        if (hasFocus) {
+            // Animate panel focus with glass effects
+            glassMenuContainer.animatePanelFocus(binding.group, hasFocus)
+            
+            // Transition to category panel
+            glassMenuContainer.transitionToPanel(PanelType.CATEGORY)
+            
+            glassMenuContainer.updatePanelContent(binding.list) {
+                (binding.list.adapter as ListAdapter).update(tvListModel)
+            }
+            (activity as LegacyMainActivity).menuActive()
+        }
+    }
+
+    override fun onItemClicked(position: Int) {
+        // Handle category item click - transition to channel list
+        showChannelList()
+    }
+
+    private fun showChannelList() {
+        if (!::listAdapter.isInitialized) return
+        
+        if (listAdapter.itemCount == 0) {
+            Toast.makeText(context, "No channel yet", Toast.LENGTH_LONG).show()
+            return
+        }
+        
+        // Smooth transition to channel panel
+        glassMenuContainer.transitionToPanel(PanelType.CHANNEL)
+        
+        groupAdapter.focusable(false)
+        listAdapter.focusable(true)
+
+        // Hide categories to expand channel list
+        binding.categoryPanelContainer?.visibility = View.GONE
+        binding.panelDivider?.visibility = View.GONE
+
+        val tvModel = TVList.getTVModel()
+        if (tvModel != null) {
+            if (tvModel.groupIndex == TVList.groupModel.position.value!!) {
+                Log.i(
+                    TAG,
+                    "list on show toPosition ${tvModel.tv.title} ${tvModel.listIndex}/${listAdapter.tvListModel.size()}"
+                )
+                listAdapter.toPosition(tvModel.listIndex)
+            } else {
+                listAdapter.toPosition(0)
+            }
+        } else {
+            listAdapter.toPosition(0)
+        }
+    }
+
+    override fun onItemFocusChange(tvModel: TVModel, hasFocus: Boolean) {
+        if (hasFocus) {
+            // Animate panel focus with glass effects
+            glassMenuContainer.animatePanelFocus(binding.list, hasFocus)
+            
+            // Transition to channel panel
+            glassMenuContainer.transitionToPanel(PanelType.CHANNEL)
+            
+            (activity as LegacyMainActivity).menuActive()
+        }
+    }
+
+    override fun onItemClicked(tvModel: TVModel) {
+        TVList.setPosition(tvModel.tv.id, updateGroup = false)
+        (activity as LegacyMainActivity).hideMenuFragment()
+    }
+
+    override fun onKey(keyCode: Int): Boolean {
+        when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                showChannelList()
+                return true
+            }
+
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                // Handle left navigation if needed
+                return true
+            }
+        }
+        return false
+    }
+
+    override fun onKey(listAdapter: ListAdapter, keyCode: Int): Boolean {
+        when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                // Show categories again
+                binding.categoryPanelContainer?.visibility = View.VISIBLE
+                binding.panelDivider?.visibility = View.VISIBLE
+                
+                // Smooth transition to category panel
+                glassMenuContainer.transitionToPanel(PanelType.CATEGORY)
+                
+                groupAdapter.focusable(true)
+                listAdapter.focusable(false)
+                listAdapter.clear()
+                Log.i(TAG, "group toPosition on left")
+                groupAdapter.toPosition(TVList.groupModel.position.value!!)
+                return true
+            }
+        }
+        return false
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!::groupAdapter.isInitialized || !::listAdapter.isInitialized) {
+            return
+        }
+        
+        if (!hidden) {
+            if (binding.list.isVisible) {
+                val currentTvModel = TVList.getTVModel()
+                if (currentTvModel != null) {
+                    val channelId = currentTvModel.tv.id
+                    
+                    // Find the channel's index in the currently displayed list (works for Favorites/All too)
+                    val indexInCategory = listAdapter.tvListModel.tvListModel.value?.indexOfFirst { it.tv.id == channelId } ?: -1
+                    
+                    if (indexInCategory != -1) {
+                        Log.i(TAG, "Restoring focus in category to channel $channelId at index $indexInCategory")
+                        listAdapter.toPosition(indexInCategory)
+                    } else {
+                        Log.i(TAG, "Channel $channelId not found in current category, focusing first item")
+                        listAdapter.toPosition(0)
+                    }
+                }
+            }
+            
+            if (binding.group.isVisible) {
+                Log.i(
+                    TAG,
+                    "group on show toPosition ${TVList.groupModel.position.value!!}/${TVList.groupModel.size()}"
+                )
+                groupAdapter.toPosition(TVList.groupModel.position.value!!)
+            }
+            (activity as LegacyMainActivity).menuActive()
+        } else {
+            view?.post {
+                if (::groupAdapter.isInitialized) groupAdapter.visible = false
+                if (::listAdapter.isInitialized) listAdapter.visible = false
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Position will be handled by glass container animations
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        
+        // Clean up performance manager resources
+        if (::glassPerformanceManager.isInitialized) {
+            glassPerformanceManager.cleanup()
+        }
+        
+        // Clean up scroll manager resources
+        // if (::glassScrollManager.isInitialized) {
+        //     glassScrollManager.cleanup()
+        // }
+        
+        _binding = null
+    }
+}

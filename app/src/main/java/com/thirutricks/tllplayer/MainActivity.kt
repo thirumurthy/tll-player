@@ -1,9 +1,13 @@
 package com.thirutricks.tllplayer
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.Network
 import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -23,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
 import com.thirutricks.tllplayer.core.launcher.LauncherDeepLink
+import com.thirutricks.tllplayer.core.util.NetworkSecurity
 import com.thirutricks.tllplayer.features.profiles.ProfileGate
 import com.thirutricks.tllplayer.features.profiles.ProfilesViewModel
 import com.thirutricks.tllplayer.features.setup.Onboarding
@@ -34,12 +39,31 @@ import com.thirutricks.tllplayer.ui.theme.UiZoom
 class MainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "OwnTVHome"
+        @Volatile var keyInterceptor: ((android.view.KeyEvent) -> Boolean)? = null
     }
 
     private val player: com.thirutricks.tllplayer.player.OwnTVPlayer by inject()
     private val previewEngine: com.thirutricks.tllplayer.player.LivePreviewEngine by inject()
     private val heroPreviewEngine: com.thirutricks.tllplayer.player.HeroPreviewEngine by inject()
     private var pendingDeepLink by mutableStateOf<LauncherDeepLink?>(null)
+
+    // --- VPN guard: the production path (this activity) must enforce the same block the legacy app did.
+    // Detecting on every network change (and on resume) catches a VPN toggled on while the app is running.
+    private val connectivityManager: ConnectivityManager? by lazy {
+        getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+    }
+    private val vpnNetworkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            super.onAvailable(network)
+            if (NetworkSecurity.isVpnActive(this@MainActivity)) {
+                runOnUiThread {
+                    Log.d(TAG, "VPN detected via network callback. Exiting app.")
+                    Toast.makeText(this@MainActivity, "VPN detected. Exiting app.", Toast.LENGTH_LONG).show()
+                    finishAffinity()
+                }
+            }
+        }
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -70,8 +94,30 @@ class MainActivity : ComponentActivity() {
         previewEngine.onAppForegrounded()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Re-check the VPN guard on resume — catches a VPN enabled while the app was paused/backgrounded
+        // (the network callback alone wouldn't fire if no new network came up while we were away).
+        if (NetworkSecurity.isVpnActive(this)) {
+            Toast.makeText(this, "VPN detected. Exiting app.", Toast.LENGTH_LONG).show()
+            finishAffinity()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        runCatching { connectivityManager?.unregisterNetworkCallback(vpnNetworkCallback) }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // VPN guard — enforce immediately on launch and on every network change (mirrors the legacy app).
+        if (NetworkSecurity.isVpnActive(this)) {
+            Toast.makeText(this, "VPN detected. Exiting app.", Toast.LENGTH_LONG).show()
+            finishAffinity()
+            return
+        }
+        connectivityManager?.registerDefaultNetworkCallback(vpnNetworkCallback)
         pendingDeepLink = LauncherDeepLink.parse(intent.data)
         Log.d(TAG, "onCreate deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}")
         setContent {
@@ -82,6 +128,7 @@ class MainActivity : ComponentActivity() {
                 if (playing) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
+
 
             val viewModel: ShellViewModel = koinViewModel()
             val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
@@ -171,5 +218,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (keyInterceptor?.invoke(event) == true) {
+            return true
+        }
+        return super.dispatchKeyEvent(event)
     }
 }

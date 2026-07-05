@@ -66,6 +66,9 @@ class MyTVApplication : MultiDexApplication(), SingletonImageLoader.Factory {
         // Build the EPG Guide read-index once in the background
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             runCatching { GlobalContext.get().get<com.thirutricks.tllplayer.core.repository.EpgRepository>().ensureEpgIndexes() }
+            // Guarantee the default TLL profile + source always exist (re-seeds if a bad migration
+            // or DB wipe ever dropped them). Safe to run every launch.
+            runCatching { GlobalContext.get().get<com.thirutricks.tllplayer.core.repository.DefaultProfileGuard>().ensureDefaults() }
         }
 
         displayMetrics = DisplayMetrics()

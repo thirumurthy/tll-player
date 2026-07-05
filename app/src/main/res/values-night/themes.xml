@@ -1,0 +1,9 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Night variant of the launch-window theme. Same AMOLED-black window background. -->
+    <style name="Theme.OwnTV" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/owntv_window_bg</item>
+        <item name="android:statusBarColor">@color/owntv_window_bg</item>
+        <item name="android:navigationBarColor">@color/owntv_window_bg</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>
