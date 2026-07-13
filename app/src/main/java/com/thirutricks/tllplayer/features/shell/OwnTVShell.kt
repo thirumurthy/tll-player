@@ -445,6 +445,7 @@ fun OwnTVShell(
                     onChannelUp = zap?.let { z -> { z(-1) } },
                     onChannelDown = zap?.let { z -> { z(1) } },
                     onOpenChannelList = if (isLiveChannel && liveCanZap) { { showChannelList = true } } else null,
+                    isChannelListOpen = showChannelList,
                     onRewindLive = if (isLiveChannel && canRewindLive) liveVm::rewindLive else null,
                     onForwardLive = if (isLiveChannel) liveVm::forwardLive else null,
                     onGoToLive = if (isLiveChannel) liveVm::goToLive else null,

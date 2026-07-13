@@ -73,8 +73,9 @@ fun PlayerHud(
     onPip: (() -> Unit)? = null,
     onChannelUp: (() -> Unit)? = null,
     onChannelDown: (() -> Unit)? = null,
-    // Live: open the channel-list overlay (Left while the controls are hidden). Null = not a live channel.
+    // Live: open the channel-list overlay. Null = not a live channel.
     onOpenChannelList: (() -> Unit)? = null,
+    isChannelListOpen: Boolean = false,
     // Live rewind / timeshift (catch-up channels). onRewindLive non-null = this live channel can rewind;
     // timeshiftOffsetSec non-null = currently watching that many seconds behind the live edge.
     onRewindLive: (() -> Unit)? = null,
@@ -127,59 +128,81 @@ fun PlayerHud(
     LaunchedEffect(channelFlash) { if (channelFlash > 0) { showFlash = true; delay(3000); showFlash = false; showZapHint = false } }
     val zap: (Int) -> Unit = { d -> (if (d < 0) onChannelUp else onChannelDown)?.invoke(); channelFlash++ }
 
+    LaunchedEffect(isChannelListOpen) {
+        if (isChannelListOpen) {
+            controlsVisible = false
+        }
+    }
     LaunchedEffect(forceShow) { if (forceShow) controlsVisible = true }
     LaunchedEffect(controlsVisible, wakeTick, forceShow) {
         if (controlsVisible && !forceShow) { delay(4500); controlsVisible = false }
     }
-    LaunchedEffect(controlsVisible, error) {
+    LaunchedEffect(controlsVisible, error, isChannelListOpen) {
+        if (isChannelListOpen) return@LaunchedEffect
         if (controlsVisible) {
             if (error != null) runCatching { retryFocus.requestFocus() } else runCatching { playFocus.requestFocus() }
         } else runCatching { catchFocus.requestFocus() }
     }
 
-    DisposableEffect(canZap, controlsVisible, onChannelUp, onChannelDown, onOpenChannelList) {
+    DisposableEffect(canZap, controlsVisible, onChannelUp, onChannelDown, onOpenChannelList, isChannelListOpen) {
         val oldInterceptor = MainActivity.keyInterceptor
+        var consumedDownKey = -1
+
         MainActivity.keyInterceptor = { event ->
-            if (event.action == android.view.KeyEvent.ACTION_DOWN) {
-                val keyCode = event.keyCode
-                val isChannelKey = keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP ||
-                        keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN ||
-                        keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_UP ||
-                        keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_DOWN ||
-                        keyCode == android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS ||
-                        keyCode == android.view.KeyEvent.KEYCODE_MEDIA_NEXT
-                
-                when {
-                    canZap && (keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_UP || keyCode == android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS) -> {
-                        zap(-1)
-                        true
-                    }
-                    canZap && (keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_DOWN || keyCode == android.view.KeyEvent.KEYCODE_MEDIA_NEXT) -> {
-                        zap(1)
-                        true
-                    }
-                    canZap && !controlsVisible && keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP -> {
-                        zap(-1)
-                        true
-                    }
-                    canZap && !controlsVisible && keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
-                        zap(1)
-                        true
-                    }
-                    // Left while HUD is hidden opens the channel-list overlay (live only).
-                    onOpenChannelList != null && !controlsVisible && keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
-                        onOpenChannelList()
-                        true
-                    }
-                    // Any other key wakes the HUD when hidden (except Back)
-                    !controlsVisible && keyCode != android.view.KeyEvent.KEYCODE_BACK && !isChannelKey -> {
-                        controlsVisible = true
-                        true
-                    }
-                    else -> false
-                }
-            } else {
+            val keyCode = event.keyCode
+            if (event.action == android.view.KeyEvent.ACTION_UP && consumedDownKey == keyCode) {
+                consumedDownKey = -1
+                true
+            } else if (isChannelListOpen) {
                 false
+            } else {
+                if (event.action == android.view.KeyEvent.ACTION_DOWN) {
+                    val isChannelKey = keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP ||
+                            keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN ||
+                            keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_UP ||
+                            keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_DOWN ||
+                            keyCode == android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS ||
+                            keyCode == android.view.KeyEvent.KEYCODE_MEDIA_NEXT
+
+                    val consumed = when {
+                        canZap && (keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_UP || keyCode == android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS) -> {
+                            zap(-1)
+                            true
+                        }
+                        canZap && (keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_DOWN || keyCode == android.view.KeyEvent.KEYCODE_MEDIA_NEXT) -> {
+                            zap(1)
+                            true
+                        }
+                        canZap && !controlsVisible && keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                            zap(-1)
+                            true
+                        }
+                        canZap && !controlsVisible && keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            zap(1)
+                            true
+                        }
+                        // Left or OK/Center while HUD is hidden opens the channel-list overlay (live only).
+                        onOpenChannelList != null && !controlsVisible &&
+                                (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT ||
+                                 keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER ||
+                                 keyCode == android.view.KeyEvent.KEYCODE_ENTER) -> {
+                            onOpenChannelList()
+                            true
+                        }
+                        // Any other key wakes the HUD when hidden (except Back)
+                        !controlsVisible && keyCode != android.view.KeyEvent.KEYCODE_BACK && !isChannelKey -> {
+                            controlsVisible = true
+                            true
+                        }
+                        else -> false
+                    }
+                    if (consumed) {
+                        consumedDownKey = keyCode
+                    }
+                    consumed
+                } else {
+                    false
+                }
             }
         }
         onDispose {
@@ -189,6 +212,7 @@ fun PlayerHud(
 
     Box(
         modifier = modifier.fillMaxSize().onPreviewKeyEvent { e ->
+            if (isChannelListOpen) return@onPreviewKeyEvent false
             if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
             when {
                 // Channel surfing: dedicated CH+/CH- and media prev/next keys always zap. D-pad Up/Down
@@ -198,14 +222,18 @@ fun PlayerHud(
                 canZap && (e.key == Key.ChannelDown || e.key == Key.MediaNext) -> { zap(1); true }
                 canZap && !controlsVisible && e.key == Key.DirectionUp -> { zap(-1); true }
                 canZap && !controlsVisible && e.key == Key.DirectionDown -> { zap(1); true }
-                // Left while the HUD is hidden opens the channel-list overlay (live only).
-                onOpenChannelList != null && !controlsVisible && e.key == Key.DirectionLeft -> { onOpenChannelList(); true }
+                // Left or OK/Center while the HUD is hidden opens the channel-list overlay (live only).
+                onOpenChannelList != null && !controlsVisible &&
+                        (e.key == Key.DirectionLeft || e.key == Key.DirectionCenter || e.key == Key.Enter) -> {
+                    onOpenChannelList()
+                    true
+                }
                 controlsVisible -> { wakeTick++; false }
                 else -> false
             }
         },
     ) {
-        if (!controlsVisible) {
+        if (!controlsVisible && !isChannelListOpen) {
             Box(
                 Modifier.fillMaxSize().focusRequester(catchFocus).focusable()
                     // Any key wakes the HUD — EXCEPT channel-surfing keys (Up/Down/CH±/media prev-next).
@@ -213,6 +241,7 @@ fun PlayerHud(
                     // otherwise the first up/down press would pop the HUD open and steal focus, making
                     // channel switching feel broken on remotes without dedicated CH keys (e.g. Fire TV).
                     .onKeyEvent { e ->
+                        if (isChannelListOpen) return@onKeyEvent false
                         if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
                         val isChannelKey = e.key == Key.DirectionUp || e.key == Key.DirectionDown ||
                             e.key == Key.ChannelUp || e.key == Key.ChannelDown ||
@@ -413,12 +442,12 @@ private fun CenterControls(
             if (nav.hasPrev) CircleButton(OwnTVIcon.SKIP_PREVIOUS, size = 52) { player.previous() }
             when {
                 rewindMode -> CircleButton(OwnTVIcon.REWIND, size = 52) { onRewindLive!!() } // step back into the archive
-                !isLive -> CircleButton(OwnTVIcon.REWIND, size = 52) { player.seekBy(-10_000) }
+                !isLive || player is MpvPlaybackEngine -> CircleButton(OwnTVIcon.REWIND, size = 52) { player.seekBy(-10_000) }
             }
             CircleButton(if (isPlaying) OwnTVIcon.PAUSE else OwnTVIcon.PLAY, size = 72, primary = true, modifier = Modifier.focusRequester(playFocus)) { player.togglePlayPause() }
             when {
                 rewindMode && timeshifting -> CircleButton(OwnTVIcon.FORWARD, size = 52) { onForwardLive!!() } // toward live
-                !isLive && !rewindMode -> CircleButton(OwnTVIcon.FORWARD, size = 52) { player.seekBy(10_000) }
+                (!isLive || player is MpvPlaybackEngine) && !rewindMode -> CircleButton(OwnTVIcon.FORWARD, size = 52) { player.seekBy(10_000) }
             }
             if (rewindMode && timeshifting && onGoToLive != null) {
                 CircleButton(OwnTVIcon.LIVE_TV, size = 52, primary = true) { onGoToLive() } // jump to the live edge
@@ -460,10 +489,19 @@ private fun BottomBar(
                 Spacer(Modifier.height(10.dp))
             }
             isLive -> {
-                SeekBar(positionMs = 1L, durationMs = 1L, onSeek = {}, enabled = false)
+                SeekBar(
+                    positionMs = if (player is MpvPlaybackEngine) position else 1L,
+                    durationMs = if (player is MpvPlaybackEngine) duration.coerceAtLeast(1L) else 1L,
+                    onSeek = { player.seekBy(it) },
+                    enabled = player is MpvPlaybackEngine
+                )
                 Spacer(Modifier.height(6.dp))
                 Row(Modifier.fillMaxWidth()) {
-                    Text("LIVE", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+                    if (player is MpvPlaybackEngine && position > 0) {
+                        Text(formatTime(position), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+                    } else {
+                        Text("LIVE", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
+                    }
                 }
                 Spacer(Modifier.height(10.dp))
             }

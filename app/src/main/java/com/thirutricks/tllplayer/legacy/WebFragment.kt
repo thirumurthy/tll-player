@@ -840,42 +840,30 @@ class WebFragment : Fragment() {
         savedAudioTrackToApply = SP.getAudioTrack(url)
         Log.i(TAG, "Saved audio track to apply: $savedAudioTrackToApply")
 
-        if (STREAMING_EXTENSIONS.any { url.endsWith(it, ignoreCase = true) }||
-            url.startsWith("rtmp://") || url.startsWith("rtsp://") || url.contains("?|")) {
-            
-            webView.visibility = View.GONE
-            playerView.visibility = View.VISIBLE
-            webView.loadUrl("about:blank") // Stop webview
-            
-            initializePlayer(url)
-            return
-        }
-
-        if (url.contains("yupptv.com") || url.contains("athavantv.com") || url.contains("ttn.tv") || url.contains("youtube.com")) {
-            playerView.visibility = View.GONE
-            webView.visibility = View.VISIBLE
-            releasePlayer()
-
-            CoroutineScope(Dispatchers.IO).launch {
-                val result = performNetworkRequest(url)
-                if(result != null){
-                    withContext(Dispatchers.Main) {
-                        if (this@WebFragment.tvModel?.videoUrl?.value != url) return@withContext
-                        val encodedUrl = java.net.URLEncoder.encode(result, "UTF-8")
-                        webView.loadUrl("$ASSET_PLAYER_URL$encodedUrl")
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        if (this@WebFragment.tvModel?.videoUrl?.value != url) return@withContext
-                        this@WebFragment.tvModel?.setErrInfo("Failed to load stream")
-                        Toast.makeText(context, "Stream not available", Toast.LENGTH_SHORT).show()
-                    }
-                }
+        // 1. Direct check: Non-HTTP/HTTPS protocols are streams, not websites
+        if (!url.startsWith("http://", ignoreCase = true) && !url.startsWith("https://", ignoreCase = true)) {
+            val isWebPage = url.endsWith(".html", ignoreCase = true) || url.endsWith(".htm", ignoreCase = true)
+            if (isWebPage) {
+                playInWebView(url)
+            } else {
+                webView.visibility = View.GONE
+                playerView.visibility = View.VISIBLE
+                webView.loadUrl("about:blank")
+                initializePlayer(url)
             }
             return
         }
 
-        // Stalker Portal / MAG stream URLs: pattern is /play/live.php?mac=...&stream=...&extension=ts&play_token=...
+        // 2. Custom headers format (contains ?| or ?%7C) is a stream, not a website
+        if (url.contains("?|") || url.contains("?%7C")) {
+            webView.visibility = View.GONE
+            playerView.visibility = View.VISIBLE
+            webView.loadUrl("about:blank")
+            initializePlayer(url)
+            return
+        }
+
+        // 3. Stalker Portal / MAG stream URLs: pattern is /play/live.php?mac=...&stream=...&extension=ts&play_token=...
         // The extension param tells us the media type; we must route to ExoPlayer directly.
         // These must NOT go through the .php WebView path or the HEAD-request detection path.
         val urlLower = url.lowercase()
@@ -889,12 +877,7 @@ class WebFragment : Fragment() {
             return
         }
 
-        if (url.endsWith(".html", ignoreCase = true) || url.endsWith(".htm", ignoreCase = true) || url.endsWith(".php", ignoreCase = true)) {
-            playInWebView(url)
-            return
-        }
-
-        // Intelligently detect if the link is an HTML page or a stream
+        // 4. Perform network check first to determine if the URL is a website (text/html) or not
         CoroutineScope(Dispatchers.IO).launch {
             var isWebPage = false
             try {
@@ -908,9 +891,7 @@ class WebFragment : Fragment() {
                 val contentType = response.header("Content-Type")?.lowercase()
                 
                 if (contentType != null) {
-                    if (contentType.contains("text/html")) {
-                        isWebPage = true
-                    }
+                    isWebPage = contentType.contains("text/html")
                 } else {
                     // Try GET request with a range to fetch just some bytes if HEAD is unsupported/returns no content-type
                     val getRequest = Request.Builder()
@@ -920,12 +901,14 @@ class WebFragment : Fragment() {
                         .build()
                     val getResponse = client.newCall(getRequest).execute()
                     val getContentType = getResponse.header("Content-Type")?.lowercase()
-                    if (getContentType != null && getContentType.contains("text/html")) {
-                        isWebPage = true
+                    if (getContentType != null) {
+                        isWebPage = getContentType.contains("text/html")
+                    } else {
+                        isWebPage = checkIsWebPageFallback(url)
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Header check failed", e)
+                Log.e(TAG, "Header check failed for $url", e)
                 try {
                     val getRequest = Request.Builder()
                         .url(url)
@@ -934,13 +917,14 @@ class WebFragment : Fragment() {
                         .build()
                     val getResponse = client.newCall(getRequest).execute()
                     val getContentType = getResponse.header("Content-Type")?.lowercase()
-                    if (getContentType != null && getContentType.contains("text/html")) {
-                        isWebPage = true
+                    if (getContentType != null) {
+                        isWebPage = getContentType.contains("text/html")
+                    } else {
+                        isWebPage = checkIsWebPageFallback(url)
                     }
                 } catch (ex: Exception) {
-                    Log.e(TAG, "GET fallback check failed", ex)
-                    // If network fails completely, assume WebView as fallback where user might see error page
-                    isWebPage = true
+                    Log.e(TAG, "GET fallback check failed for $url", ex)
+                    isWebPage = checkIsWebPageFallback(url)
                 }
             }
 
@@ -948,7 +932,30 @@ class WebFragment : Fragment() {
                 if (this@WebFragment.tvModel?.videoUrl?.value != url) return@withContext
                 
                 if (isWebPage) {
-                    playInWebView(url)
+                    if (url.contains("yupptv.com") || url.contains("athavantv.com") || url.contains("ttn.tv") || url.contains("youtube.com")) {
+                        playerView.visibility = View.GONE
+                        webView.visibility = View.VISIBLE
+                        releasePlayer()
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val result = performNetworkRequest(url)
+                            if (result != null) {
+                                withContext(Dispatchers.Main) {
+                                    if (this@WebFragment.tvModel?.videoUrl?.value != url) return@withContext
+                                    val encodedUrl = java.net.URLEncoder.encode(result, "UTF-8")
+                                    webView.loadUrl("$ASSET_PLAYER_URL$encodedUrl")
+                                }
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    if (this@WebFragment.tvModel?.videoUrl?.value != url) return@withContext
+                                    this@WebFragment.tvModel?.setErrInfo("Failed to load stream")
+                                    Toast.makeText(context, "Stream not available", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    } else {
+                        playInWebView(url)
+                    }
                 } else {
                     webView.visibility = View.GONE
                     playerView.visibility = View.VISIBLE
@@ -957,6 +964,20 @@ class WebFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun checkIsWebPageFallback(url: String): Boolean {
+        if (url.contains("yupptv.com") || url.contains("athavantv.com") || url.contains("ttn.tv") || url.contains("youtube.com")) {
+            return true
+        }
+        if (url.endsWith(".html", ignoreCase = true) || url.endsWith(".htm", ignoreCase = true) || url.endsWith(".php", ignoreCase = true)) {
+            return true
+        }
+        if (STREAMING_EXTENSIONS.any { url.endsWith(it, ignoreCase = true) }) {
+            return false
+        }
+        // Default to true (webview) if unknown and network fails, to preserve original fallback behavior
+        return true
     }
 
     private fun playInWebView(url: String) {

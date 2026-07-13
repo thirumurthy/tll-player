@@ -461,9 +461,6 @@ class LiveViewModel(
     fun ensurePlaying(channel: ChannelEntity) {
         _previewChannel.value = channel
         timeshiftJob?.cancel(); tickJob?.cancel(); _timeshiftOffsetSec.value = null // normal live = not timeshifted
-        // TLL channels route straight to the full player (WebView/Exo engine + multi-URL retry), bypassing
-        // the ExoPlayer preview — the preview engine doesn't speak the TLL web/stream logic.
-        if (sourceTypeOf(channel) == SourceType.TLL) { startOnMpv(channel); recordLiveHistory(channel); return }
         // Self-learning routing: a channel the user pinned to mpv skips ExoPlayer entirely (no artifacts/silent
         // first), straight to the engine that plays it. Everyone else gets the fast ExoPlayer-first path.
         val pinned = channel.streamUrl in forceMpvUrls.value
