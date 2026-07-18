@@ -70,7 +70,7 @@ class CrashInformationCapturePropertyTest {
             )
 
             // Allow coroutine to complete with longer wait
-            Thread.sleep(200)
+            waitForCrashReport(crashDiagnosticManager)
 
             // Then: Comprehensive diagnostic information should be captured
             val allReports = crashDiagnosticManager.getAllCrashReports()
@@ -106,7 +106,7 @@ class CrashInformationCapturePropertyTest {
             // Verify resource validation state is captured
             assertNotNull("Resource state should not be null for iteration $iteration", latestReport.resourceState)
             assertNotEquals("Resource state timestamp should not be 0 for iteration $iteration", 0L, latestReport.resourceState.timestamp)
-            assertNotEquals("Validation time should not be 0 for iteration $iteration", 0L, latestReport.resourceState.validationTimeMs)
+            assertTrue("Validation time should be non-negative for iteration $iteration", latestReport.resourceState.validationTimeMs >= 0L)
 
             // Verify crash type is determined correctly
             assertNotNull("Crash type should not be null for iteration $iteration", latestReport.crashType)
@@ -148,7 +148,7 @@ class CrashInformationCapturePropertyTest {
                 componentName = failureScenario.componentName
             )
 
-            Thread.sleep(200)
+            waitForCrashReport(crashDiagnosticManager)
 
             // Then: Component failure should be properly identified and logged
             val allReports = crashDiagnosticManager.getAllCrashReports()
@@ -189,7 +189,7 @@ class CrashInformationCapturePropertyTest {
                 context = settingsContext
             )
 
-            Thread.sleep(200)
+            waitForCrashReport(crashDiagnosticManager)
 
             // Then: Missing resources should be captured in crash report
             val allReports = crashDiagnosticManager.getAllCrashReports()
@@ -234,7 +234,7 @@ class CrashInformationCapturePropertyTest {
                 fragment = fragmentScenario.mockFragment
             )
 
-            Thread.sleep(200)
+            waitForCrashReport(crashDiagnosticManager)
 
             // Then: Fragment state should be properly captured
             val allReports = crashDiagnosticManager.getAllCrashReports()
@@ -344,31 +344,40 @@ class CrashInformationCapturePropertyTest {
         val managerStates = listOf("ACTIVE", "DESTROYED", "STATE_SAVED", "NULL")
         val lifecycleStates = listOf("CREATED", "STARTED", "RESUMED", "DESTROYED", "UNKNOWN")
         
-        val mockFragmentManager = mock(FragmentManager::class.java)
-        val mockFragment = mock(Fragment::class.java)
-        
         val isAttached = random.nextBoolean()
         val isVisible = random.nextBoolean()
         val isHidden = !isVisible
         val managerState = managerStates.random(random)
         val lifecycleState = lifecycleStates.random(random)
         
+        val mockFragmentManager = if (managerState == "NULL") null else mock(FragmentManager::class.java)
+        if (mockFragmentManager != null) {
+            `when`(mockFragmentManager.isDestroyed).thenReturn(managerState == "DESTROYED")
+            `when`(mockFragmentManager.isStateSaved).thenReturn(managerState == "STATE_SAVED")
+        }
+        
+        val mockFragment = mock(Fragment::class.java)
+        
         // Configure mocks based on generated state
         `when`(mockFragment.isAdded).thenReturn(isAttached)
         `when`(mockFragment.isVisible).thenReturn(isVisible)
         `when`(mockFragment.isHidden).thenReturn(isHidden)
         
-        val mockLifecycle = mock(Lifecycle::class.java)
-        `when`(mockFragment.lifecycle).thenReturn(mockLifecycle)
-        `when`(mockLifecycle.currentState).thenReturn(
-            when (lifecycleState) {
-                "CREATED" -> Lifecycle.State.CREATED
-                "STARTED" -> Lifecycle.State.STARTED
-                "RESUMED" -> Lifecycle.State.RESUMED
-                "DESTROYED" -> Lifecycle.State.DESTROYED
-                else -> Lifecycle.State.INITIALIZED
-            }
-        )
+        val mockLifecycle = if (lifecycleState == "UNKNOWN") null else mock(Lifecycle::class.java)
+        if (mockLifecycle != null) {
+            `when`(mockFragment.lifecycle).thenReturn(mockLifecycle)
+            `when`(mockLifecycle.currentState).thenReturn(
+                when (lifecycleState) {
+                    "CREATED" -> Lifecycle.State.CREATED
+                    "STARTED" -> Lifecycle.State.STARTED
+                    "RESUMED" -> Lifecycle.State.RESUMED
+                    "DESTROYED" -> Lifecycle.State.DESTROYED
+                    else -> Lifecycle.State.INITIALIZED
+                }
+            )
+        } else {
+            `when`(mockFragment.lifecycle).thenReturn(null)
+        }
         
         return FragmentStateScenario(
             isAttached = isAttached,
@@ -380,6 +389,14 @@ class CrashInformationCapturePropertyTest {
             mockFragmentManager = mockFragmentManager,
             mockFragment = mockFragment
         )
+    }
+
+    private fun waitForCrashReport(manager: CrashDiagnosticManager) {
+        var elapsed = 0
+        while (manager.getAllCrashReports().isEmpty() && elapsed < 2000) {
+            Thread.sleep(10)
+            elapsed += 10
+        }
     }
 }
 

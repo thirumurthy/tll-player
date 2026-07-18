@@ -225,6 +225,21 @@ class OwnTVPlayer(
      * all tracks are detected. If a trimmed live load returns no audio, [forceFullProbe] re-probes fully.
      */
     private fun MPVLib.applyProbeProfile(url: String) {
+        if (isLiveContent) {
+            // For live streams, use a very small cache to avoid startup delay and buffering stalls
+            setPropertyString("demuxer-max-bytes", "16MiB")
+            setPropertyString("demuxer-max-back-bytes", "0")
+            setPropertyString("demuxer-readahead-secs", "2.0")
+            setPropertyString("cache-secs", "5.0")
+        } else {
+            // Restore VOD cache sizes from the budget
+            val budget = playerBudget ?: PlayerBudget.of(context)
+            setPropertyString("demuxer-max-bytes", budget.demuxerMaxBytes)
+            setPropertyString("demuxer-max-back-bytes", budget.demuxerBackBytes)
+            setPropertyString("demuxer-readahead-secs", budget.readaheadSecs)
+            setPropertyString("cache-secs", budget.cacheSecs)
+        }
+
         val lower = url.lowercase()
         // Raw continuous MPEG-TS (Xtream live `…/id.ts`, catch-up timeshift `.ts`). These probe fast and
         // start mid-stream, so they're the streams fast-zap trimming was built for — and the proven-safe

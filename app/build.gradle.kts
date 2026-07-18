@@ -76,7 +76,29 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
 
+fun getVersionFromJSON(): Pair<Int, String>? {
+    try {
+        val jsonFile = rootProject.file("version.json")
+        if (jsonFile.exists()) {
+            val text = jsonFile.readText()
+            val codeRegex = "\"version_code\"\\s*:\\s*(\\d+)".toRegex()
+            val nameRegex = "\"version_name\"\\s*:\\s*\"([^\"]+)\"".toRegex()
+            val codeMatch = codeRegex.find(text)
+            val nameMatch = nameRegex.find(text)
+            if (codeMatch != null && nameMatch != null) {
+                val code = codeMatch.groupValues[1].toInt()
+                val name = nameMatch.groupValues[1]
+                return Pair(code, name)
+            }
+        }
+    } catch (ignored: Exception) {
+    }
+    return null
+}
+
 fun getVersionCode(): Int {
+    val fromJson = getVersionFromJSON()
+    if (fromJson != null) return fromJson.first
     return try {
         val process = Runtime.getRuntime().exec("git describe --tags --always")
         process.waitFor()
@@ -91,6 +113,8 @@ fun getVersionCode(): Int {
 }
 
 fun getVersionName(): String {
+    val fromJson = getVersionFromJSON()
+    if (fromJson != null) return fromJson.second.removePrefix("v").removePrefix("V")
     return try {
         val process = Runtime.getRuntime().exec("git describe --tags --always")
         process.waitFor()

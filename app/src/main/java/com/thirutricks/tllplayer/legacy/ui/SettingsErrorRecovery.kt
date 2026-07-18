@@ -108,11 +108,11 @@ class SettingsErrorRecovery(
         crashDiagnosticManager.logCrashDetails(error, "componentInitialization", component)
         
         val attemptCount = retryAttempts.computeIfAbsent(component) { AtomicInteger(0) }
-        val currentAttempt = attemptCount.incrementAndGet()
+        val currentAttempt = attemptCount.get()
         
         return when {
-            currentAttempt <= MAX_RETRY_ATTEMPTS && retryCallback != null -> {
-                Log.i(TAG, "Retrying component initialization (attempt $currentAttempt/$MAX_RETRY_ATTEMPTS)")
+            currentAttempt < MAX_RETRY_ATTEMPTS && retryCallback != null -> {
+                Log.i(TAG, "Retrying component initialization (attempt ${currentAttempt + 1}/$MAX_RETRY_ATTEMPTS)")
                 retryWithFallback(component, retryCallback)
             }
             else -> {
@@ -127,7 +127,7 @@ class SettingsErrorRecovery(
      */
     fun retryWithFallback(componentName: String, operation: () -> View?): View? {
         return try {
-            val attemptCount = retryAttempts[componentName]?.get() ?: 0
+            val attemptCount = retryAttempts.computeIfAbsent(componentName) { AtomicInteger(0) }.incrementAndGet()
             
             Log.d(TAG, "Retrying operation for $componentName (attempt $attemptCount)")
             

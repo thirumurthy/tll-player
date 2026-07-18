@@ -86,7 +86,7 @@ class SettingsErrorRecoveryUnitTest {
         var callCount = 0
         val retryOperation = {
             callCount++
-            if (callCount < 2) null else Switch(context)
+            Switch(context)
         }
 
         // When

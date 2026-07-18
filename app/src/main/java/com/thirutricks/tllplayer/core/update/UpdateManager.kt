@@ -128,8 +128,10 @@ class UpdateManager(
 
     /** Numeric segment-wise compare: "1.10.0" > "1.9.3"; non-numeric junk compares as 0. */
     private fun isNewer(remote: String, local: String): Boolean {
-        val r = remote.split('.').map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
-        val l = local.split('.').map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
+        val cleanRemote = remote.trim().removePrefix("v").removePrefix("V")
+        val cleanLocal = local.trim().removePrefix("v").removePrefix("V")
+        val r = cleanRemote.split('.').map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
+        val l = cleanLocal.split('.').map { it.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
         for (i in 0 until maxOf(r.size, l.size)) {
             val a = r.getOrElse(i) { 0 }
             val b = l.getOrElse(i) { 0 }

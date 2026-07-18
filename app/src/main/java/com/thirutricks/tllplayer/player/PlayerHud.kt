@@ -110,7 +110,7 @@ fun PlayerHud(
     val retryFocus = remember { FocusRequester() }
     val catchFocus = remember { FocusRequester() }
 
-    var controlsVisible by remember { mutableStateOf(true) }
+    var controlsVisible by remember { mutableStateOf(!isLive) }
     var showInfo by remember { mutableStateOf(false) } // stream technical-info overlay
     var wakeTick by remember { mutableIntStateOf(0) }
     val forceShow = error != null || dialog != HudDialog.NONE
@@ -125,17 +125,23 @@ fun PlayerHud(
     // Show a "▲▼ to change channel" hint the first time the user zaps, so the up/down gesture is
     // discoverable on remotes without dedicated CH keys. Cleared after the first zap card dismisses.
     var showZapHint by remember { mutableStateOf(true) }
-    LaunchedEffect(channelFlash) { if (channelFlash > 0) { showFlash = true; delay(3000); showFlash = false; showZapHint = false } }
+    LaunchedEffect(channelFlash) { if (channelFlash > 0) { showFlash = true; delay(1500); showFlash = false; showZapHint = false } }
+    LaunchedEffect(Unit) { if (isLive) channelFlash = 1 }
     val zap: (Int) -> Unit = { d -> (if (d < 0) onChannelUp else onChannelDown)?.invoke(); channelFlash++ }
+    // Plain (non-Compose-state) flag so the key handling below sees it the instant OK is pressed to open
+    // the channel list — no waiting on a recomposition or on isChannelListOpen to round-trip back down
+    // from the parent. That's what keeps a fast Up/Down right behind OK from still triggering a zap.
+    val listOpening = remember { booleanArrayOf(false) }
 
     LaunchedEffect(isChannelListOpen) {
+        listOpening[0] = false
         if (isChannelListOpen) {
             controlsVisible = false
         }
     }
     LaunchedEffect(forceShow) { if (forceShow) controlsVisible = true }
     LaunchedEffect(controlsVisible, wakeTick, forceShow) {
-        if (controlsVisible && !forceShow) { delay(4500); controlsVisible = false }
+        if (controlsVisible && !forceShow) { delay(2500); controlsVisible = false }
     }
     LaunchedEffect(controlsVisible, error, isChannelListOpen) {
         if (isChannelListOpen) return@LaunchedEffect
@@ -153,17 +159,10 @@ fun PlayerHud(
             if (event.action == android.view.KeyEvent.ACTION_UP && consumedDownKey == keyCode) {
                 consumedDownKey = -1
                 true
-            } else if (isChannelListOpen) {
+            } else if (isChannelListOpen || listOpening[0]) {
                 false
             } else {
                 if (event.action == android.view.KeyEvent.ACTION_DOWN) {
-                    val isChannelKey = keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP ||
-                            keyCode == android.view.KeyEvent.KEYCODE_DPAD_DOWN ||
-                            keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_UP ||
-                            keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_DOWN ||
-                            keyCode == android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS ||
-                            keyCode == android.view.KeyEvent.KEYCODE_MEDIA_NEXT
-
                     val consumed = when {
                         canZap && (keyCode == android.view.KeyEvent.KEYCODE_CHANNEL_UP || keyCode == android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS) -> {
                             zap(-1)
@@ -181,16 +180,18 @@ fun PlayerHud(
                             zap(1)
                             true
                         }
-                        // Left or OK/Center while HUD is hidden opens the channel-list overlay (live only).
+                        // OK/Center (not Left) opens the channel-list overlay while the HUD is hidden (live
+                        // only). listOpening flips immediately so a zap key riding in right behind it is a no-op.
                         onOpenChannelList != null && !controlsVisible &&
-                                (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT ||
-                                 keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER ||
+                                (keyCode == android.view.KeyEvent.KEYCODE_DPAD_CENTER ||
                                  keyCode == android.view.KeyEvent.KEYCODE_ENTER) -> {
+                            listOpening[0] = true
                             onOpenChannelList()
                             true
                         }
-                        // Any other key wakes the HUD when hidden (except Back)
-                        !controlsVisible && keyCode != android.view.KeyEvent.KEYCODE_BACK && !isChannelKey -> {
+                        // Strictly D-pad Right wakes the hidden HUD — every other undefined key (including
+                        // Left, now freed from opening the channel list) is a no-op here.
+                        !controlsVisible && keyCode == android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
                             controlsVisible = true
                             true
                         }
@@ -212,7 +213,7 @@ fun PlayerHud(
 
     Box(
         modifier = modifier.fillMaxSize().onPreviewKeyEvent { e ->
-            if (isChannelListOpen) return@onPreviewKeyEvent false
+            if (isChannelListOpen || listOpening[0]) return@onPreviewKeyEvent false
             if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
             when {
                 // Channel surfing: dedicated CH+/CH- and media prev/next keys always zap. D-pad Up/Down
@@ -222,9 +223,11 @@ fun PlayerHud(
                 canZap && (e.key == Key.ChannelDown || e.key == Key.MediaNext) -> { zap(1); true }
                 canZap && !controlsVisible && e.key == Key.DirectionUp -> { zap(-1); true }
                 canZap && !controlsVisible && e.key == Key.DirectionDown -> { zap(1); true }
-                // Left or OK/Center while the HUD is hidden opens the channel-list overlay (live only).
+                // OK/Center opens the channel-list overlay while the HUD is hidden (live only). Left no
+                // longer triggers this, so it can't collide with the Up/Down zap gesture.
                 onOpenChannelList != null && !controlsVisible &&
-                        (e.key == Key.DirectionLeft || e.key == Key.DirectionCenter || e.key == Key.Enter) -> {
+                        (e.key == Key.DirectionCenter || e.key == Key.Enter) -> {
+                    listOpening[0] = true
                     onOpenChannelList()
                     true
                 }
@@ -236,17 +239,13 @@ fun PlayerHud(
         if (!controlsVisible && !isChannelListOpen) {
             Box(
                 Modifier.fillMaxSize().focusRequester(catchFocus).focusable()
-                    // Any key wakes the HUD — EXCEPT channel-surfing keys (Up/Down/CH±/media prev-next).
-                    // Those must stay a clean channel switch (handled by the outer onPreviewKeyEvent),
-                    // otherwise the first up/down press would pop the HUD open and steal focus, making
-                    // channel switching feel broken on remotes without dedicated CH keys (e.g. Fire TV).
+                    // Strictly D-pad Right wakes the hidden HUD. Every other key — channel-surfing keys
+                    // (handled by the outer onPreviewKeyEvent) and Left (now unassigned) included — is a
+                    // no-op here, so nothing but Right can pop the HUD open mid-zap or mid-list-open.
                     .onKeyEvent { e ->
-                        if (isChannelListOpen) return@onKeyEvent false
+                        if (isChannelListOpen || listOpening[0]) return@onKeyEvent false
                         if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
-                        val isChannelKey = e.key == Key.DirectionUp || e.key == Key.DirectionDown ||
-                            e.key == Key.ChannelUp || e.key == Key.ChannelDown ||
-                            e.key == Key.MediaPrevious || e.key == Key.MediaNext
-                        if (e.key != Key.Back && !isChannelKey) { controlsVisible = true; true } else false
+                        if (e.key == Key.DirectionRight) { controlsVisible = true; true } else false
                     },
             )
         }
