@@ -2,4 +2,9 @@
 <paths>
     <!-- Downloaded in-app update APKs (filesDir/updates/) -->
     <files-path name="updates" path="updates/" />
+
+    <!-- Downloaded movies/series shared with an external player (ExternalPlayerLauncher). -->
+    <external-path name="shared_media" path="." />
+    <files-path name="files_root" path="." />
+    <cache-path name="cache_root" path="." />
 </paths>

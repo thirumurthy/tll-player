@@ -14,6 +14,7 @@ tvProvider = "1.1.0"
 lifecycle = "2.10.0"
 navigationCompose = "2.9.8"
 datastore = "1.2.1"
+work = "2.11.2"
 
 # --- Build tooling ---
 # KSP2 (decoupled versioning) targeting Kotlin 2.3.x. Used by Room. Verified 2026-06-09.
@@ -24,9 +25,12 @@ room = "2.8.4"
 paging = "3.5.0"
 
 # --- Media playback ---
-media3 = "1.10.0"
+media3 = "1.10.1"
 # libmpv (FFmpeg-based) — full codec/track support for IPTV, caching, speed, etc.
 libmpv = "1.0.0"
+
+# Installs merged baseline profiles into ART at install/boot time (essential for sideloaded apps)
+profileinstaller = "1.4.1"
 
 # --- Kotlin libs ---
 coroutines = "1.10.2"
@@ -35,6 +39,9 @@ coroutines = "1.10.2"
 coil = "3.3.0"
 koin = "4.1.1"
 okhttp = "4.12.0"
+youtubePlayer = "13.0.0"
+zxing = "3.5.3"
+juniversalchardet = "2.5.0"
 
 # --- Test ---
 junit = "4.13.2"
@@ -68,6 +75,12 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 # DataStore (theme / prefs persistence)
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
+# WorkManager (durable background sync)
+androidx-work-runtime = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+
+# Baseline profile installer (AOT-compiles hot paths from bundled profiles on sideloaded installs)
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+
 # Room (database) + Paging
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
@@ -83,6 +96,15 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 # Image loading
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+
+# QR code generation (companion add-source) — encodes LAN URL into scannable bitmap
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+
+# Charset detection for local subtitle files
+juniversalchardet = { group = "com.github.albfernandez", name = "juniversalchardet", version.ref = "juniversalchardet" }
+
+# In-app YouTube trailer playback (WebView IFrame wrapper)
+youtube-player = { group = "com.pierfrancescosoffritti.androidyoutubeplayer", name = "core", version.ref = "youtubePlayer" }
 
 # Networking (M3U/Xtream fetch)
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }

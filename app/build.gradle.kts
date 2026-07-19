@@ -32,6 +32,23 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // ABI split: arm64-v8a + armeabi-v7a for real TV hardware; x86_64 for emulators only.
+    flavorDimensions += "abi"
+    productFlavors {
+        create("standard") {
+            dimension = "abi"
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+        }
+        create("x86_64") {
+            dimension = "abi"
+            ndk { abiFilters += listOf("x86_64") }
+        }
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     buildFeatures {
         viewBinding = true
         compose = true
@@ -54,13 +71,17 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
-            signingConfig = signingConfigs.getByName("release")
+            optimization {
+                enable = true
+                keepRules {
+                    files("proguard-rules.pro")
+                }
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -154,6 +175,12 @@ dependencies {
     // Preferences
     implementation(libs.androidx.datastore.preferences)
 
+    // WorkManager (durable background sync)
+    implementation(libs.androidx.work.runtime)
+
+    // Baseline profile installer (sideloaded apps need this for bundled profiles)
+    implementation(libs.androidx.profileinstaller)
+
     // Database (Room, via KSP) + Paging
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
@@ -164,6 +191,8 @@ dependencies {
 
     // Networking
     implementation(libs.okhttp)
+    implementation(libs.zxing.core) // QR generation for companion add-source flow
+    implementation(libs.juniversalchardet) // Local subtitle charset detection
 
     // Media playback — libmpv (FFmpeg) engine
     implementation(libs.libmpv)
@@ -176,6 +205,9 @@ dependencies {
     implementation(libs.androidx.media3.datasource.rtmp)
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.datasource.okhttp)
+
+    // In-app YouTube trailer playback — WebView-backed IFrame player
+    implementation(libs.youtube.player)
 
     // Image loading
     implementation(libs.coil.compose)

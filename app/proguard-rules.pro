@@ -1,31 +1,30 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# TLL release keep rules (R8). Each rule guards a runtime lookup that R8 can't see
+# statically — trim only with a full on-device regression (sync, both engines, backup).
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# --- Crash reports: keep readable stack traces (mapping.txt still needed for names) ---
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# --- libmpv JNI: native code resolves MPVLib and its event callbacks by name ---
+-keep class dev.jdtech.mpv.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# --- WorkManager: workers are re-instantiated by FQCN string (KoinWorkerFactory matches
+#     workerClassName against ::class.java.name, and WorkManager persists the name in its DB
+#     across app updates) ---
+-keep class * extends androidx.work.ListenableWorker
 
-# Keep data models to prevent Gson serialization/deserialization issues
+# --- Persisted enum names: DataStore prefs, backup JSON, and per-setting modes
+#     (ZoomMode, ThemeMode, StartupMode, AnimationLevel, ResumeMode,
+#     EpgAutoRefresh, PlaylistAutoRefresh, ...) round-trip through Enum.name/valueOf.
+#     Renaming a constant would silently reset settings and break old backups. ---
+-keep enum com.thirutricks.tllplayer.** { *; }
+
+# --- Keep data models to prevent Gson serialization/deserialization issues ---
 -keep class com.thirutricks.tllplayer.models.** { *; }
 
-# Keep Gua library classes
+# --- Keep Gua library classes ---
 -keep class io.github.lizongying.** { *; }
 
-# Keep generic type signatures for Gson TypeToken
+# --- Keep generic type signatures for Gson TypeToken ---
 -keepattributes Signature
 -keepattributes *Annotation*
