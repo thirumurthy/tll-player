@@ -14,7 +14,7 @@ import com.thirutricks.tllplayer.R
 
 /**
  * Owns the Remote companion HTTP listener for the app's lifetime. Registered as a Koin `single` so
- * [tv.own.owntv.features.setup.SetupViewModel] and [tv.own.owntv.features.settings.SettingsViewModel]
+ * [com.thirutricks.tllplayer.features.setup.SetupViewModel] and [com.thirutricks.tllplayer.features.settings.SettingsViewModel]
  * share one server instead of each carrying duplicate networking code.
  *
  * The phone only fills the Add Source form; it never starts the import. Each submission is exposed two

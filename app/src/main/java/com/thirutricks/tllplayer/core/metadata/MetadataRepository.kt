@@ -71,7 +71,7 @@ class MetadataRepository(
      * Resolve TMDB metadata for a series (show-level). Same lazy resolve + cache + negative-cache as
      * [resolveMovie], but against TMDB's TV endpoints. Cache/match keyed with the "tv" type.
      */
-    suspend fun resolveSeries(series: tv.own.owntv.core.database.entity.SeriesEntity): MetadataCacheEntity? {
+    suspend fun resolveSeries(series: com.thirutricks.tllplayer.core.database.entity.SeriesEntity): MetadataCacheEntity? {
         if (!settings.metadataConfig().enabled) return null
 
         val localKey = seriesLocalKey(series)
@@ -138,8 +138,8 @@ class MetadataRepository(
      * null when enrichment is off, the show has no match, or that episode isn't on TMDB.
      */
     suspend fun resolveEpisode(
-        series: tv.own.owntv.core.database.entity.SeriesEntity,
-        episode: tv.own.owntv.core.database.entity.EpisodeEntity,
+        series: com.thirutricks.tllplayer.core.database.entity.SeriesEntity,
+        episode: com.thirutricks.tllplayer.core.database.entity.EpisodeEntity,
     ): MetadataCacheEntity? {
         if (!settings.metadataConfig().enabled) return null
         val show = resolveSeries(series) ?: return null // no confident show match → no episode lookup
@@ -183,7 +183,7 @@ class MetadataRepository(
      * are left in place — they're orphaned but harmless (episode resolve looks them up by tmdbId, so stale
      * rows under an old id are simply never read). Caller re-triggers [resolveSeries].
      */
-    suspend fun clearSeries(series: tv.own.owntv.core.database.entity.SeriesEntity) {
+    suspend fun clearSeries(series: com.thirutricks.tllplayer.core.database.entity.SeriesEntity) {
         val localKey = seriesLocalKey(series)
         dao.getMatch(localKey)?.tmdbId?.let { dao.deleteCache(tvCacheKey(it)) }
         dao.deleteMatch(localKey)
@@ -195,8 +195,8 @@ class MetadataRepository(
      * Caller re-triggers [resolveEpisode].
      */
     suspend fun clearEpisode(
-        series: tv.own.owntv.core.database.entity.SeriesEntity,
-        episode: tv.own.owntv.core.database.entity.EpisodeEntity,
+        series: com.thirutricks.tllplayer.core.database.entity.SeriesEntity,
+        episode: com.thirutricks.tllplayer.core.database.entity.EpisodeEntity,
     ) {
         val localKey = seriesLocalKey(series)
         dao.getMatch(localKey)?.tmdbId?.let { tid ->
@@ -215,7 +215,7 @@ class MetadataRepository(
     suspend fun movieOverride(movie: MovieEntity): TmdbOverride? = overrideStore.get(movieLocalKey(movie))
 
     /** The saved override for this series, if any. */
-    suspend fun seriesOverride(series: tv.own.owntv.core.database.entity.SeriesEntity): TmdbOverride? =
+    suspend fun seriesOverride(series: com.thirutricks.tllplayer.core.database.entity.SeriesEntity): TmdbOverride? =
         overrideStore.get(seriesLocalKey(series))
 
     /** Save a movie's override and drop its cached match so the next resolve uses the new query. */
@@ -225,7 +225,7 @@ class MetadataRepository(
     }
 
     /** Save a series' override and drop its cached match so the next resolve uses the new query. */
-    suspend fun setSeriesOverride(series: tv.own.owntv.core.database.entity.SeriesEntity, title: String, year: Int?) {
+    suspend fun setSeriesOverride(series: com.thirutricks.tllplayer.core.database.entity.SeriesEntity, title: String, year: Int?) {
         overrideStore.set(seriesLocalKey(series), title, year)
         clearSeries(series)
     }
@@ -237,7 +237,7 @@ class MetadataRepository(
     }
 
     /** Remove a series' override and drop its cached match so the next resolve re-normalizes the provider title. */
-    suspend fun clearSeriesOverride(series: tv.own.owntv.core.database.entity.SeriesEntity) {
+    suspend fun clearSeriesOverride(series: com.thirutricks.tllplayer.core.database.entity.SeriesEntity) {
         overrideStore.clear(seriesLocalKey(series))
         clearSeries(series)
     }
@@ -353,7 +353,7 @@ class MetadataRepository(
 
         fun cacheKey(tmdbId: Int): String = "$TYPE_MOVIE:$tmdbId"
 
-        fun seriesLocalKey(series: tv.own.owntv.core.database.entity.SeriesEntity): String =
+        fun seriesLocalKey(series: com.thirutricks.tllplayer.core.database.entity.SeriesEntity): String =
             "$TYPE_TV:${series.sourceId}:${series.remoteId ?: series.name}"
 
         fun tvCacheKey(tmdbId: Int): String = "$TYPE_TV:$tmdbId"

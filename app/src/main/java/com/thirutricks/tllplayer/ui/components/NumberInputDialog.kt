@@ -88,7 +88,7 @@ fun NumberInputDialog(
         onDismiss()
     }
 
-    tv.own.owntv.ui.theme.PopupFontTheme {
+    com.thirutricks.tllplayer.ui.theme.PopupFontTheme {
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
             Column(
                 modifier = Modifier.dialogPanel(width = 320.dp, corner = 16.dp, padding = 16.dp),

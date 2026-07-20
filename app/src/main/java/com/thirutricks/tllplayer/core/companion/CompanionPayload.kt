@@ -21,7 +21,7 @@ data class CompanionPayload(
     val mac: String = "",
     val userAgent: String = "",
     val epgUrl: String = "",
-    /** Name of a [tv.own.owntv.features.settings.data.PlaylistAutoRefresh] entry; defaults to OFF. */
+    /** Name of a [com.thirutricks.tllplayer.features.settings.data.PlaylistAutoRefresh] entry; defaults to OFF. */
     val autoRefresh: String = "OFF",
     val syncLive: Boolean = true,
     val syncMovies: Boolean = true,

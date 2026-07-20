@@ -8,7 +8,7 @@ import com.thirutricks.tllplayer.core.model.SourceType
  * the system sans for body text. Kept separate from the socket plumbing so the markup is easy to
  * iterate on and unit-testable in isolation.
  *
- * The palette mirrors [tv.own.owntv.ui.theme] dark tokens: background #040E0B, surfaces #1B211F /
+ * The palette mirrors [com.thirutricks.tllplayer.ui.theme] dark tokens: background #040E0B, surfaces #1B211F /
  * #252B29, text #DEE4E1 / #BFC9C4, outline #3F4945, teal accent #52DBC8.
  */
 internal object CompanionHtml {
@@ -191,7 +191,7 @@ internal object CompanionHtml {
             when (payload.type) {
                 SourceType.STALKER -> "My Portal"
                 SourceType.M3U -> "My Playlist"
-                else -> "My IPTV"
+                SourceType.TLL, SourceType.XTREAM, SourceType.LOCAL_BACKUP -> "My IPTV"
             }
         }
         return page(

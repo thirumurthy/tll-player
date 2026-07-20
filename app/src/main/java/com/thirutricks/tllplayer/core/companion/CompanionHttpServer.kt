@@ -200,7 +200,7 @@ class CompanionHttpServer {
         when (type) {
             SourceType.STALKER -> if (portalUrl.isBlank() || mac.isBlank()) return null
             SourceType.M3U -> if (server.isBlank()) return null
-            SourceType.XTREAM, SourceType.LOCAL_BACKUP -> if (server.isBlank() || user.isBlank() || pass.isBlank()) return null
+            SourceType.XTREAM, SourceType.LOCAL_BACKUP, SourceType.TLL -> if (server.isBlank() || user.isBlank() || pass.isBlank()) return null
         }
 
         return CompanionPayload(

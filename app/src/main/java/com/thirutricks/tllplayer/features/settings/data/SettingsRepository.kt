@@ -414,4 +414,16 @@ class SettingsRepository(private val context: Context) {
             backupFloatKeys.forEach { k -> if (o.has(k.name)) prefs[k] = o.getDouble(k.name).toFloat() }
         }
     }
+
+    // ---- TMDB metadata config (used by TmdbProvider / MetadataRepository) ----
+    data class MetadataConfig(
+        val enabled: Boolean = true,
+        val tier: Tier = Tier.DEFAULT_WORKER,
+        val customServerUrl: String = "",
+        val tmdbApiKey: String = "",
+    ) {
+        enum class Tier { SELF_HOST, OWN_KEY, DEFAULT_WORKER }
+    }
+
+    fun metadataConfig(): MetadataConfig = MetadataConfig()
 }
