@@ -254,7 +254,7 @@ private fun SourceRow(
                 buildString {
                     // The TLL stream URL is a protected endpoint — never expose it in the UI. Other source
                     // types show their URL for transparency/editing.
-                    append(when (source.type) { SourceType.XTREAM -> "Xtream • ${source.url}"; SourceType.M3U -> "M3U • ${source.url}"; SourceType.TLL -> "TLL"; SourceType.LOCAL_BACKUP -> "Backup" })
+                    append(when (source.type) { SourceType.XTREAM -> "Xtream • ${source.url}"; SourceType.M3U -> "M3U • ${source.url}"; SourceType.TLL -> "TLL"; SourceType.STALKER -> "Stalker"; SourceType.LOCAL_BACKUP -> "Backup" })
                     if (refreshOnStart) append("  •  ⟳ on startup")
                     if (!countsLabel.isNullOrBlank()) append("  •  $countsLabel")
                 },

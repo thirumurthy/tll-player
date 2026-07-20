@@ -74,6 +74,7 @@ class EpgRepository(
     fun guideUrl(source: SourceEntity): String? = when (source.type) {
         SourceType.XTREAM -> source.epgUrl?.takeIf { it.isNotBlank() } ?: xtream.xmltvUrl(source)
         SourceType.M3U, SourceType.TLL -> source.epgUrl?.takeIf { it.isNotBlank() }
+        SourceType.STALKER -> source.epgUrl?.takeIf { it.isNotBlank() }
         SourceType.LOCAL_BACKUP -> null
     }
 

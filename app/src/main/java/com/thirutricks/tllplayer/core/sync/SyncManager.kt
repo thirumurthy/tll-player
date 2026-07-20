@@ -54,6 +54,7 @@ class SyncManager(
                     SourceType.XTREAM -> syncXtream(source, onProgress)
                     SourceType.M3U -> syncM3u(source, onProgress)
                     SourceType.TLL -> syncTllPlaylist(source, onProgress)
+                    SourceType.STALKER -> Unit // Stalker support not yet integrated
                     SourceType.LOCAL_BACKUP -> Unit
                 }
                 sourceDao.markSynced(source.id, System.currentTimeMillis())

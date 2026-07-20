@@ -4,7 +4,7 @@ package com.thirutricks.tllplayer.core.model
 enum class MediaType { LIVE, MOVIE, SERIES, EPISODE }
 
 /** How a source delivers its content. */
-enum class SourceType { M3U, XTREAM, LOCAL_BACKUP, TLL }
+enum class SourceType { M3U, XTREAM, LOCAL_BACKUP, STALKER, TLL }
 
 /** Lifecycle of a download (movies & series only). */
 enum class DownloadStatus { QUEUED, RUNNING, PAUSED, COMPLETED, FAILED }

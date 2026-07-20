@@ -26,9 +26,9 @@ class TmdbProvider(
     private suspend fun resolveEndpoint(): Endpoint {
         val cfg = settings.metadataConfig()
         return when (cfg.tier) {
-            MetadataConfig.Tier.SELF_HOST -> Endpoint(cfg.customServerUrl.trimEnd('/'), apiKey = null)
-            MetadataConfig.Tier.OWN_KEY -> Endpoint(TMDB_DIRECT_BASE, apiKey = cfg.tmdbApiKey.trim())
-            MetadataConfig.Tier.DEFAULT_WORKER -> Endpoint(DEFAULT_WORKER_BASE, apiKey = null)
+            SettingsRepository.MetadataConfig.Tier.SELF_HOST -> Endpoint(cfg.customServerUrl.trimEnd('/'), apiKey = null)
+            SettingsRepository.MetadataConfig.Tier.OWN_KEY -> Endpoint(TMDB_DIRECT_BASE, apiKey = cfg.tmdbApiKey.trim())
+            SettingsRepository.MetadataConfig.Tier.DEFAULT_WORKER -> Endpoint(DEFAULT_WORKER_BASE, apiKey = null)
         }
     }
 
