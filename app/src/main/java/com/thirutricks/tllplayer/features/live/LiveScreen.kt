@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +41,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -103,7 +108,7 @@ fun LiveScreen(
         vm.playPreview(ch)
     }
 
-    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val listState = rememberLazyGridState()
     val selFocus = remember { FocusRequester() }
     val firstItemFocus = remember { FocusRequester() }
     var renaming by remember { mutableStateOf<ChannelEntity?>(null) }
@@ -214,11 +219,17 @@ fun LiveScreen(
                     )
                 }
             } else {
-                LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.focusGroup(),
+                ) {
                     items(channels.itemCount) { index ->
                         val channel = channels[index]
                         if (channel != null) {
-                            ChannelRow(
+                            ChannelCard(
                                 channel = channel,
                                 isFavorite = favoriteIds.contains(channel.id),
                                 modifier = when {
@@ -303,7 +314,7 @@ fun LiveScreen(
 }
 
 @Composable
-private fun ChannelRow(
+private fun ChannelCard(
     channel: ChannelEntity,
     isFavorite: Boolean,
     onFocus: () -> Unit,
@@ -315,36 +326,71 @@ private fun ChannelRow(
     FocusableSurface(
         onClick = onClick,
         onLongClick = onLongClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .onFocusChanged { if (it.hasFocus) onFocus() },
-        shape = RoundedCornerShape(12.dp),
-        contentAlignment = Alignment.CenterStart,
+        modifier = modifier.onFocusChanged { if (it.hasFocus) onFocus() },
+        shape = RoundedCornerShape(14.dp),
+        focusedScale = 1.08f,
+        glowElevation = 16,
+        focusedContainerColor = colors.surfaceContainerHigh,
+        unfocusedContainerColor = colors.surfaceContainerHigh,
+        selectedContainerColor = colors.surfaceContainerHigh,
+        contentAlignment = Alignment.TopStart,
     ) { focused ->
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
             Box(
-                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(8.dp)).background(colors.surfaceContainerLowest),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(colors.surfaceContainerLowest),
                 contentAlignment = Alignment.Center,
             ) {
                 if (!channel.logoUrl.isNullOrBlank()) {
-                    AsyncImage(model = channel.logoUrl, contentDescription = null, modifier = Modifier.fillMaxSize())
+                    AsyncImage(
+                        model = channel.logoUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize().padding(10.dp),
+                    )
                 } else {
-                    OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(24.dp))
+                    OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(30.dp))
+                }
+                if (isFavorite) {
+                    OwnTVIcon(
+                        OwnTVIcon.STAR,
+                        tint = colors.favorite,
+                        filled = true,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(14.dp),
+                    )
+                }
+                channel.number?.let { num ->
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(5.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Black.copy(alpha = 0.55f))
+                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = "$num",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
             }
+            Spacer(Modifier.height(6.dp))
             Text(
-                channel.name,
-                style = MaterialTheme.typography.titleSmall,
+                text = channel.name,
+                style = MaterialTheme.typography.labelMedium,
                 color = if (focused) colors.primary else colors.onSurface,
-                modifier = Modifier.weight(1f),
+                maxLines = 2,
+                minLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
             )
-            if (isFavorite) {
-                OwnTVIcon(OwnTVIcon.STAR, tint = colors.favorite, filled = true, modifier = Modifier.size(20.dp))
-            }
         }
     }
 }
