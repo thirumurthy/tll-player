@@ -2,8 +2,6 @@ package com.thirutricks.tllplayer.features.live
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,7 +20,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,7 +58,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.thirutricks.tllplayer.core.database.entity.ChannelEntity
 import com.thirutricks.tllplayer.features.shell.components.CategoryRail
-import com.thirutricks.tllplayer.features.shell.components.PreviewPane
 import com.thirutricks.tllplayer.features.shell.components.RailCategory
 import com.thirutricks.tllplayer.ui.components.longPressMenuGuard
 import com.thirutricks.tllplayer.ui.components.FocusableSurface
@@ -68,45 +72,25 @@ import com.thirutricks.tllplayer.ui.components.formatCount
 import com.thirutricks.tllplayer.ui.theme.Dimens
 import com.thirutricks.tllplayer.ui.theme.OwnTVTheme
 
-/** Layer 2–4 for Live TV: real category rail, Paging channel list, and a live preview pane. */
+/** Live TV browser: compact category rail and a responsive, paged channel grid. */
 @Composable
 fun LiveScreen(
     onFullscreen: () -> Unit,
     onChildFocused: () -> Unit,
-    previewEnabled: Boolean = true,
     restoreFocus: Boolean = false,
     onRestored: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val colors = OwnTVTheme.colors
     val vm: LiveViewModel = koinViewModel()
     val railItems by vm.railItems.collectAsStateWithLifecycle()
     val selectedKey by vm.selectedKey.collectAsStateWithLifecycle()
     val count by vm.count.collectAsStateWithLifecycle()
     val favoriteIds by vm.favoriteIds.collectAsStateWithLifecycle()
     val previewChannel by vm.previewChannel.collectAsStateWithLifecycle()
-    val previewArmed by vm.previewArmed.collectAsStateWithLifecycle()
-    val nowNext by vm.nowNext.collectAsStateWithLifecycle()
     val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
     val sortMode by vm.sortMode.collectAsStateWithLifecycle()
-    val livePreviewSetting by vm.livePreviewEnabled.collectAsStateWithLifecycle()
     val channels = vm.channels.collectAsLazyPagingItems()
-    // Preview runs only when the player isn't busy (previewEnabled) AND the user hasn't turned it off.
-    val effectivePreview = previewEnabled && livePreviewSetting
-
-    // NOTE: do NOT stop the player when LiveScreen leaves composition — going fullscreen disposes
-    // this screen, and stopping here would abort the stream that was just started. Playback is
-    // stopped on fullscreen exit (shell BackHandler) instead.
-
-    // In-pane preview: play the focused channel after the focus settles (700ms). Disabled while the
-    // fullscreen/mini player owns the surface (previewEnabled=false) to avoid two surfaces fighting.
-    LaunchedEffect(previewChannel?.id, effectivePreview, previewArmed) {
-        // previewArmed gates the case where the last channel was restored on startup — we don't auto-preview
-        // it until the user actually focuses a channel (then it plays normally).
-        if (!effectivePreview || !previewArmed) return@LaunchedEffect
-        val ch = previewChannel ?: return@LaunchedEffect
-        delay(700)
-        vm.playPreview(ch)
-    }
 
     val listState = rememberLazyGridState()
     val selFocus = remember { FocusRequester() }
@@ -152,24 +136,29 @@ fun LiveScreen(
     Row(
         modifier = modifier
             .fillMaxSize()
+            .background(
+                Brush.horizontalGradient(
+                    listOf(
+                        colors.background,
+                        colors.primary.copy(alpha = 0.035f),
+                        colors.background,
+                    ),
+                ),
+            )
             .onFocusChanged { if (it.hasFocus) onChildFocused() },
     ) {
         CategoryRail(
             categories = railItems.map { RailCategory(it.abbr, it.title, it.icon) },
             selectedIndex = selectedIndex,
             onSelect = { idx -> railItems.getOrNull(idx)?.let { vm.select(it.key) } },
-            // Focusing a folder stops the in-pane preview — but only when a preview is actually running.
-            // When the player is docked (live PiP) or fullscreen, previewEnabled is false and stopPreview
-            // would kill that stream (e.g. while navigating left to leave Live), so we skip it.
-            onFocused = { if (previewEnabled) vm.stopPreview() },
         )
 
-        // Layer 3 — header + channel list (fixed-width column; the preview pane fills the rest)
+        // The channel browser fills all remaining space; no preview stream or detail card is composed.
         Column(
             modifier = Modifier
-                .width(Dimens.ChannelListWidth)
+                .weight(1f)
                 .fillMaxHeight()
-                // Entering this pane (from the rail or the preview) must land on a channel row, never
+                // Entering this pane from the rail must land on a channel row, never
                 // the search bar: prefer the last-focused channel, else the first row. onEnter fires
                 // only for directional entry from outside (internal moves don't re-trigger it).
                 .focusProperties {
@@ -182,19 +171,10 @@ fun LiveScreen(
                 .focusGroup()
                 .padding(horizontal = Dimens.ScreenPaddingH, vertical = Dimens.ScreenPaddingV),
         ) {
-            Text(
-                "Live TV / ${selectedItem?.title ?: "All"}",
-                style = MaterialTheme.typography.headlineMedium,
-                color = OwnTVTheme.colors.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "${selectedItem?.abbr ?: "ALL"} (${formatCount(count)} channels)",
-                style = MaterialTheme.typography.titleMedium,
-                color = OwnTVTheme.colors.primary,
-                fontWeight = FontWeight.Bold,
+            LiveHeader(
+                title = selectedItem?.title ?: "All Channels",
+                abbreviation = selectedItem?.abbr ?: "ALL",
+                channelCount = count,
             )
             Spacer(Modifier.height(14.dp))
 
@@ -203,7 +183,7 @@ fun LiveScreen(
                     query = searchQuery,
                     onQueryChange = vm::setSearchQuery,
                     placeholder = "Search ${selectedItem?.title ?: "channels"}…",
-                    modifier = Modifier.weight(1f).onFocusChanged { if (it.hasFocus && previewEnabled) vm.stopPreview() },
+                    modifier = Modifier.weight(1f),
                 )
                 Spacer(Modifier.size(10.dp))
                 SortChip(mode = sortMode, onToggle = vm::toggleSort)
@@ -213,14 +193,14 @@ fun LiveScreen(
             if (channels.itemCount == 0) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        if (searchQuery.isNotBlank()) "No channels found for “${searchQuery.trim()}”" else "No channels here.",
+                        if (searchQuery.isNotBlank()) "No channels found for “${searchQuery.trim()}”" else "No channels in this playlist yet",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = OwnTVTheme.colors.onSurfaceVariant,
+                        color = colors.onSurfaceVariant,
                     )
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    columns = GridCells.Adaptive(minSize = 160.dp),
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -232,6 +212,7 @@ fun LiveScreen(
                             ChannelCard(
                                 channel = channel,
                                 isFavorite = favoriteIds.contains(channel.id),
+                                isActive = channel.id == previewChannel?.id,
                                 modifier = when {
                                     channel.id == previewChannel?.id -> Modifier.focusRequester(selFocus)
                                     index == 0 -> Modifier.focusRequester(firstItemFocus)
@@ -248,22 +229,6 @@ fun LiveScreen(
                     }
                 }
             }
-        }
-
-        // Layer 4 — preview pane
-        Box(modifier = Modifier.weight(1f).fillMaxSize().padding(Dimens.GapLarge)) {
-            LivePreviewPane(
-                channel = previewChannel,
-                nowNext = nowNext,
-                previewEngine = vm.previewEngine,
-                showVideo = effectivePreview,
-                isFavorite = previewChannel?.let { favoriteIds.contains(it.id) } ?: false,
-                onToggleFavorite = { previewChannel?.let { vm.toggleFavorite(it) } },
-                onRename = { renaming = previewChannel },
-                onHide = { previewChannel?.let { vm.hideChannel(it) } },
-                onMatchEpg = { matchingEpg = previewChannel },
-                onCatchup = { catchupChannel = previewChannel },
-            )
         }
     }
 
@@ -314,9 +279,66 @@ fun LiveScreen(
 }
 
 @Composable
+private fun LiveHeader(
+    title: String,
+    abbreviation: String,
+    channelCount: Int,
+) {
+    val colors = OwnTVTheme.colors
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            LiveBadge()
+            Text(
+                text = "$abbreviation PLAYLIST",
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(colors.primary.copy(alpha = 0.14f))
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+            ) {
+                Text(
+                    text = formatCount(channelCount),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            color = colors.onSurface,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = "Browse ${formatCount(channelCount)} live channels",
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
 private fun ChannelCard(
     channel: ChannelEntity,
     isFavorite: Boolean,
+    isActive: Boolean,
     onFocus: () -> Unit,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
@@ -326,22 +348,27 @@ private fun ChannelCard(
     FocusableSurface(
         onClick = onClick,
         onLongClick = onLongClick,
+        selected = isActive,
         modifier = modifier.onFocusChanged { if (it.hasFocus) onFocus() },
-        shape = RoundedCornerShape(14.dp),
-        focusedScale = 1.08f,
-        glowElevation = 16,
-        focusedContainerColor = colors.surfaceContainerHigh,
-        unfocusedContainerColor = colors.surfaceContainerHigh,
-        selectedContainerColor = colors.surfaceContainerHigh,
+        shape = RoundedCornerShape(18.dp),
+        focusedScale = 1.045f,
+        glowElevation = 14,
+        focusedContainerColor = colors.surfaceContainerHighest,
+        unfocusedContainerColor = colors.surfaceContainerLow,
+        selectedContainerColor = colors.primaryContainer.copy(alpha = 0.36f),
         contentAlignment = Alignment.TopStart,
     ) { focused ->
-        Column(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(7.dp)) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(colors.surfaceContainerLowest),
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(colors.surfaceContainerLowest, colors.surfaceContainer),
+                        ),
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 if (!channel.logoUrl.isNullOrBlank()) {
@@ -349,27 +376,36 @@ private fun ChannelCard(
                         model = channel.logoUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize().padding(10.dp),
+                        modifier = Modifier.fillMaxSize().padding(13.dp),
                     )
                 } else {
                     OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(30.dp))
                 }
                 if (isFavorite) {
-                    OwnTVIcon(
-                        OwnTVIcon.STAR,
-                        tint = colors.favorite,
-                        filled = true,
-                        modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(14.dp),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.52f))
+                            .padding(5.dp),
+                    ) {
+                        OwnTVIcon(
+                            OwnTVIcon.STAR,
+                            tint = colors.favorite,
+                            filled = true,
+                            modifier = Modifier.size(12.dp),
+                        )
+                    }
                 }
                 channel.number?.let { num ->
                     Box(
                         modifier = Modifier
-                            .align(Alignment.BottomStart)
+                            .align(Alignment.TopStart)
                             .padding(5.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.Black.copy(alpha = 0.55f))
-                            .padding(horizontal = 5.dp, vertical = 2.dp),
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.Black.copy(alpha = 0.58f))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
                     ) {
                         Text(
                             text = "$num",
@@ -379,17 +415,36 @@ private fun ChannelCard(
                         )
                     }
                 }
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(6.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.Black.copy(alpha = 0.52f))
+                        .padding(horizontal = 6.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Box(Modifier.size(5.dp).clip(CircleShape).background(Color(0xFFFF4D5E)))
+                    Text(
+                        text = "LIVE",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = channel.name,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (focused) colors.primary else colors.onSurface,
+                color = if (focused || isActive) colors.primary else colors.onSurface,
+                fontWeight = if (focused || isActive) FontWeight.Bold else FontWeight.Medium,
                 maxLines = 2,
                 minLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Start,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 3.dp),
             )
         }
     }
@@ -438,166 +493,35 @@ private fun ChannelContextMenu(
     }
 }
 
+/** Pulsing ● LIVE badge. */
 @Composable
-private fun LivePreviewPane(
-    channel: ChannelEntity?,
-    nowNext: EpgNowNext?,
-    previewEngine: com.thirutricks.tllplayer.player.LivePreviewEngine,
-    showVideo: Boolean,
-    isFavorite: Boolean,
-    onToggleFavorite: () -> Unit,
-    onRename: () -> Unit,
-    onHide: () -> Unit,
-    onMatchEpg: () -> Unit,
-    onCatchup: () -> Unit,
-) {
-    val colors = OwnTVTheme.colors
-    val previewState by previewEngine.state.collectAsStateWithLifecycle()
-    val previewHeight by previewEngine.videoHeight.collectAsStateWithLifecycle()
-    val streamChips by previewEngine.streamChips.collectAsStateWithLifecycle()
-    // Show the ExoPlayer surface once it's playing/buffering; on ERROR fall back to the channel logo.
-    val previewPlaying = showVideo && previewState != com.thirutricks.tllplayer.player.LivePreviewEngine.State.ERROR &&
-        previewState != com.thirutricks.tllplayer.player.LivePreviewEngine.State.IDLE
-    val previewLoading = showVideo && previewState == com.thirutricks.tllplayer.player.LivePreviewEngine.State.LOADING
-    val videoRes = previewHeight?.let { "${it}p" }
-    if (channel == null) {
-        PreviewPane(hint = "Focus a channel to see it here.")
-        return
-    }
-    Column(
-        // Scrollable so the action buttons are never clipped when the EPG (Now/Next/Later) makes the
-        // pane taller than the screen — focusing a button brings it into view.
-        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(Dimens.CardCorner)).background(colors.panel)
-            .verticalScroll(rememberScrollState()).padding(Dimens.GapLarge),
-        horizontalAlignment = Alignment.CenterHorizontally,
+private fun LiveBadge(modifier: Modifier = Modifier) {
+    val infiniteTransition = rememberInfiniteTransition(label = "livePulse")
+    val dotAlpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.3f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "liveDot",
+    )
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color(0xFFCC0000).copy(alpha = 0.92f))
+            .padding(horizontal = 7.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(12.dp)).background(colors.surfaceContainerLowest),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (!channel.logoUrl.isNullOrBlank()) {
-                AsyncImage(model = channel.logoUrl, contentDescription = null, modifier = Modifier.size(120.dp))
-            } else {
-                OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(56.dp))
-            }
-            if (previewPlaying) {
-                com.thirutricks.tllplayer.player.ExoPreviewSurface(engine = previewEngine, modifier = Modifier.fillMaxSize())
-            }
-            if (previewLoading) {
-                OwnTVSpinner(sizeDp = 28)
-            }
-            // Real stream spec — aspect · resolution · fps · audio. The channel NAME often lies ("…4K"),
-            // so this shows what you'll actually get before you commit to watching. Falls back to just the
-            // resolution until the full format is known.
-            val chips = streamChips.takeIf { it.isNotEmpty() } ?: videoRes?.let { listOf(it) }.orEmpty()
-            chips.takeIf { previewPlaying && it.isNotEmpty() }?.let { list ->
-                Row(
-                    Modifier.align(Alignment.TopStart).padding(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    list.forEach { label ->
-                        Box(
-                            Modifier.clip(RoundedCornerShape(6.dp))
-                                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.6f))
-                                .padding(horizontal = 8.dp, vertical = 3.dp),
-                        ) {
-                            Text(label, style = MaterialTheme.typography.labelMedium, color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-        }
-        Spacer(Modifier.height(14.dp))
-        Text(channel.name, style = MaterialTheme.typography.titleLarge, color = colors.onSurface)
-
-        EpgSection(nowNext)
-
-        // Catch-up channels: jump straight to a recent programme to replay it (no Guide gymnastics).
-        if (channel.catchup) {
-            Spacer(Modifier.height(16.dp))
-            OwnTVButton(label = "Catch-up", onClick = onCatchup, icon = OwnTVIcon.HISTORY)
-        }
-
-        Spacer(Modifier.height(16.dp))
-        OwnTVButton(
-            label = if (isFavorite) "Favorited" else "Favorite",
-            onClick = onToggleFavorite,
-            style = OwnTVButtonStyle.SECONDARY,
-            icon = OwnTVIcon.STAR,
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = dotAlpha)),
         )
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            OwnTVButton(label = "Rename", onClick = onRename, style = OwnTVButtonStyle.SECONDARY)
-            OwnTVButton(label = "Hide", onClick = onHide, style = OwnTVButtonStyle.SECONDARY)
-        }
-        Spacer(Modifier.height(10.dp))
-        OwnTVButton(label = "Match EPG", onClick = onMatchEpg, style = OwnTVButtonStyle.SECONDARY, icon = OwnTVIcon.EPG)
-        Spacer(Modifier.height(8.dp))
-        Text("Press OK to watch fullscreen", style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
-    }
-}
-
-/** Now-playing (with progress) + up-next, from the channel's short EPG. Hidden when no guide exists. */
-@Composable
-private fun EpgSection(nowNext: EpgNowNext?) {
-    val colors = OwnTVTheme.colors
-    val now = nowNext?.now
-    val next = nowNext?.next
-    if (now == null && next == null) return
-
-    Spacer(Modifier.height(16.dp))
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (now != null) {
-            Text("NOW", style = MaterialTheme.typography.labelSmall, color = colors.primary, fontWeight = FontWeight.Bold)
-            Text(
-                now.title,
-                style = MaterialTheme.typography.titleSmall,
-                color = colors.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val span = (now.stopMs - now.startMs).coerceAtLeast(1)
-            val progress = ((System.currentTimeMillis() - now.startMs).toFloat() / span).coerceIn(0f, 1f)
-            Box(
-                modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(colors.surfaceContainerLowest),
-            ) {
-                Box(Modifier.fillMaxWidth(progress).height(4.dp).clip(RoundedCornerShape(2.dp)).background(colors.primary))
-            }
-            Text(
-                "${formatClock(now.startMs)} – ${formatClock(now.stopMs)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = colors.onSurfaceVariant,
-            )
-        }
-        if (next != null) {
-            Spacer(Modifier.height(2.dp))
-            Text("NEXT  ·  ${formatClock(next.startMs)}", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)
-            Text(
-                next.title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = colors.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        // Upcoming programmes after "next" — see what's on later without opening the Guide (#11).
-        val later = nowNext?.upcoming ?: emptyList()
-        if (later.isNotEmpty()) {
-            Spacer(Modifier.height(6.dp))
-            Text("LATER", style = MaterialTheme.typography.labelSmall, color = colors.onSurfaceVariant, fontWeight = FontWeight.Bold)
-            later.forEach { p ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(formatClock(p.startMs), style = MaterialTheme.typography.labelSmall, color = colors.primary)
-                    Text(p.title, style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
+        Text("LIVE", style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Bold)
     }
 }
 
 private val clockFormat = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-private fun formatClock(ms: Long): String = clockFormat.format(java.util.Date(ms))
-
 private val catchupDayTimeFormat = java.text.SimpleDateFormat("EEE HH:mm", java.util.Locale.getDefault())
 private fun formatCatchupTime(startMs: Long, stopMs: Long): String =
     "${catchupDayTimeFormat.format(java.util.Date(startMs))} – ${clockFormat.format(java.util.Date(stopMs))}"

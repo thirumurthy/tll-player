@@ -9,15 +9,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
@@ -34,9 +35,11 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -84,10 +87,6 @@ fun CategoryRail(
         if (q.isEmpty()) categories.indices.toList()
         else categories.indices.filter { categories[it].fullName.contains(q, ignoreCase = true) }
     }
-    // Phase 2 — the rail is a FIXED full-label column (no collapse/abbreviation overlay), so it never
-    // reflows the layout on the D-pad. Always "expanded" = full category names.
-    val expanded = true
-
     val listState = rememberLazyListState()
     val selectedFocus = remember { FocusRequester() }
     val searchFocus = remember { FocusRequester() }
@@ -100,15 +99,39 @@ fun CategoryRail(
         }
     }
 
-    // Fixed full-label column in the screen's Row — a real grid column (no overlay), so it takes its own
-    // space and nothing reflows when focus enters/leaves it.
-    Box(modifier = modifier.fillMaxHeight().width(Dimens.RailWidthFixed)) {
-        LazyColumn(
-            state = listState,
+    val expanded = hasFocus
+    val panelWidth by animateDpAsState(
+        targetValue = if (expanded) Dimens.RailWidthExpanded else Dimens.RailWidth,
+        animationSpec = com.thirutricks.tllplayer.ui.theme.ownTvTween(180),
+        label = "categoryRailWidth",
+    )
+    val panelShape = RoundedCornerShape(topEnd = 28.dp, bottomEnd = 28.dp)
+
+    // Only the compact rail participates in the parent layout. The searchable picker expands over
+    // the content, keeping the channel grid stable and returning the former fixed-column space.
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .width(Dimens.RailWidth)
+            .zIndex(if (expanded) 10f else 0f),
+    ) {
+        Column(
             modifier = Modifier
+                .requiredWidth(panelWidth)
                 .fillMaxHeight()
-                .fillMaxWidth()
-                .background(colors.panel)
+                .shadow(
+                    elevation = if (expanded) 28.dp else 0.dp,
+                    shape = panelShape,
+                    ambientColor = colors.focusGlow,
+                    spotColor = colors.focusGlow,
+                )
+                .clip(panelShape)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(colors.surfaceContainer, colors.surfaceContainerLow),
+                    ),
+                )
+                .border(1.dp, colors.outlineVariant.copy(alpha = 0.55f), panelShape)
                 .onFocusChanged {
                     // Spatial D-pad entry would land on whatever pill is horizontally aligned —
                     // redirect every entry (from the sidebar OR back from the content list) to the
@@ -133,45 +156,78 @@ fun CategoryRail(
                     }
                 }
                 .focusGroup(),
-            contentPadding = PaddingValues(vertical = Dimens.GapLarge, horizontal = 10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(Dimens.GapSmall),
         ) {
-            // Category-search field, only while the rail is expanded (focused). Entering the rail lands
-            // here; Down drops into the list, and the filter clears when the rail loses focus.
-            if (hasFocus) {
-                item(key = "__rail_search__") {
-                    SearchBar(
-                        query = query,
-                        onQueryChange = { query = it },
-                        placeholder = "Search categories…",
+            if (expanded) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 18.dp, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    OwnTVIcon(OwnTVIcon.PLAYLIST, tint = colors.primary, modifier = Modifier.size(19.dp))
+                    Text(
+                        text = "Folders",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = colors.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Box(
                         modifier = Modifier
-                            .focusRequester(searchFocus)
-                            .fillMaxWidth()
-                            .padding(bottom = 4.dp),
+                            .clip(RoundedCornerShape(50))
+                            .background(colors.primary.copy(alpha = 0.14f))
+                            .padding(horizontal = 9.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text = categories.size.toString(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = colors.primary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                SearchBar(
+                    query = query,
+                    onQueryChange = { query = it },
+                    placeholder = "Find a folder…",
+                    modifier = Modifier
+                        .focusRequester(searchFocus)
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 4.dp),
+                )
+                Spacer(Modifier.size(6.dp))
+            }
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                contentPadding = PaddingValues(
+                    top = if (expanded) 4.dp else Dimens.GapLarge,
+                    bottom = Dimens.GapLarge,
+                    start = if (expanded) 14.dp else 10.dp,
+                    end = if (expanded) 14.dp else 10.dp,
+                ),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Dimens.GapSmall),
+            ) {
+                items(count = visible.size, key = { visible[it] }) { i ->
+                    val index = visible[i]
+                    RailPill(
+                        category = categories[index],
+                        selected = index == selectedIndex,
+                        expanded = expanded,
+                        onClick = { onSelect(index) },
+                        modifier = if (index == selectedIndex) Modifier.focusRequester(selectedFocus) else Modifier,
                     )
                 }
-            }
-            items(count = visible.size, key = { visible[it] }) { i ->
-                val index = visible[i]
-                RailPill(
-                    category = categories[index],
-                    // RailPill only lights the green "active" fill when this pill is BOTH the current
-                    // category AND focused — so the highlight always follows focus and nothing is auto-lit.
-                    selected = index == selectedIndex,
-                    expanded = expanded,
-                    onClick = { onSelect(index) },
-                    modifier = if (index == selectedIndex) Modifier.focusRequester(selectedFocus) else Modifier,
-                )
-            }
-            if (hasFocus && visible.isEmpty()) {
-                item {
-                    Text(
-                        "No categories match",
-                        color = colors.textSecondary,
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(12.dp),
-                    )
+                if (expanded && visible.isEmpty()) {
+                    item {
+                        Text(
+                            "No folders found",
+                            color = colors.textSecondary,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(18.dp),
+                        )
+                    }
                 }
             }
         }
@@ -189,16 +245,10 @@ private fun RailPill(
     val colors = OwnTVTheme.colors
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    // Only ever highlight the FOCUSED pill. The current category shows the green "selected" fill *when
-    // it's the one you're on*; otherwise a focused pill gets the focus outline, and a selected-but-not-
-    // focused pill shows nothing — so the highlight always reads as "where the remote is".
-    val activeSelected = selected && focused
-
-    // M3 tonal states: the active+focused category uses the primary *container* (soft tonal fill), a
-    // plain focused pill uses a surface-container fill with a primary outline.
+    // Keep the current folder visible in compact mode; focus adds a clear remote-navigation outline.
     val bg by animateColorAsState(
         targetValue = when {
-            activeSelected -> colors.primaryContainer
+            selected -> colors.primaryContainer
             focused -> colors.card
             else -> Color.Transparent
         },
@@ -207,7 +257,7 @@ private fun RailPill(
     )
     val fg by animateColorAsState(
         targetValue = when {
-            activeSelected -> colors.onPrimaryContainer
+            selected -> colors.onPrimaryContainer
             focused -> colors.accent
             else -> colors.textSecondary
         },
@@ -223,7 +273,7 @@ private fun RailPill(
             .clip(shape)
             .background(bg)
             .then(
-                if (focused && !selected) Modifier.border(Dimens.FocusBorderWidth, colors.focusBorder, shape)
+                if (focused) Modifier.border(Dimens.FocusBorderWidth, colors.focusBorder, shape)
                 else Modifier
             )
             .selectable(
@@ -242,7 +292,7 @@ private fun RailPill(
             contentAlignment = Alignment.Center,
         ) {
             if (category.icon != null) {
-                OwnTVIcon(icon = category.icon, tint = fg, filled = activeSelected, modifier = Modifier.size(if (expanded) 20.dp else Dimens.RailPillSize / 2))
+                OwnTVIcon(icon = category.icon, tint = fg, filled = selected, modifier = Modifier.size(if (expanded) 20.dp else Dimens.RailPillSize / 2))
             } else {
                 Text(
                     text = category.abbr,

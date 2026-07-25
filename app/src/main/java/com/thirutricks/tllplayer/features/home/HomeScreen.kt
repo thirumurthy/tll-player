@@ -99,6 +99,7 @@ fun HomeScreen(
     previewEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    val colors = OwnTVTheme.colors
     val state by vm.uiState.collectAsStateWithLifecycle()
     val heroPreviewEngine = koinInject<HeroPreviewEngine>()
     val engineState by heroPreviewEngine.state.collectAsStateWithLifecycle()
@@ -179,12 +180,20 @@ fun HomeScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(OwnTVTheme.colors.surface)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        colors.background,
+                        colors.surface,
+                        colors.background,
+                    ),
+                ),
+            )
             .onFocusChanged { if (it.hasFocus) onChildFocused() }
             .focusGroup(),
         state = listState,
-        contentPadding = PaddingValues(vertical = Dimens.ScreenPaddingV),
-        verticalArrangement = Arrangement.spacedBy(Dimens.GapLarge),
+        contentPadding = PaddingValues(top = 20.dp, bottom = 48.dp),
+        verticalArrangement = Arrangement.spacedBy(30.dp),
     ) {
         item {
             if (state.heroItems.isNotEmpty()) {
@@ -222,6 +231,17 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     focusRequester = fallbackFocus,
                     onChildFocused = onNonHeroFocused,
+                )
+            }
+        }
+
+        if (state.recentLive.isNotEmpty()) {
+            item {
+                ChannelRailRow(
+                    title = "Recently Watched Live",
+                    channels = state.recentLive,
+                    onChannelClick = { id -> onPlayChannel(id, state.recentLive) },
+                    onFocus = onNonHeroFocused,
                 )
             }
         }
@@ -283,6 +303,59 @@ fun HomeScreen(
 
 private enum class RowKind { FAVORITES, MOVIES, SERIES }
 
+@Composable
+private fun HomeSectionHeader(
+    title: String,
+    subtitle: String,
+    count: Int,
+    modifier: Modifier = Modifier,
+) {
+    val colors = OwnTVTheme.colors
+    Row(
+        modifier = modifier.fillMaxWidth().padding(horizontal = Dimens.HomeRowPaddingH),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(RoundedCornerShape(11.dp))
+                .background(colors.primary.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            OwnTVIcon(OwnTVIcon.PLAY, tint = colors.primary, modifier = Modifier.size(15.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = colors.onSurface,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(colors.surfaceContainerHigh)
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+        ) {
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = colors.primary,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HeroRowSection(
@@ -301,7 +374,9 @@ private fun HeroRowSection(
     val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
     val approxRowWidth = screenWidthDp - Dimens.SidebarWidthCollapsed - Dimens.HomeRowPaddingH
     val maxCardHeight = (approxRowWidth - Dimens.HeroBaseWidth - Dimens.HeroGap) * 9f / 16f
-    val cardHeight = maxCardHeight.coerceIn(Dimens.HeroMinCardHeight, Dimens.HeroMaxCardHeight)
+    // Keep the hero cinematic without letting it consume the whole TV viewport. The first content
+    // rail remains visible below it, making Home feel like a browsable hub instead of a splash page.
+    val cardHeight = maxCardHeight.coerceIn(220.dp, 260.dp)
     val posterHeight = cardHeight - Dimens.HeroMetaHeight
     val expandedWidth = cardHeight * 16f / 9f
     val cardShape = RoundedCornerShape(Dimens.HeroCardCorner)
@@ -322,14 +397,12 @@ private fun HeroRowSection(
     val endPadding = (rowWidthDp - Dimens.HeroBaseWidth - Dimens.HomeRowPaddingH).coerceAtLeast(Dimens.HomeRowPaddingH)
 
     Column(modifier = modifier) {
-        Text(
-            text = "Keep Watching".uppercase(),
-            style = MaterialTheme.typography.titleSmall,
-            color = colors.primary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = Dimens.HomeRowPaddingH),
+        HomeSectionHeader(
+            title = "Up Next",
+            subtitle = "Continue where you left off",
+            count = items.size,
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(12.dp))
 
         Box(
             modifier = Modifier
@@ -425,14 +498,42 @@ private fun HeroRowSection(
                             contentAlignment = Alignment.Center,
                         ) { focused ->
                             if (isExpanded) {
-                                Box(Modifier.fillMaxSize().background(Color.Black)) {
+                                Box(
+                                    Modifier
+                                        .fillMaxSize()
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(
+                                                    colors.surfaceContainerLowest,
+                                                    colors.primaryContainer.copy(alpha = 0.28f),
+                                                    colors.surfaceContainerLowest,
+                                                ),
+                                            ),
+                                        ),
+                                ) {
                                     if (!imageUrl.isNullOrBlank()) {
-                                        AsyncImage(
-                                            model = imageUrl,
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Fit,
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
+                                        if (item is HeroItem.LiveHero) {
+                                            AsyncImage(
+                                                model = imageUrl,
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                alpha = 0.24f,
+                                                modifier = Modifier.fillMaxSize().blur(26.dp),
+                                            )
+                                            AsyncImage(
+                                                model = imageUrl,
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Fit,
+                                                modifier = Modifier.align(Alignment.CenterEnd).padding(end = 54.dp).size(176.dp),
+                                            )
+                                        } else {
+                                            AsyncImage(
+                                                model = imageUrl,
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize(),
+                                            )
+                                        }
                                     } else {
                                         Box(
                                             Modifier.fillMaxSize(),
@@ -547,7 +648,17 @@ private fun HeroRowSection(
                             .clip(cardShape),
                     ) {
                         Box(
-                            Modifier.fillMaxSize().background(Color.Black),
+                            Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(
+                                            colors.surfaceContainerLowest,
+                                            colors.primaryContainer.copy(alpha = 0.28f),
+                                            colors.surfaceContainerLowest,
+                                        ),
+                                    ),
+                                ),
                             contentAlignment = Alignment.Center,
                         ) {
                             HeroPreviewSurface(
@@ -561,12 +672,28 @@ private fun HeroRowSection(
                                     is HeroItem.LiveHero -> expandedItem.channel.logoUrl
                                 }
                                 if (!artUrl.isNullOrBlank()) {
-                                    AsyncImage(
-                                        model = artUrl,
-                                        contentDescription = null,
-                                        contentScale = ContentScale.Fit,
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
+                                    if (expandedItem is HeroItem.LiveHero) {
+                                        AsyncImage(
+                                            model = artUrl,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            alpha = 0.24f,
+                                            modifier = Modifier.fillMaxSize().blur(26.dp),
+                                        )
+                                        AsyncImage(
+                                            model = artUrl,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Fit,
+                                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 54.dp).size(176.dp),
+                                        )
+                                    } else {
+                                        AsyncImage(
+                                            model = artUrl,
+                                            contentDescription = null,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+                                    }
                                 } else {
                                     val fallback = when (expandedItem) {
                                         is HeroItem.MovieHero -> OwnTVIcon.MOVIES
@@ -582,12 +709,16 @@ private fun HeroRowSection(
                             Modifier
                                 .fillMaxSize()
                                 .background(
+                                    Brush.horizontalGradient(
+                                        0f to Color.Black.copy(alpha = 0.88f),
+                                        0.58f to Color.Black.copy(alpha = 0.18f),
+                                        1f to Color.Transparent,
+                                    ),
+                                )
+                                .background(
                                     Brush.verticalGradient(
-                                        listOf(
-                                            Color.Transparent,
-                                            Color.Transparent,
-                                            Color.Black.copy(alpha = 0.86f),
-                                        ),
+                                        0.42f to Color.Transparent,
+                                        1f to Color.Black.copy(alpha = 0.76f),
                                     ),
                                 ),
                         )
@@ -598,6 +729,33 @@ private fun HeroRowSection(
                                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                                 .widthIn(max = Dimens.HeroOverlayMaxWidth),
                         ) {
+                            val typeIcon = when (expandedItem) {
+                                is HeroItem.MovieHero -> OwnTVIcon.MOVIES
+                                is HeroItem.SeriesHero -> OwnTVIcon.SERIES
+                                is HeroItem.LiveHero -> OwnTVIcon.LIVE_TV
+                            }
+                            val typeLabel = when (expandedItem) {
+                                is HeroItem.MovieHero -> "MOVIE"
+                                is HeroItem.SeriesHero -> "SERIES"
+                                is HeroItem.LiveHero -> "LIVE CHANNEL"
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color.Black.copy(alpha = 0.48f))
+                                    .padding(horizontal = 9.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                OwnTVIcon(typeIcon, tint = colors.primary, modifier = Modifier.size(12.dp))
+                                Text(
+                                    text = typeLabel,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                            Spacer(Modifier.height(8.dp))
                             val title = when (expandedItem) {
                                 is HeroItem.MovieHero -> expandedItem.item.title
                                 is HeroItem.SeriesHero -> expandedItem.item.title
@@ -605,8 +763,8 @@ private fun HeroRowSection(
                             }
                             Text(
                                 text = title,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = colors.onSurface,
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = Color.White,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis,
                                 fontWeight = FontWeight.Bold,
@@ -651,7 +809,8 @@ private fun HeroRowSection(
                                 },
                                 onClick = { onPlay(expandedItem) },
                                 modifier = Modifier.focusProperties { canFocus = false },
-                                style = OwnTVButtonStyle.SECONDARY,
+                                style = OwnTVButtonStyle.PRIMARY,
+                                icon = OwnTVIcon.PLAY,
                                 enabled = true,
                             )
                         }
@@ -781,16 +940,14 @@ private fun ContinueWatchingRow(
     var focusedIndex by remember { mutableStateOf(-1) }
 
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = title.uppercase(),
-            style = MaterialTheme.typography.titleSmall,
-            color = OwnTVTheme.colors.primary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = Dimens.HomeRowPaddingH),
+        HomeSectionHeader(
+            title = title,
+            subtitle = "Ready when you are",
+            count = items.size,
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = PaddingValues(horizontal = Dimens.HomeRowPaddingH),
             modifier = Modifier.focusGroup(),
             userScrollEnabled = false,
@@ -831,7 +988,7 @@ private fun ContinueWatchingCard(
     val progressPercent = progressFraction?.let { (it * 100).toInt() }
 
     val cardAlpha by animateFloatAsState(
-        targetValue = if (dimmed) 0.5f else 1f,
+        targetValue = if (dimmed) 0.72f else 1f,
         animationSpec = tween(220),
         label = "cardAlpha",
     )
@@ -839,14 +996,14 @@ private fun ContinueWatchingCard(
     FocusableSurface(
         onClick = onClick,
         modifier = modifier
-            .width(300.dp)
+            .width(276.dp)
             .alpha(cardAlpha)
             .onFocusChanged { if (it.hasFocus) onFocus() else onBlur() },
-        shape = RoundedCornerShape(16.dp),
-        focusedScale = 1.10f,
-        glowElevation = 24,
-        focusedContainerColor = colors.surfaceContainerHigh,
-        unfocusedContainerColor = colors.surfaceContainerHigh,
+        shape = RoundedCornerShape(20.dp),
+        focusedScale = 1.045f,
+        glowElevation = 14,
+        focusedContainerColor = colors.surfaceContainerHighest,
+        unfocusedContainerColor = colors.surfaceContainerLow,
         selectedContainerColor = colors.surfaceContainerHigh,
         contentAlignment = Alignment.TopStart,
     ) { focused ->
@@ -854,7 +1011,7 @@ private fun ContinueWatchingCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(16.dp)),
+                .clip(RoundedCornerShape(20.dp)),
         ) {
             // Poster / placeholder
             if (!item.posterUrl.isNullOrBlank()) {
@@ -902,10 +1059,10 @@ private fun ContinueWatchingCard(
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(10.dp)
+                        .padding(9.dp)
                         .clip(RoundedCornerShape(50))
                         .background(colors.primary)
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                        .padding(horizontal = 9.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OwnTVIcon(OwnTVIcon.PLAY, tint = Color.White, modifier = Modifier.size(10.dp))
@@ -924,7 +1081,7 @@ private fun ContinueWatchingCard(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 13.dp, vertical = 11.dp),
             ) {
                 val subline = buildContinueWatchingSubtitle(item)
                 if (subline != null) {
@@ -1004,49 +1161,53 @@ private fun ChannelRailRow(
     Column(
         modifier = modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = title.uppercase(),
-            style = MaterialTheme.typography.titleSmall,
-            color = OwnTVTheme.colors.primary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(start = Dimens.HomeRowPaddingH),
+        HomeSectionHeader(
+            title = title,
+            subtitle = if (title.startsWith("Recently")) "Jump back into live TV" else "Your saved live channels",
+            count = channels.size,
         )
         Spacer(Modifier.height(10.dp))
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = PaddingValues(horizontal = Dimens.HomeRowPaddingH),
             modifier = Modifier.focusGroup(),
         ) {
             itemsIndexed(channels, key = { _, channel -> channel.id }) { index, channel ->
                 Box(
                     modifier = Modifier
-                        .width(180.dp)
-                        .height(100.dp),
+                        .width(220.dp)
+                        .height(112.dp),
                 ) {
+                    val colors = OwnTVTheme.colors
                     FocusableSurface(
                         onClick = { onChannelClick(channel.id) },
                         modifier = when {
                             firstItemFocusRequester != null && index == 0 -> Modifier.focusRequester(firstItemFocusRequester)
                             else -> Modifier
                         }.onFocusChanged { if (it.hasFocus) onFocus() },
-                        shape = RoundedCornerShape(14.dp),
-                        focusedScale = 1f,
-                        focusedContainerColor = OwnTVTheme.colors.surfaceContainerHigh,
-                        unfocusedContainerColor = OwnTVTheme.colors.surfaceContainerHigh,
-                        selectedContainerColor = OwnTVTheme.colors.surfaceContainerHigh,
+                        shape = RoundedCornerShape(18.dp),
+                        focusedScale = 1.045f,
+                        glowElevation = 14,
+                        focusedContainerColor = colors.surfaceContainerHighest,
+                        unfocusedContainerColor = colors.surfaceContainerLow,
+                        selectedContainerColor = colors.surfaceContainerHigh,
                     ) { focused ->
                         Row(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(10.dp),
+                                .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(OwnTVTheme.colors.surfaceContainerLowest),
+                                    .size(58.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(
+                                        Brush.verticalGradient(
+                                            listOf(colors.surfaceContainerLowest, colors.surfaceContainer),
+                                        ),
+                                    ),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 if (!channel.logoUrl.isNullOrBlank()) {
@@ -1054,19 +1215,35 @@ private fun ChannelRailRow(
                                         model = channel.logoUrl,
                                         contentDescription = null,
                                         modifier = Modifier.fillMaxSize(),
-                                        contentScale = ContentScale.Crop,
+                                        contentScale = ContentScale.Fit,
                                     )
                                 } else {
-                                    OwnTVIcon(OwnTVIcon.LIVE_TV, tint = OwnTVTheme.colors.onSurfaceVariant, modifier = Modifier.size(22.dp))
+                                    OwnTVIcon(OwnTVIcon.LIVE_TV, tint = colors.onSurfaceVariant, modifier = Modifier.size(26.dp))
                                 }
                             }
-                            Text(
-                                text = channel.name,
-                                style = MaterialTheme.typography.titleSmall,
-                                color = if (focused) OwnTVTheme.colors.primary else OwnTVTheme.colors.onSurface,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                                ) {
+                                    Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFFFF4D5E)))
+                                    Text(
+                                        text = "LIVE",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = colors.onSurfaceVariant,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                                Spacer(Modifier.height(5.dp))
+                                Text(
+                                    text = channel.name,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = if (focused) colors.primary else colors.onSurface,
+                                    fontWeight = if (focused) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                 }

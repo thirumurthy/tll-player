@@ -92,9 +92,6 @@ class LiveViewModel(
     private val forceMpvStore: com.thirutricks.tllplayer.core.player.ForceMpvStore,
 ) : ViewModel() {
 
-    val livePreviewEnabled: StateFlow<Boolean> = settings.livePreviewEnabled
-        .stateIn(viewModelScope, SharingStarted.Eagerly, true)
-
     /** Channels pinned to mpv ("compatibility mode") — opened straight on mpv, bypassing ExoPlayer. Eagerly
      *  collected so the routing decision in [ensurePlaying] always sees the current set. Keyed by stream URL. */
     val forceMpvUrls: StateFlow<Set<String>> = forceMpvStore.urls
@@ -112,9 +109,6 @@ class LiveViewModel(
             )
         }
     }
-
-    private val livePreviewAudio: StateFlow<Boolean> = settings.livePreviewAudio
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private data class Ctx(val profileId: Long, val sourceIds: List<Long>)
 
@@ -340,35 +334,7 @@ class LiveViewModel(
     }
 
     fun onChannelFocused(channel: ChannelEntity) {
-        _previewArmed.value = true // a real user focus — the in-pane preview may now play
         _previewChannel.value = channel
-    }
-
-    // The in-pane preview only plays once the user has actually focused a channel — so restoring the last
-    // focused channel on startup positions focus & the details pane WITHOUT auto-previewing on launch (#6).
-    private val _previewArmed = MutableStateFlow(false)
-    val previewArmed: StateFlow<Boolean> = _previewArmed.asStateFlow()
-
-
-    /** In-pane preview playback (no history) — triggered by the UI after the focus settles. Runs on the
-     *  lightweight ExoPlayer engine (fast HLS start), not mpv; the full/fullscreen player stays on mpv. */
-    fun playPreview(channel: ChannelEntity) {
-        // Don't touch the engine while it's promoted to full-screen. Clicking OK before the in-pane preview's
-        // focus-delay fires would otherwise let this late preview call re-mute the now-full-screen stream
-        // (preview audio is off) — so full-screen would play with no sound. ensurePlaying() sets liveOnExo
-        // the instant OK is pressed, before this can run.
-        if (_liveOnExo.value) return
-        // Already previewing this channel (e.g. re-focus)? Just re-apply the preview mute, no reload.
-        if (previewEngine.currentUrl == channel.streamUrl &&
-            previewEngine.state.value != com.thirutricks.tllplayer.player.LivePreviewEngine.State.ERROR
-        ) {
-            previewEngine.setMuted(!livePreviewAudio.value)
-            return
-        }
-        previewEngine.play(
-            channel.streamUrl, muted = !livePreviewAudio.value,
-            meta = com.thirutricks.tllplayer.player.MediaMeta(title = channel.name, logoUrl = channel.logoUrl),
-        )
     }
 
     // The ordered channel list of the row the user opened fullscreen from, so the player HUD can

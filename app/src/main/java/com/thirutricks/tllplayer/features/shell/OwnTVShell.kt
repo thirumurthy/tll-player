@@ -326,7 +326,6 @@ fun OwnTVShell(
                     selectedSection == MainSection.LIVE_TV -> LiveScreen(
                         onFullscreen = { openFullscreen() },
                         onChildFocused = { focusedLayer = ShellLayer.CONTENT },
-                        previewEnabled = playerMode == PlayerMode.NONE,
                         restoreFocus = restoreFocus,
                         onRestored = { restoreFocus = false },
                         modifier = Modifier.fillMaxSize(),
