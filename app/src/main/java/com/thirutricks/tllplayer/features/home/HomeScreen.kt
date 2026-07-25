@@ -2,6 +2,7 @@ package com.thirutricks.tllplayer.features.home
 
 import android.content.Context
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.background
@@ -777,18 +778,7 @@ private fun ContinueWatchingRow(
     firstItemFocusRequester: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
-    val lazyListState = rememberLazyListState()
     var focusedIndex by remember { mutableStateOf(-1) }
-    var rowWidthPx by remember { mutableStateOf(0) }
-    val density = LocalDensity.current
-
-    // Animate scroll to keep the focused card centered in the row
-    LaunchedEffect(focusedIndex) {
-        if (focusedIndex < 0 || rowWidthPx == 0) return@LaunchedEffect
-        val cardWidthPx = with(density) { 280.dp.roundToPx() }
-        val centerOffset = -(rowWidthPx / 2 - cardWidthPx / 2)
-        lazyListState.animateScrollToItem(focusedIndex, scrollOffset = centerOffset)
-    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -798,19 +788,17 @@ private fun ContinueWatchingRow(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(start = Dimens.HomeRowPaddingH),
         )
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(12.dp))
         LazyRow(
-            state = lazyListState,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
             contentPadding = PaddingValues(horizontal = Dimens.HomeRowPaddingH),
-            modifier = Modifier
-                .focusGroup()
-                .onGloballyPositioned { rowWidthPx = it.size.width },
-            userScrollEnabled = false, // D-pad focus movement drives scrolling; disabling prevents stuck-scroll on TV
+            modifier = Modifier.focusGroup(),
+            userScrollEnabled = false,
         ) {
             itemsIndexed(items, key = { _, item -> item.stableKey }) { index, item ->
                 ContinueWatchingCard(
                     item = item,
+                    dimmed = focusedIndex != -1 && focusedIndex != index,
                     modifier = when {
                         firstItemFocusRequester != null && index == 0 -> Modifier.focusRequester(firstItemFocusRequester)
                         else -> Modifier
@@ -819,6 +807,7 @@ private fun ContinueWatchingRow(
                         focusedIndex = index
                         onFocus()
                     },
+                    onBlur = { if (focusedIndex == index) focusedIndex = -1 },
                     onClick = { onItemClick(item) },
                 )
             }
@@ -829,23 +818,33 @@ private fun ContinueWatchingRow(
 @Composable
 private fun ContinueWatchingCard(
     item: LauncherContinuationItem,
+    dimmed: Boolean = false,
     modifier: Modifier = Modifier,
     onFocus: () -> Unit = {},
+    onBlur: () -> Unit = {},
     onClick: () -> Unit,
 ) {
     val colors = OwnTVTheme.colors
     val progressFraction = if (item.durationMs > 0) {
         (item.positionMs.toFloat() / item.durationMs.toFloat()).coerceIn(0f, 1f)
     } else null
+    val progressPercent = progressFraction?.let { (it * 100).toInt() }
+
+    val cardAlpha by animateFloatAsState(
+        targetValue = if (dimmed) 0.5f else 1f,
+        animationSpec = tween(220),
+        label = "cardAlpha",
+    )
 
     FocusableSurface(
         onClick = onClick,
         modifier = modifier
-            .width(280.dp)
-            .onFocusChanged { if (it.hasFocus) onFocus() },
-        shape = RoundedCornerShape(14.dp),
-        focusedScale = 1.14f,
-        glowElevation = 20,
+            .width(300.dp)
+            .alpha(cardAlpha)
+            .onFocusChanged { if (it.hasFocus) onFocus() else onBlur() },
+        shape = RoundedCornerShape(16.dp),
+        focusedScale = 1.10f,
+        glowElevation = 24,
         focusedContainerColor = colors.surfaceContainerHigh,
         unfocusedContainerColor = colors.surfaceContainerHigh,
         selectedContainerColor = colors.surfaceContainerHigh,
@@ -855,8 +854,9 @@ private fun ContinueWatchingCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(14.dp)),
+                .clip(RoundedCornerShape(16.dp)),
         ) {
+            // Poster / placeholder
             if (!item.posterUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = item.posterUrl,
@@ -866,68 +866,111 @@ private fun ContinueWatchingCard(
                 )
             } else {
                 Box(
-                    Modifier
-                        .fillMaxSize()
-                        .background(colors.surfaceContainerLowest),
+                    Modifier.fillMaxSize().background(colors.surfaceContainerLowest),
                     contentAlignment = Alignment.Center,
                 ) {
-                    OwnTVIcon(OwnTVIcon.MOVIES, tint = colors.onSurfaceVariant, modifier = Modifier.size(40.dp))
+                    OwnTVIcon(OwnTVIcon.MOVIES, tint = colors.onSurfaceVariant, modifier = Modifier.size(44.dp))
                 }
             }
 
-            // Bottom gradient for text readability
+            // Subtle top scrim so Resume chip stays readable
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            0f to Color.Transparent,
-                            0.4f to Color.Transparent,
-                            1f to Color.Black.copy(alpha = 0.9f),
+                            0f to Color.Black.copy(alpha = 0.40f),
+                            0.28f to Color.Transparent,
                         )
                     ),
             )
 
+            // Heavy bottom scrim for text legibility
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0.30f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.94f),
+                        )
+                    ),
+            )
+
+            // "Resume" pill — top-right, only when focused
+            if (focused) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(colors.primary)
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OwnTVIcon(OwnTVIcon.PLAY, tint = Color.White, modifier = Modifier.size(10.dp))
+                    Spacer(Modifier.width(5.dp))
+                    Text(
+                        text = "Resume",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+
+            // Bottom info block
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
             ) {
                 val subline = buildContinueWatchingSubtitle(item)
                 if (subline != null) {
                     Text(
                         text = subline,
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = Color.White.copy(alpha = 0.72f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(3.dp))
                 }
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.labelLarge,
                     color = if (focused) colors.primary else Color.White,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (progressFraction != null && progressFraction > 0f) {
-                    Spacer(Modifier.height(6.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.White.copy(alpha = 0.25f)),
-                    ) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth(progressFraction)
-                                .height(3.dp)
-                                .background(colors.primary),
-                        )
+                                .weight(1f)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(Color.White.copy(alpha = 0.22f)),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(progressFraction)
+                                    .height(4.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(colors.primary),
+                            )
+                        }
+                        if (progressPercent != null) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "$progressPercent%",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.65f),
+                            )
+                        }
                     }
                 }
             }
