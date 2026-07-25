@@ -76,7 +76,6 @@ import com.thirutricks.tllplayer.ui.components.OwnTVButton
 import com.thirutricks.tllplayer.ui.components.OwnTVButtonStyle
 import com.thirutricks.tllplayer.ui.components.OwnTVIcon
 import com.thirutricks.tllplayer.ui.components.OwnTVSpinner
-import com.thirutricks.tllplayer.ui.components.PosterCard
 import com.thirutricks.tllplayer.ui.theme.Dimens
 import com.thirutricks.tllplayer.ui.theme.OwnTVTheme
 import androidx.tv.material3.MaterialTheme
@@ -778,9 +777,20 @@ private fun ContinueWatchingRow(
     firstItemFocusRequester: FocusRequester? = null,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-    ) {
+    val lazyListState = rememberLazyListState()
+    var focusedIndex by remember { mutableStateOf(-1) }
+    var rowWidthPx by remember { mutableStateOf(0) }
+    val density = LocalDensity.current
+
+    // Animate scroll to keep the focused card centered in the row
+    LaunchedEffect(focusedIndex) {
+        if (focusedIndex < 0 || rowWidthPx == 0) return@LaunchedEffect
+        val cardWidthPx = with(density) { 280.dp.roundToPx() }
+        val centerOffset = -(rowWidthPx / 2 - cardWidthPx / 2)
+        lazyListState.animateScrollToItem(focusedIndex, scrollOffset = centerOffset)
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = title.uppercase(),
             style = MaterialTheme.typography.titleSmall,
@@ -790,28 +800,152 @@ private fun ContinueWatchingRow(
         )
         Spacer(Modifier.height(10.dp))
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            state = lazyListState,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(horizontal = Dimens.HomeRowPaddingH),
-            modifier = Modifier.focusGroup(),
+            modifier = Modifier
+                .focusGroup()
+                .onGloballyPositioned { rowWidthPx = it.size.width },
+            userScrollEnabled = false, // D-pad focus movement drives scrolling; disabling prevents stuck-scroll on TV
         ) {
             itemsIndexed(items, key = { _, item -> item.stableKey }) { index, item ->
-                Box(Modifier.width(150.dp)) {
-                    PosterCard(
-                        posterUrl = item.posterUrl,
-                        title = item.title,
-                        progressFraction = if (item.durationMs > 0) {
-                            (item.positionMs.toFloat() / item.durationMs.toFloat()).coerceIn(0f, 1f)
-                        } else null,
-                        modifier = when {
-                            firstItemFocusRequester != null && index == 0 -> Modifier.focusRequester(firstItemFocusRequester)
-                            else -> Modifier
-                        },
-                        onFocus = onFocus,
-                        onClick = { onItemClick(item) },
+                ContinueWatchingCard(
+                    item = item,
+                    modifier = when {
+                        firstItemFocusRequester != null && index == 0 -> Modifier.focusRequester(firstItemFocusRequester)
+                        else -> Modifier
+                    },
+                    onFocus = {
+                        focusedIndex = index
+                        onFocus()
+                    },
+                    onClick = { onItemClick(item) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ContinueWatchingCard(
+    item: LauncherContinuationItem,
+    modifier: Modifier = Modifier,
+    onFocus: () -> Unit = {},
+    onClick: () -> Unit,
+) {
+    val colors = OwnTVTheme.colors
+    val progressFraction = if (item.durationMs > 0) {
+        (item.positionMs.toFloat() / item.durationMs.toFloat()).coerceIn(0f, 1f)
+    } else null
+
+    FocusableSurface(
+        onClick = onClick,
+        modifier = modifier
+            .width(280.dp)
+            .onFocusChanged { if (it.hasFocus) onFocus() },
+        shape = RoundedCornerShape(14.dp),
+        focusedScale = 1.14f,
+        glowElevation = 20,
+        focusedContainerColor = colors.surfaceContainerHigh,
+        unfocusedContainerColor = colors.surfaceContainerHigh,
+        selectedContainerColor = colors.surfaceContainerHigh,
+        contentAlignment = Alignment.TopStart,
+    ) { focused ->
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(14.dp)),
+        ) {
+            if (!item.posterUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = item.posterUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .background(colors.surfaceContainerLowest),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    OwnTVIcon(OwnTVIcon.MOVIES, tint = colors.onSurfaceVariant, modifier = Modifier.size(40.dp))
+                }
+            }
+
+            // Bottom gradient for text readability
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            0.4f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.9f),
+                        )
+                    ),
+            )
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+            ) {
+                val subline = buildContinueWatchingSubtitle(item)
+                if (subline != null) {
+                    Text(
+                        text = subline,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
+                    Spacer(Modifier.height(2.dp))
+                }
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (focused) colors.primary else Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (progressFraction != null && progressFraction > 0f) {
+                    Spacer(Modifier.height(6.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.White.copy(alpha = 0.25f)),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progressFraction)
+                                .height(3.dp)
+                                .background(colors.primary),
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+private fun buildContinueWatchingSubtitle(item: LauncherContinuationItem): String? {
+    val episodePart = if (item.seasonNumber != null && item.episodeNumber != null) {
+        "S${item.seasonNumber} E${item.episodeNumber}"
+    } else null
+    val containerPart = item.containerTitle
+    return when {
+        episodePart != null && containerPart != null -> "$episodePart • $containerPart"
+        episodePart != null -> episodePart
+        containerPart != null -> containerPart
+        item.subtitle != null -> item.subtitle
+        else -> null
     }
 }
 
